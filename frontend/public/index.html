@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Pluto Capital Funding — Proprietary Trading Firm. 1-Step and 2-Step evaluations. Up to $200K funding. cTrader and MetaTrader 5.">
+  <title>Pluto Capital Funding — Trade Beyond Limits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="landing">
+  <nav class="nav" id="topNav"><div class="container nav-inner">
+    <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <div class="logo-icon"></div>
+      <div class="logo-text">PLUTO<span>CAPITAL</span></div>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#rules">Rules</a>
+      <a href="#pricing">Pricing</a>
+      <button onclick="showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
+      <button onclick="showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
+    </div>
+  </div></nav>
+
+  <section class="hero"><div class="container">
+    <div class="hero-inner">
+      <div class="hero-tag">Proprietary Trading Firm</div>
+      <h1>Trade Beyond<br><em>Limits.</em></h1>
+      <p class="hero-desc">1-Step and 2-Step evaluations. No hidden rules. No time limits. Get funded with up to $200,000 and keep up to 90% of your profits.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="showAuth('register')">Start Your Challenge &rarr;</button>
+        <button class="btn btn-outline" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View Pricing</button>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-v">$200K</div><div class="hs-l">Max Funding</div></div>
+      <div class="hs"><div class="hs-v">90%</div><div class="hs-l">Profit Split</div></div>
+      <div class="hs"><div class="hs-v">2</div><div class="hs-l">Platforms</div></div>
+    </div>
+  </div></section>
+
+  <section class="section" id="features"><div class="container">
+    <div class="section-label">Why Pluto Capital</div>
+    <h2 class="section-title">Built for traders who<br>demand better.</h2>
+    <div class="features-grid">
+      <div class="feat"><div class="feat-icon" style="background:var(--ac-bg)">&#9889;</div><h3>1-Step &amp; 2-Step Evaluations</h3><p>Choose your path. 1-Step for confident traders, 2-Step for a more gradual approach. No time limits on either.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--gr-bg)">&#128737;</div><h3>Static Drawdown</h3><p>Your max loss floor is fixed from day one. It never trails upward. The more you profit, the safer you get.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--bl-bg)">&#128176;</div><h3>Crypto &amp; Bank Payouts</h3><p>Request payouts via USDT, USDC, or bank transfer. Fast processing through Rise.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--cy-bg)">&#128200;</div><h3>cTrader &amp; MetaTrader 5</h3><p>Trade on your preferred platform. Full EA support, advanced charting, desktop, web, and mobile.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--am-bg)">&#127919;</div><h3>No Hidden Rules</h3><p>If the rule isn't on our website, it's not a rule. Period. Zero surprises, zero small print.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--rd-bg)">&#128640;</div><h3>Scale to $2M</h3><p>Consistent performers scale through our 4-level plan, growing up to $2,000,000 in funding.</p></div>
+    </div>
+  </div></section>
+
+  <section class="section" id="rules"><div class="container">
+    <div class="section-label">Evaluation Rules</div>
+    <h2 class="section-title">Simple. Transparent. Fair.</h2>
+    <div class="rules-grid">
+      <div class="rule-card"><h4>&#127919; Profit Target</h4><p>1-Step: 10%. 2-Step: Phase 1 is 8%, Phase 2 is 5%. Hit the target with no open positions.</p></div>
+      <div class="rule-card"><h4>&#128201; Max Daily Loss</h4><p>5% of previous day's closing balance. Resets daily at 5 PM EST. Hard breach if exceeded.</p></div>
+      <div class="rule-card"><h4>&#128737; Max Drawdown</h4><p>8% static from initial balance. This floor never moves. It does NOT trail your equity.</p></div>
+      <div class="rule-card"><h4>&#9203; No Time Limit</h4><p>Take 1 day or 1 year. No deadline. No minimum or maximum trading days.</p></div>
+      <div class="rule-card"><h4>&#129302; EAs Allowed</h4><p>Expert Advisors, copy trading, scripts, indicators — all permitted on both platforms.</p></div>
+      <div class="rule-card"><h4>&#128197; Weekend Closure</h4><p>Positions closed by 3:45 PM EST Friday. Soft breach only — trading resumes Monday.</p></div>
+      <div class="rule-card"><h4>&#128260; 30-Day Activity</h4><p>Place at least one trade every 30 days to keep your account active.</p></div>
+      <div class="rule-card"><h4>&#128177; Hedging</h4><p>Allowed within your leverage and lot size limits on both cTrader and MT5.</p></div>
+    </div>
+  </div></section>
+
+  <section class="section" id="pricing"><div class="container">
+    <div class="section-label">Challenge Plans</div>
+    <h2 class="section-title">Choose your account size.</h2>
+    <div class="eval-tabs">
+      <button class="eval-tab active" onclick="switchEval('one_step')">1-Step Evaluation</button>
+      <button class="eval-tab" onclick="switchEval('two_step')">2-Step Evaluation</button>
+    </div>
+    <div class="pricing-grid" id="landingPricing"></div>
+  </div></section>
+
+  <section class="section"><div class="container">
+    <div class="cta-box">
+      <h2>Ready to trade beyond limits?</h2>
+      <p>Join Pluto Capital Funding. No hidden rules, no trailing drawdown, up to 90% profit split.</p>
+      <button class="btn btn-primary" onclick="showAuth('register')">Get Funded Now &rarr;</button>
+    </div>
+  </div></section>
+
+  <footer class="footer"><div class="container">
+    <p>&copy; 2026 Pluto Capital Funding. All rights reserved. All trading takes place in a simulated environment.</p>
+    <p style="margin-top:6px"><a href="#">Terms of Service</a> &middot; <a href="#">Privacy Policy</a> &middot; <a href="#">Risk Disclosure</a></p>
+  </div></footer>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg hidden" id="authModal"><div class="modal">
+  <button class="modal-close" onclick="hideAuth()">&times;</button>
+  <div id="formLogin">
+    <h2>Welcome back</h2>
+    <p>Sign in to your Pluto Capital dashboard</p>
+    <form onsubmit="doLogin(event)">
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" required></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPass" required></div>
+      <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+    </form>
+    <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
+  </div>
+  <div id="formRegister" class="hidden">
+    <h2>Get Funded</h2>
+    <p>Create your Pluto Capital account</p>
+    <form onsubmit="doRegister(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>First Name</label><input id="regFirst" required></div>
+        <div class="field"><label>Last Name</label><input id="regLast" required></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="regEmail" required></div>
+      <div class="field"><label>Password</label><input type="password" id="regPass" required minlength="6"></div>
+      <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+    </form>
+    <div class="modal-switch">Have an account? <a onclick="showAuth('login')">Sign In</a></div>
+  </div>
+</div></div>
+
+<!-- DASHBOARD -->
+<div id="app"><div class="app-layout">
+  <aside class="sidebar">
+    <div class="sb-logo"><div class="logo" style="gap:8px"><div class="logo-icon" style="width:22px;height:22px;border-radius:6px"></div><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
+    <nav class="sb-nav">
+      <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
+      <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
+      <button class="sb-link" onclick="navigate('funded')" data-page="funded"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>Funded Accounts</button>
+      <button class="sb-link" onclick="navigate('buy')" data-page="buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Buy Challenge</button>
+      <button class="sb-link" onclick="navigate('payouts')" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H3v16h18V4z"/><path d="M3 10h18"/></svg>Payouts</button>
+      <button class="sb-link" onclick="navigate('trades')" data-page="trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Trade History</button>
+      <div class="sb-sep"></div>
+      <button class="sb-link" onclick="navigate('profile')" data-page="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+      <div id="adminMenuItem" class="hidden"><button class="sb-link" onclick="navigate('admin')" data-page="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.17.39.4.74.7 1.01"/></svg>Admin Panel</button></div>
+    </nav>
+    <div class="sb-user">
+      <div class="sb-user-name" id="userName">&mdash;</div>
+      <div class="sb-user-email" id="userEmail">&mdash;</div>
+      <button class="btn btn-outline btn-sm btn-full" style="margin-top:10px" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="page-dashboard" class="page fade"></div>
+    <div id="page-challenges" class="page hidden fade"></div>
+    <div id="page-funded" class="page hidden fade"></div>
+    <div id="page-buy" class="page hidden fade"></div>
+    <div id="page-payouts" class="page hidden fade"></div>
+    <div id="page-trades" class="page hidden fade"></div>
+    <div id="page-profile" class="page hidden fade"></div>
+    <div id="page-admin" class="page hidden fade"></div>
+  </main>
+</div></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
