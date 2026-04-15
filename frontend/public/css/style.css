@@ -26,7 +26,7 @@ a{color:inherit;text-decoration:none}
 .container{max-width:1180px;margin:0 auto;padding:0 24px}
 
 /* FULLSCREEN CANVAS */
-#heroCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#heroCanvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 26px;border-radius:var(--r2);font-family:var(--ff);font-weight:700;font-size:.86rem;cursor:pointer;border:none;transition:all .22s;letter-spacing:.01em}

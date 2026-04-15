@@ -124,7 +124,7 @@ async function purchase(s){
   try{
     const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify({account_size:s,challenge_type:currentEval,payment_method:'crypto'})});
     if(d.payment_url){window.location.href=d.payment_url}
-    else if(d.ctrader){toast('Challenge activated! Login: '+d.ctrader.login,'success');navigate('challenges')}
+    else if(d.ctrader){celebrateWithMessage('Challenge Activated!','Login: '+d.ctrader.login+' — Start trading now');navigate('challenges')}
     else{toast('Challenge created','success');navigate('challenges')}
   }catch(x){toast(x.message,'error')}
 }
@@ -148,7 +148,7 @@ function showPayoutModal(fundedId){
 }
 async function submitPayout(id,method){
   document.getElementById('payoutModal')?.remove();
-  try{const d=await api('/api/payouts/request',{method:'POST',body:JSON.stringify({funded_account_id:id,payout_method:method})});toast('Payout requested: '+F(d.trader_amount),'success');navigate('payouts')}catch(x){toast(x.message,'error')}
+  try{const d=await api('/api/payouts/request',{method:'POST',body:JSON.stringify({funded_account_id:id,payout_method:method})});celebrateWithMessage('Payout Requested!','$'+d.trader_amount.toFixed(2)+' via '+method.replace(/_/g,' ').toUpperCase());navigate('payouts')}catch(x){toast(x.message,'error')}
 }
 
 // PAYOUTS
@@ -203,6 +203,7 @@ function handleReturnFromPayment(){
   const params=new URLSearchParams(window.location.search);
   if(params.get('purchased')==='true'){
     toast('Payment received! Your challenge will be activated shortly.','success');
+    if(typeof celebrateWithMessage==='function')celebrateWithMessage('Payment Confirmed!','Your challenge is being activated. Check your dashboard.');
     window.history.replaceState({},'',window.location.pathname);
   }
 }
