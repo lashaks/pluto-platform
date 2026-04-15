@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const config = require('./config');
 const { initDatabase } = require('./src/models/database');
@@ -18,6 +19,7 @@ const app = express();
 // ============================================================
 // MIDDLEWARE
 // ============================================================
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(cors({
   origin: [
     'https://pluto-platform.vercel.app',
@@ -29,6 +31,19 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Patch express to catch async errors (express 4 doesn't catch rejected promises)
+const Layer = require('express/lib/router/layer');
+const origHandle = Layer.prototype.handle_request;
+Layer.prototype.handle_request = function(req, res, next) {
+  try {
+    const result = origHandle.call(this, req, res, next);
+    if (result && typeof result.catch === 'function') {
+      result.catch(next);
+    }
+  } catch (err) { next(err); }
+};
+process.on('unhandledRejection', (err) => { console.error('[UNHANDLED REJECTION]', err.message || err); });
 
 // Simple rate limiter for auth routes
 const rateLimits = {};
@@ -214,11 +229,18 @@ if (fs.existsSync(frontendPath)) {
 }
 
 // ============================================================
+// 404 — Unknown API routes
+// ============================================================
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: 'Endpoint not found', path: req.path });
+});
+
+// ============================================================
 // ERROR HANDLER
 // ============================================================
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error', message: config.nodeEnv === 'development' ? err.message : undefined });
+  console.error('Server error:', err.message || err);
+  res.status(err.status || 500).json({ error: 'Internal server error', message: config.nodeEnv === 'development' ? err.message : undefined });
 });
 
 // ============================================================
