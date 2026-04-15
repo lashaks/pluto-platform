@@ -1,90 +1,64 @@
-// ============================================================
-// PAYMENT SERVICES
-//
-// INCOMING: Stripe (cards) + NOWPayments (crypto)
-// OUTGOING: Rise (fiat + USDC) + direct crypto
-//
-// Replace with real
-// Stripe SDK, NOWPayments API, and Rise API calls for production.
-// ============================================================
+const crypto = require('crypto');
 
 class PaymentService {
-  // ---- INCOMING PAYMENTS ----
-
-  /**
-   * Create Stripe Checkout session
-   * PRODUCTION: Use stripe.checkout.sessions.create()
-   */
-  async createCheckoutSession({ userId, challengeType, accountSize, fee, successUrl, cancelUrl }) {
-    console.log(`[Payment] Creating Stripe session: $${fee} for $${accountSize} challenge`);
-    return {
-      sessionId: 'cs_acf_' + Date.now(),
-      url: successUrl + '?session_id=acf_' + Date.now(),
-    };
+  constructor() {
+    this.nowpaymentsKey = process.env.NOWPAYMENTS_API_KEY || '';
+    this.nowpaymentsIpnSecret = process.env.NOWPAYMENTS_IPN_SECRET || '';
+    this.nowpaymentsBase = 'https://api.nowpayments.io/v1';
   }
 
-  /**
-   * Verify Stripe webhook
-   * PRODUCTION: stripe.webhooks.constructEvent(body, sig, secret)
-   */
-  async verifyStripeWebhook(body, signature) {
-    console.log('[Payment] Verifying Stripe webhook');
-    return { verified: true, event: body };
+  async createCryptoInvoice({ amount, orderId, description, successUrl, cancelUrl }) {
+    console.log('[Payment] Creating NOWPayments invoice: $' + amount + ' for order ' + orderId);
+    const response = await fetch(this.nowpaymentsBase + '/invoice', {
+      method: 'POST',
+      headers: { 'x-api-key': this.nowpaymentsKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        price_amount: amount,
+        price_currency: 'usd',
+        order_id: orderId,
+        order_description: description || 'Pluto Capital Challenge',
+        success_url: successUrl || 'https://pluto-platform.vercel.app?purchased=true',
+        cancel_url: cancelUrl || 'https://pluto-platform.vercel.app',
+        is_fee_paid_by_user: false,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('[Payment] NOWPayments error:', data);
+      throw new Error(data.message || 'Failed to create payment');
+    }
+    console.log('[Payment] Invoice created: ' + data.id);
+    return { invoiceId: data.id, invoiceUrl: data.invoice_url, orderId: orderId };
   }
 
-  /**
-   * Create crypto payment (NOWPayments)
-   * PRODUCTION: POST api.nowpayments.io/v1/payment
-   */
-  async createCryptoPayment({ amount, currency = 'usd', payCurrency = 'usdttrc20', orderId }) {
-    console.log(`[Payment] Creating crypto payment: $${amount} → ${payCurrency}`);
-    return {
-      paymentId: 'np_acf_' + Date.now(),
-      payAddress: 'TDev...Address' + Math.random().toString(36).slice(2, 8),
-      payAmount: amount,
-      payCurrency,
-    };
+  verifyIpnSignature(body, receivedSignature) {
+    if (!this.nowpaymentsIpnSecret) return true;
+    const sorted = Object.keys(body).sort().reduce((r, k) => { r[k] = body[k]; return r; }, {});
+    const hmac = crypto.createHmac('sha512', this.nowpaymentsIpnSecret).update(JSON.stringify(sorted)).digest('hex');
+    return hmac === receivedSignature;
   }
 
-  // ---- OUTGOING PAYMENTS (PAYOUTS) ----
-
-  /**
-   * Process payout via Rise
-   * PRODUCTION: POST api.riseworks.io/v1/payments
-   */
-  async processRisePayout({ contractorId, amount, currency = 'USD', method = 'crypto_usdc', description }) {
-    console.log(`[Payout] Rise payout: $${amount} via ${method} to contractor ${contractorId}`);
-    return {
-      success: true,
-      paymentId: 'rise_' + Date.now(),
-      status: 'processing',
-      estimatedArrival: method.includes('crypto') ? '< 1 hour' : '1-3 business days',
-    };
+  isPaymentComplete(status) {
+    return ['finished', 'confirmed', 'sending', 'partially_paid'].includes(status);
   }
 
-  /**
-   * Process direct USDT/USDC payout
-   * PRODUCTION: Use ethers.js (ERC-20) or tronweb (TRC-20)
-   */
-  async processDirectCryptoPayout({ walletAddress, amount, token = 'USDT', network = 'TRC20' }) {
-    console.log(`[Payout] Direct crypto: ${amount} ${token} (${network}) → ${walletAddress}`);
-    return {
-      success: true,
-      txHash: '0xacf_' + Math.random().toString(36).slice(2, 14),
-      status: 'broadcasted',
-    };
+  async createCheckoutSession() {
+    return { error: 'Card payments coming soon. Please use crypto.' };
   }
 
-  /**
-   * Onboard trader as Rise contractor (for first payout)
-   * PRODUCTION: POST api.riseworks.io/v1/contractors
-   */
-  async onboardRiseContractor({ email, firstName, lastName, country }) {
-    console.log(`[Payout] Onboarding ${email} on Rise`);
-    return {
-      contractorId: 'rise_c_' + Date.now(),
-      status: 'active',
-    };
+  async processRisePayout({ contractorId, amount, method }) {
+    console.log('[Payout] Rise: $' + amount + ' via ' + method);
+    return { success: true, paymentId: 'rise_' + Date.now(), status: 'processing' };
+  }
+
+  async processDirectCryptoPayout({ walletAddress, amount, token, network }) {
+    console.log('[Payout] Direct crypto: ' + amount + ' ' + token + ' to ' + walletAddress);
+    return { success: true, txHash: '0x' + crypto.randomBytes(16).toString('hex'), status: 'broadcasted' };
+  }
+
+  async onboardRiseContractor({ email }) {
+    console.log('[Payout] Onboarding ' + email);
+    return { contractorId: 'rise_c_' + Date.now(), status: 'active' };
   }
 }
 

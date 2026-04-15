@@ -84,6 +84,64 @@ app.get('/api/pricing', (req, res) => {
   res.json(plans);
 });
 
+// NOWPayments webhook — activates challenge after crypto payment
+const payments = require('./src/services/payments');
+const ctraderService = require('./src/services/ctrader');
+const { generateId: genId, generateLogin: genLogin, generatePassword: genPass } = require('./src/utils/helpers');
+
+app.post('/api/webhooks/nowpayments', async (req, res) => {
+  try {
+    const sig = req.headers['x-nowpayments-sig'];
+    if (!payments.verifyIpnSignature(req.body, sig)) {
+      console.log('[Webhook] Invalid IPN signature');
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    const { order_id, payment_status, actually_paid, pay_amount, pay_currency } = req.body;
+    console.log(`[Webhook] NOWPayments: order=${order_id} status=${payment_status} paid=${actually_paid}`);
+
+    if (payments.isPaymentComplete(payment_status)) {
+      // Find the pending challenge
+      const challenge = await queryOne(`SELECT * FROM challenges WHERE id='${order_id}' AND status='pending_payment'`);
+      if (!challenge) {
+        console.log('[Webhook] Challenge not found or already activated:', order_id);
+        return res.json({ success: true });
+      }
+
+      // Create cTrader account
+      const ctraderResult = await ctraderService.createAccount({
+        balance: challenge.account_size,
+        leverage: challenge.leverage || '1:20',
+        group: 'demo_prop_evaluation',
+      });
+
+      // Activate the challenge
+      await run(`UPDATE challenges SET status='active', activated_at=NOW()::TEXT,
+        ctrader_login=?, ctrader_account_id=?, ctrader_server=? WHERE id=?`,
+        [ctraderResult.login, ctraderResult.accountId, ctraderResult.server, order_id]);
+
+      // Record transaction
+      await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method, payment_intent_id)
+        VALUES (?, ?, 'purchase', ?, ?, ?, 'crypto', ?)`,
+        [genId(), challenge.user_id, -challenge.fee_paid,
+         `$${(challenge.account_size/1000)}K Challenge Purchase`, order_id, String(req.body.payment_id)]);
+
+      // Audit log
+      await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
+        VALUES (?, ?, 'CHALLENGE_ACTIVATED', 'challenge', ?, ?)`,
+        [genId(), challenge.user_id, order_id,
+         `Crypto payment confirmed: ${actually_paid} ${pay_currency}. Challenge activated.`]);
+
+      console.log(`[Webhook] Challenge ${order_id} activated!`);
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Webhook] Error:', e.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
