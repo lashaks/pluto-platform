@@ -82,9 +82,18 @@ router.post('/payouts/:id/pay', requireAdmin, async (req, res) => {
 
   await run(`UPDATE payouts SET status='paid', paid_at=NOW()::TEXT WHERE id=?`, [req.params.id]);
 
-  // Update funded account totals
+  // Update funded account totals AND reset balance to starting_balance (standard prop firm logic)
   if (payout.funded_account_id) {
-    await run(`UPDATE funded_accounts SET total_payouts = total_payouts + ?, payout_count = payout_count + 1 WHERE id=?`,
+    await run(`UPDATE funded_accounts SET 
+      total_payouts = total_payouts + ?, 
+      payout_count = payout_count + 1,
+      current_balance = starting_balance,
+      current_equity = starting_balance,
+      highest_balance = starting_balance,
+      lowest_equity = starting_balance,
+      day_start_balance = starting_balance,
+      total_profit = 0
+      WHERE id=?`,
       [payout.trader_amount, payout.funded_account_id]);
   }
 
