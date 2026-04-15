@@ -84,7 +84,81 @@ ${activeChallenges.length?`<div class="card"><div class="card-title">Active Acco
     <div class="row" style="margin-top:12px"><span class="row-label">Trades</span><span class="row-value">${c.total_trades} (${c.winning_trades}W / ${c.losing_trades}L)</span></div>
   </div>`}).join('')}</div>`:`<div class="card"><div class="empty">No active challenges yet.<br><a onclick="navigate('buy')">Purchase your first challenge &rarr;</a></div></div>`}`}catch(e){$('page-dashboard').innerHTML='<div class="card"><div class="empty">Failed to load dashboard.</div></div>'}};
 
-window.render_challenges=async function(){$('page-challenges').innerHTML=LOADING;const d=await api('/api/challenges');$('page-challenges').innerHTML=`<div class="page-head"><h1>My Challenges</h1><p>All evaluation accounts</p></div><div class="card"><table class="tbl"><thead><tr><th>Size</th><th>Type</th><th>Status</th><th>Balance</th><th>Profit</th><th>Trades</th><th>Login</th></tr></thead><tbody>${d.map(c=>{const p=c.current_balance-c.starting_balance;return`<tr><td class="fw">${F(c.account_size)}</td><td>${c.challenge_type==='two_step'?'2-Step':'1-Step'}</td><td>${B(c.status)}</td><td class="mono">${F(c.current_balance)}</td><td class="${p>=0?'pos':'neg'}">${F(p)}</td><td>${c.total_trades}</td><td class="mono">${c.ctrader_login||'\u2014'}</td></tr>`}).join('')}</tbody></table>${!d.length?'<div class="empty">No challenges yet. <a onclick="navigate(\'buy\')">Purchase one &rarr;</a></div>':''}</div>`};
+window.render_challenges=async function(){$('page-challenges').innerHTML=LOADING;const d=await api('/api/challenges');
+if(!d.length){$('page-challenges').innerHTML=`<div class="page-head"><h1>My Challenges</h1><p>All evaluation accounts</p></div><div class="card"><div class="empty">No challenges yet. <a onclick="navigate('buy')">Purchase your first challenge &rarr;</a></div></div>`;return}
+$('page-challenges').innerHTML=`<div class="page-head"><h1>My Challenges</h1><p>Account metrics and credentials</p></div>
+${d.map(c=>{
+  const profit=c.current_balance-c.starting_balance;
+  const profitPct=(profit/c.starting_balance*100);
+  const targetPct=Math.min(100,Math.max(0,profitPct/c.profit_target_pct*100));
+  const ddUsed=((c.highest_balance-c.lowest_equity)/c.starting_balance*100);
+  const ddPct=Math.min(100,ddUsed/c.max_total_loss_pct*100);
+  const wr=c.total_trades?Math.round(c.winning_trades/c.total_trades*100):0;
+  const isActive=c.status==='active';
+  const isPassed=c.status==='passed';
+  const isFailed=c.status==='failed';
+  const isPending=c.status==='pending_payment';
+
+  // Gauge helper
+  const gauge=(label,value,max,unit,color,warn)=>{
+    const pct=Math.min(100,Math.abs(value)/max*100);
+    const barColor=warn&&pct>70?'var(--rd)':color;
+    return`<div style="flex:1;min-width:140px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${label}</span><span style="font-size:.82rem;font-family:var(--fm);font-weight:600;color:${warn&&pct>70?'var(--rd)':'var(--t1)'}">${value.toFixed(2)}${unit} / ${max}${unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div>`;
+  };
+
+  return`<div class="detail" style="margin-bottom:20px">
+    <div class="detail-head">
+      <div>
+        <div class="detail-title">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'} Challenge</div>
+        <div class="detail-sub">Created ${new Date(c.created_at).toLocaleDateString()} &bull; ID: ${c.id.slice(0,8)}</div>
+      </div>
+      ${B(c.status)}
+    </div>
+
+    ${isPending?`<div style="padding:20px;background:var(--am-bg);border:1px solid rgba(251,191,36,.15);border-radius:var(--r2);text-align:center;color:var(--am)"><strong>Awaiting Payment</strong><br><span style="font-size:.84rem;color:var(--t2)">Complete your crypto payment to activate this challenge.</span></div>`:''}
+
+    ${isActive||isPassed||isFailed?`
+    <!-- CREDENTIALS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px;padding:16px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--brd)">
+      <div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:4px">Platform</div><div style="font-size:.9rem;font-weight:600">cTrader</div></div>
+      <div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:4px">Login</div><div style="font-size:.9rem;font-family:var(--fm);font-weight:600;color:var(--ac2)">${c.ctrader_login||'\u2014'}</div></div>
+      <div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:4px">Server</div><div style="font-size:.9rem;font-family:var(--fm)">${c.ctrader_server||'Demo'}</div></div>
+      <div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:4px">Leverage</div><div style="font-size:.9rem;font-weight:600">${c.leverage||'1:100'}</div></div>
+    </div>
+
+    <!-- GAUGES -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      ${gauge('Profit Target',profitPct,c.profit_target_pct,'%','var(--gr)',false)}
+      ${gauge('Daily Loss Used',0,c.max_daily_loss_pct,'%','var(--am)',true)}
+      ${gauge('Max Drawdown Used',ddUsed,c.max_total_loss_pct,'%','var(--ac2)',true)}
+    </div>
+
+    <!-- KEY METRICS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Balance</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px">${F(c.current_balance)}</div></div>
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Equity</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px">${F(c.current_equity)}</div></div>
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Profit</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px;color:${profit>=0?'var(--gr)':'var(--rd)'}">${F(profit)}</div></div>
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Win Rate</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px">${wr}%</div></div>
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Trades</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px">${c.total_trades}</div></div>
+      <div style="padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--brd)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:600">W / L</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;margin-top:4px"><span style="color:var(--gr)">${c.winning_trades}</span> / <span style="color:var(--rd)">${c.losing_trades}</span></div></div>
+    </div>
+
+    <!-- RULES STATUS -->
+    <div style="padding:14px 16px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--brd)">
+      <div style="font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:10px">Trading Rules</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:.82rem">
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:${profitPct>=c.profit_target_pct?'var(--gr)':'var(--t2)'}">&#${profitPct>=c.profit_target_pct?'10004':'9711'};</span> Profit Target ${c.profit_target_pct}%</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:${ddUsed<c.max_total_loss_pct?'var(--gr)':'var(--rd)'}">&#${ddUsed<c.max_total_loss_pct?'10004':'10006'};</span> Max Drawdown ${c.max_total_loss_pct}%</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> Daily Loss ${c.max_daily_loss_pct}%</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--t2)">&#9711;</span> 30% Consistency Rule</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--t2)">&#9711;</span> News Trading Restricted</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> No Time Limit</div>
+      </div>
+    </div>
+    `:''}
+
+    ${isFailed?`<div style="margin-top:14px;padding:14px 16px;background:var(--rd-bg);border:1px solid rgba(248,113,113,.15);border-radius:var(--r2)"><strong style="color:var(--rd)">Breach Reason:</strong> <span style="color:var(--t2)">${c.breach_reason||'Rule violation'}</span></div>`:''}
+  </div>`}).join('')}`};
 
 window.render_funded=async function(){$('page-funded').innerHTML=LOADING;const d=await api('/api/funded');$('page-funded').innerHTML=`<div class="page-head"><h1>Funded Accounts</h1><p>Your funded trading accounts</p></div>${d.map(a=>`<div class="detail"><div class="detail-head"><div class="detail-title">${F(a.account_size)} Funded</div>${B(a.status)}</div><div class="row"><span class="row-label">Balance</span><span class="row-value">${F(a.current_balance)}</span></div><div class="row"><span class="row-label">Total Profit</span><span class="row-value pos">${F(a.total_profit)}</span></div><div class="row"><span class="row-label">Profit Split</span><span class="row-value">${a.profit_split_pct}%</span></div><div class="row"><span class="row-label">Total Payouts</span><span class="row-value" style="color:var(--gr)">${F(a.total_payouts)}</span></div><button class="btn btn-primary btn-sm" style="margin-top:16px" onclick="showPayoutModal('${a.id}')">Request Payout</button></div>`).join('')||'<div class="card"><div class="empty">No funded accounts yet. Pass an evaluation to get funded.</div></div>'}`};
 
