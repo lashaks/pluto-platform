@@ -6,8 +6,8 @@ const { sanitize } = require('../utils/helpers');
 const router = express.Router();
 
 // GET /api/users/profile
-router.get('/profile', authenticate, (req, res) => {
-  const user = queryOne(`SELECT id, email, first_name, last_name, phone, country, kyc_status,
+router.get('/profile', authenticate, async (req, res) => {
+  const user = await queryOne(`SELECT id, email, first_name, last_name, phone, country, kyc_status,
     role, affiliate_code, balance_wallet, created_at, last_login
     FROM users WHERE id='${req.user.id}'`);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -15,16 +15,16 @@ router.get('/profile', authenticate, (req, res) => {
 });
 
 // PUT /api/users/profile
-router.put('/profile', authenticate, (req, res) => {
+router.put('/profile', authenticate, async (req, res) => {
   const { first_name, last_name, phone, country } = req.body;
-  run(`UPDATE users SET first_name=?, last_name=?, phone=?, country=?, updated_at=datetime('now') WHERE id=?`,
+  run(`UPDATE users SET first_name=?, last_name=?, phone=?, country=?, updated_at=NOW()::TEXT WHERE id=?`,
     [first_name || '', last_name || '', phone || '', country || '', req.user.id]);
   res.json({ success: true, message: 'Profile updated' });
 });
 
 // POST /api/users/kyc/start — initiate KYC verification
-router.post('/kyc/start', authenticate, (req, res) => {
-  const user = queryOne(`SELECT kyc_status FROM users WHERE id='${req.user.id}'`);
+router.post('/kyc/start', authenticate, async (req, res) => {
+  const user = await queryOne(`SELECT kyc_status FROM users WHERE id='${req.user.id}'`);
   if (user?.kyc_status === 'approved') return res.json({ status: 'already_approved' });
 
   

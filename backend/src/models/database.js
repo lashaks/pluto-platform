@@ -285,17 +285,19 @@ async function initDatabase() {
 // ============================================================
 // QUERY HELPERS (compatible with existing route code)
 // ============================================================
-function queryAll(sql, params) {
-  // Convert SQLite-style string interpolation to parameterized if needed
-  return pool.query(sql).then(r => r.rows).catch(e => { console.error('Query error:', e.message, sql); return []; });
+function queryAll(sql) {
+  return pool.query(sql).then(r => r.rows).catch(e => { console.error('Query error:', e.message); return []; });
 }
 
-function queryOne(sql, params) {
-  return pool.query(sql).then(r => r.rows[0] || null).catch(e => { console.error('Query error:', e.message, sql); return null; });
+function queryOne(sql) {
+  return pool.query(sql).then(r => r.rows[0] || null).catch(e => { console.error('Query error:', e.message); return null; });
 }
 
 function run(sql, params = []) {
-  return pool.query(sql, params).catch(e => { console.error('Run error:', e.message, sql); });
+  // Convert SQLite ? placeholders to PostgreSQL $1,$2,$3
+  let i = 0;
+  const pgSql = sql.replace(/\?/g, () => `$${++i}`);
+  return pool.query(pgSql, params).catch(e => { console.error('Run error:', e.message); });
 }
 
 function getDb() { return pool; }

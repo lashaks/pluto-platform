@@ -7,16 +7,16 @@ const router = express.Router();
 
 // GET /api/admin/overview — dashboard stats
 router.get('/overview', requireAdmin, (req, res) => {
-  const totalUsers = queryOne(`SELECT COUNT(*) as c FROM users WHERE role='trader'`)?.c || 0;
-  const totalChallenges = queryOne(`SELECT COUNT(*) as c FROM challenges`)?.c || 0;
-  const activeChallenges = queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='active'`)?.c || 0;
-  const passedChallenges = queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='passed'`)?.c || 0;
-  const failedChallenges = queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='failed'`)?.c || 0;
-  const totalFunded = queryOne(`SELECT COUNT(*) as c FROM funded_accounts WHERE status='active'`)?.c || 0;
-  const totalRevenue = queryOne(`SELECT COALESCE(SUM(fee_paid),0) as s FROM challenges`)?.s || 0;
-  const totalPayouts = queryOne(`SELECT COALESCE(SUM(trader_amount),0) as s FROM payouts WHERE status='paid'`)?.s || 0;
-  const pendingPayouts = queryOne(`SELECT COUNT(*) as c FROM payouts WHERE status IN ('requested','approved')`)?.c || 0;
-  const pendingPayoutsAmount = queryOne(`SELECT COALESCE(SUM(trader_amount),0) as s FROM payouts WHERE status IN ('requested','approved')`)?.s || 0;
+  const totalUsers = await queryOne(`SELECT COUNT(*) as c FROM users WHERE role='trader'`)?.c || 0;
+  const totalChallenges = await queryOne(`SELECT COUNT(*) as c FROM challenges`)?.c || 0;
+  const activeChallenges = await queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='active'`)?.c || 0;
+  const passedChallenges = await queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='passed'`)?.c || 0;
+  const failedChallenges = await queryOne(`SELECT COUNT(*) as c FROM challenges WHERE status='failed'`)?.c || 0;
+  const totalFunded = await queryOne(`SELECT COUNT(*) as c FROM funded_accounts WHERE status='active'`)?.c || 0;
+  const totalRevenue = await queryOne(`SELECT COALESCE(SUM(fee_paid),0) as s FROM challenges`)?.s || 0;
+  const totalPayouts = await queryOne(`SELECT COALESCE(SUM(trader_amount),0) as s FROM payouts WHERE status='paid'`)?.s || 0;
+  const pendingPayouts = await queryOne(`SELECT COUNT(*) as c FROM payouts WHERE status IN ('requested','approved')`)?.c || 0;
+  const pendingPayoutsAmount = await queryOne(`SELECT COALESCE(SUM(trader_amount),0) as s FROM payouts WHERE status IN ('requested','approved')`)?.s || 0;
   const passRate = totalChallenges > 0 ? Math.round(passedChallenges / totalChallenges * 100) : 0;
 
   res.json({
@@ -38,7 +38,7 @@ router.get('/overview', requireAdmin, (req, res) => {
 
 // GET /api/admin/users
 router.get('/users', requireAdmin, (req, res) => {
-  const users = queryAll(`SELECT id, email, first_name, last_name, country, kyc_status, role, is_active, created_at, last_login FROM users ORDER BY created_at DESC`);
+  const users = await queryAll(`SELECT id, email, first_name, last_name, country, kyc_status, role, is_active, created_at, last_login FROM users ORDER BY created_at DESC`);
   res.json(users);
 });
 
@@ -53,7 +53,7 @@ router.get('/challenges', requireAdmin, (req, res) => {
 
 // GET /api/admin/funded
 router.get('/funded', requireAdmin, (req, res) => {
-  const accounts = queryAll(`SELECT f.*, u.email, u.first_name, u.last_name FROM funded_accounts f JOIN users u ON f.user_id = u.id ORDER BY f.created_at DESC`);
+  const accounts = await queryAll(`SELECT f.*, u.email, u.first_name, u.last_name FROM funded_accounts f JOIN users u ON f.user_id = u.id ORDER BY f.created_at DESC`);
   res.json(accounts);
 });
 
@@ -68,7 +68,7 @@ router.get('/payouts', requireAdmin, (req, res) => {
 
 // POST /api/admin/payouts/:id/approve
 router.post('/payouts/:id/approve', requireAdmin, (req, res) => {
-  run(`UPDATE payouts SET status='approved', reviewed_by=?, approved_at=datetime('now') WHERE id=?`, [req.user.id, req.params.id]);
+  run(`UPDATE payouts SET status='approved', reviewed_by=?, approved_at=NOW()::TEXT WHERE id=?`, [req.user.id, req.params.id]);
   run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'PAYOUT_APPROVED', 'payout', ?, 'Admin approved payout')`,
     [generateId(), req.user.id, req.params.id]);
   res.json({ success: true });
@@ -76,14 +76,14 @@ router.post('/payouts/:id/approve', requireAdmin, (req, res) => {
 
 // POST /api/admin/payouts/:id/pay
 router.post('/payouts/:id/pay', requireAdmin, (req, res) => {
-  const payout = queryOne(`SELECT * FROM payouts WHERE id='${sanitize(req.params.id)}'`);
+  const payout = await queryOne(`SELECT * FROM payouts WHERE id='${sanitize(req.params.id)}'`);
   if (!payout) return res.status(404).json({ error: 'Payout not found' });
 
-  run(`UPDATE payouts SET status='paid', paid_at=datetime('now') WHERE id=?`, [req.params.id]);
+  run(`UPDATE payouts SET status='paid', paid_at=NOW()::TEXT WHERE id=?`, [req.params.id]);
 
   // Update funded account totals
   if (payout.funded_account_id) {
-    run(`UPDATE funded_accounts SET total_payouts = total_payouts + ?, payout_count = payout_count + 1 WHERE id=?`,
+    await run(`UPDATE funded_accounts SET total_payouts = total_payouts + ?, payout_count = payout_count + 1 WHERE id=?`,
       [payout.trader_amount, payout.funded_account_id]);
   }
 
@@ -130,13 +130,13 @@ router.post('/users/:id/kyc-approve', requireAdmin, (req, res) => {
 
 // GET /api/admin/audit-log
 router.get('/audit-log', requireAdmin, (req, res) => {
-  const logs = queryAll(`SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 200`);
+  const logs = await queryAll(`SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 200`);
   res.json(logs);
 });
 
 // GET /api/admin/transactions
 router.get('/transactions', requireAdmin, (req, res) => {
-  const txns = queryAll(`SELECT t.*, u.email, u.first_name, u.last_name FROM transactions t JOIN users u ON t.user_id = u.id ORDER BY t.created_at DESC LIMIT 200`);
+  const txns = await queryAll(`SELECT t.*, u.email, u.first_name, u.last_name FROM transactions t JOIN users u ON t.user_id = u.id ORDER BY t.created_at DESC LIMIT 200`);
   res.json(txns);
 });
 

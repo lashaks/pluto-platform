@@ -8,14 +8,14 @@ const config = require('../../config');
 const router = express.Router();
 
 // GET /api/challenges — list all user's challenges
-router.get('/', authenticate, (req, res) => {
-  const challenges = queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}' ORDER BY created_at DESC`);
+router.get('/', authenticate, async (req, res) => {
+  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}' ORDER BY created_at DESC`);
   res.json(challenges);
 });
 
 // GET /api/challenges/:id — single challenge detail
-router.get('/:id', authenticate, (req, res) => {
-  const ch = queryOne(`SELECT * FROM challenges WHERE id='${sanitize(req.params.id)}' AND user_id='${req.user.id}'`);
+router.get('/:id', authenticate, async (req, res) => {
+  const ch = await queryOne(`SELECT * FROM challenges WHERE id='${sanitize(req.params.id)}' AND user_id='${req.user.id}'`);
   if (!ch) return res.status(404).json({ error: 'Challenge not found' });
   res.json(ch);
 });
@@ -38,11 +38,11 @@ router.post('/purchase', authenticate, async (req, res) => {
     });
 
     const id = generateId();
-    run(`INSERT INTO challenges (id, user_id, account_size, starting_balance, current_balance, current_equity,
+    await run(`INSERT INTO challenges (id, user_id, account_size, starting_balance, current_balance, current_equity,
          highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
          profit_target_pct, max_daily_loss_pct, max_total_loss_pct,
          ctrader_login, ctrader_account_id, ctrader_server, status, activated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'))`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
       [id, req.user.id, account_size, account_size, account_size, account_size,
        account_size, account_size, account_size, totalFee, split, config.defaultRules.leverage,
        account_size >= 500000 ? 8 : config.defaultRules.profit_target_pct,
@@ -50,12 +50,12 @@ router.post('/purchase', authenticate, async (req, res) => {
        ctraderResult.login, ctraderResult.accountId, ctraderResult.server]);
 
     // Record transaction
-    run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method)
+    await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method)
          VALUES (?, ?, 'purchase', ?, ?, ?, ?)`,
       [generateId(), req.user.id, -totalFee, `$${(account_size/1000)}K Challenge Purchase`, id, payment_method || 'card']);
 
     // Audit log
-    run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
+    await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
          VALUES (?, ?, 'CHALLENGE_CREATED', 'challenge', ?, ?)`,
       [generateId(), req.user.id, id, `$${(account_size/1000)}K challenge purchased for $${totalFee}`]);
 
@@ -90,7 +90,7 @@ router.get('/:id/risk-check', authenticate, async (req, res) => {
 });
 
 // GET /api/challenges/pricing — public pricing info
-router.get('/info/pricing', (req, res) => {
+router.get('/info/pricing', async (req, res) => {
   const plans = Object.entries(config.challengePricing).map(([size, fee]) => ({
     size: Number(size),
     fee,

@@ -47,11 +47,11 @@ app.use('/api/admin', adminRoutes);
 const { authenticate } = require('./src/middleware/auth');
 const { queryAll, queryOne } = require('./src/models/database');
 
-app.get('/api/dashboard/stats', authenticate, (req, res) => {
-  const challenges = queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}'`);
-  const funded = queryAll(`SELECT * FROM funded_accounts WHERE user_id='${req.user.id}'`);
-  const payouts = queryAll(`SELECT * FROM payouts WHERE user_id='${req.user.id}'`);
-  const trades = queryAll(`SELECT * FROM trades WHERE user_id='${req.user.id}'`);
+app.get('/api/dashboard/stats', authenticate, async (req, res) => {
+  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}'`);
+  const funded = await queryAll(`SELECT * FROM funded_accounts WHERE user_id='${req.user.id}'`);
+  const payouts = await queryAll(`SELECT * FROM payouts WHERE user_id='${req.user.id}'`);
+  const trades = await queryAll(`SELECT * FROM trades WHERE user_id='${req.user.id}'`);
 
   const totalProfit = funded.reduce((s, a) => s + (a.total_profit || 0), 0) + challenges.reduce((s, a) => s + (a.total_profit || 0), 0);
   const totalPayouts = payouts.filter(p => p.status === 'paid').reduce((s, p) => s + p.trader_amount, 0);

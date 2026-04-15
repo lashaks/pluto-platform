@@ -6,7 +6,7 @@ const { sanitize } = require('../utils/helpers');
 const router = express.Router();
 
 // GET /api/trades
-router.get('/', authenticate, (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   const { challenge_id, funded_account_id, symbol, limit } = req.query;
   let sql = `SELECT * FROM trades WHERE user_id='${req.user.id}'`;
   if (challenge_id) sql += ` AND challenge_id='${sanitize(challenge_id)}'`;
@@ -17,8 +17,8 @@ router.get('/', authenticate, (req, res) => {
 });
 
 // GET /api/trades/stats — aggregate trading stats
-router.get('/stats', authenticate, (req, res) => {
-  const trades = queryAll(`SELECT * FROM trades WHERE user_id='${req.user.id}' AND status='closed'`);
+router.get('/stats', authenticate, async (req, res) => {
+  const trades = await queryAll(`SELECT * FROM trades WHERE user_id='${req.user.id}' AND status='closed'`);
   if (!trades.length) return res.json({ total: 0 });
 
   const wins = trades.filter(t => t.profit > 0);
