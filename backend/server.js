@@ -144,7 +144,13 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(), 
+    version: '1.0.0',
+    nowpayments_configured: !!process.env.NOWPAYMENTS_API_KEY,
+    database_configured: !!process.env.DATABASE_URL
+  });
 });
 
 // ============================================================
