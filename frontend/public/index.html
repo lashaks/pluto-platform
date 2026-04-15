@@ -7,11 +7,10 @@
   <title>Pluto Capital Funding — Trade Beyond Limits</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-
 <div id="landing">
   <nav class="nav" id="topNav"><div class="container nav-inner">
     <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -91,8 +90,13 @@
   </div></section>
 
   <footer class="footer"><div class="container">
-    <p>&copy; 2026 Pluto Capital Funding. All rights reserved. All trading takes place in a simulated environment.</p>
-    <p style="margin-top:6px"><a href="#">Terms of Service</a> &middot; <a href="#">Privacy Policy</a> &middot; <a href="#">Risk Disclosure</a></p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px">
+      <div class="logo-icon" style="width:20px;height:20px;border-radius:5px;font-size:.55rem"></div>
+      <span style="font-weight:700;font-size:.85rem">PLUTO<span style="color:var(--ac2)">CAPITAL</span></span>
+    </div>
+    <p>&copy; 2026 Pluto Capital Funding. All rights reserved.</p>
+    <p style="margin-top:4px">All trading takes place in a simulated environment.</p>
+    <p style="margin-top:8px"><a href="#">Terms of Service</a> &middot; <a href="#">Privacy Policy</a> &middot; <a href="#">Risk Disclosure</a></p>
   </div></footer>
 </div>
 
@@ -103,8 +107,8 @@
     <h2>Welcome back</h2>
     <p>Sign in to your Pluto Capital dashboard</p>
     <form onsubmit="doLogin(event)">
-      <div class="field"><label>Email</label><input type="email" id="loginEmail" required></div>
-      <div class="field"><label>Password</label><input type="password" id="loginPass" required></div>
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" required placeholder="trader@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPass" required placeholder="Enter your password"></div>
       <button type="submit" class="btn btn-primary btn-full">Sign In</button>
     </form>
     <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
@@ -114,11 +118,11 @@
     <p>Create your Pluto Capital account</p>
     <form onsubmit="doRegister(event)">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label>First Name</label><input id="regFirst" required></div>
-        <div class="field"><label>Last Name</label><input id="regLast" required></div>
+        <div class="field"><label>First Name</label><input id="regFirst" required placeholder="John"></div>
+        <div class="field"><label>Last Name</label><input id="regLast" required placeholder="Doe"></div>
       </div>
-      <div class="field"><label>Email</label><input type="email" id="regEmail" required></div>
-      <div class="field"><label>Password</label><input type="password" id="regPass" required minlength="6"></div>
+      <div class="field"><label>Email</label><input type="email" id="regEmail" required placeholder="trader@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="regPass" required minlength="6" placeholder="Min 6 characters"></div>
       <button type="submit" class="btn btn-primary btn-full">Create Account</button>
     </form>
     <div class="modal-switch">Have an account? <a onclick="showAuth('login')">Sign In</a></div>
@@ -128,7 +132,7 @@
 <!-- DASHBOARD -->
 <div id="app"><div class="app-layout">
   <aside class="sidebar">
-    <div class="sb-logo"><div class="logo" style="gap:8px"><div class="logo-icon" style="width:22px;height:22px;border-radius:6px"></div><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
+    <div class="sb-logo"><div class="logo" style="gap:8px"><div class="logo-icon" style="width:24px;height:24px;border-radius:7px;font-size:.7rem"></div><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
     <nav class="sb-nav">
       <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
       <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
@@ -143,7 +147,7 @@
     <div class="sb-user">
       <div class="sb-user-name" id="userName">&mdash;</div>
       <div class="sb-user-email" id="userEmail">&mdash;</div>
-      <button class="btn btn-outline btn-sm btn-full" style="margin-top:10px" onclick="logout()">Sign Out</button>
+      <button class="btn btn-outline btn-sm btn-full" style="margin-top:12px" onclick="logout()">Sign Out</button>
     </div>
   </aside>
   <main class="main">
@@ -157,7 +161,6 @@
     <div id="page-admin" class="page hidden fade"></div>
   </main>
 </div></div>
-
 <script src="/js/app.js"></script>
 </body>
 </html>
