@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 80">
+  <defs>
+    <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon -->
+  <rect x="4" y="8" width="64" height="64" rx="14" fill="url(#lg)"/>
+  <path d="M 20 22 L 20 58 L 26 58 L 26 46 L 38 46 C 44 46 49 41 49 34 C 49 27 44 22 38 22 Z M 26 27 L 37 27 C 42 27 44 30 44 34 C 44 38 42 41 37 41 L 26 41 Z" fill="white"/>
+  
+  <!-- Orbital ring on icon -->
+  <ellipse cx="36" cy="40" rx="30" ry="9" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3" transform="rotate(-25, 36, 40)"/>
+  
+  <!-- PLUTO text -->
+  <text x="84" y="46" font-family="Manrope, -apple-system, sans-serif" font-weight="900" font-size="36" fill="white" letter-spacing="-0.5">PLUTO</text>
+  
+  <!-- CAPITAL text -->
+  <text x="260" y="46" font-family="Manrope, -apple-system, sans-serif" font-weight="900" font-size="36" fill="#a78bfa" letter-spacing="-0.5">CAPITAL</text>
+</svg>

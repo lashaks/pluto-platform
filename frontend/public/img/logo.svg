@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="50%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#c4b5fd"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background rounded square -->
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g1)"/>
+  
+  <!-- Inner subtle highlight -->
+  <rect x="32" y="32" width="448" height="224" rx="96" fill="rgba(255,255,255,0.06)"/>
+  
+  <!-- Letter P — bold geometric -->
+  <path d="M 170 140 L 170 380 L 210 380 L 210 300 L 290 300 C 345 300 380 265 380 220 C 380 175 345 140 290 140 Z M 210 175 L 285 175 C 322 175 345 192 345 220 C 345 248 322 265 285 265 L 210 265 Z" 
+        fill="white" filter="url(#glow)"/>
+  
+  <!-- Orbital ring — representing Pluto's orbit -->
+  <ellipse cx="256" cy="256" rx="220" ry="60" 
+           fill="none" stroke="url(#g2)" stroke-width="4" opacity="0.35"
+           transform="rotate(-25, 256, 256)"/>
+  
+  <!-- Small orbital dot -->
+  <circle cx="440" cy="188" r="10" fill="#c4b5fd" opacity="0.8"/>
+</svg>
