@@ -20,9 +20,9 @@ module.exports = {
     max_daily_loss_pct: 5,
     max_total_loss_pct: 8,
     profit_split_pct: 80,
-    leverage: '1:100',
+    leverage: '1:30',
     min_payout: 50,
-    consistency_rule_pct: 30,
+    consistency_rule_pct: 20,
     max_lot_exposure: { 5000: 2, 10000: 4, 25000: 10, 50000: 20, 100000: 40, 200000: 80 },
   },
 
@@ -33,9 +33,9 @@ module.exports = {
     max_daily_loss_pct: 5,
     max_total_loss_pct: 10,
     profit_split_pct: 80,
-    leverage: '1:100',
+    leverage: '1:30',
     min_payout: 50,
-    consistency_rule_pct: 30,
+    consistency_rule_pct: 20,
     max_lot_exposure: { 5000: 2, 10000: 4, 25000: 10, 50000: 20, 100000: 40, 200000: 80 },
   },
 
@@ -45,7 +45,7 @@ module.exports = {
     max_daily_loss_pct: 5,
     max_total_loss_pct: 8,
     profit_split_pct: 80,
-    leverage: '1:100',
+    leverage: '1:30',
     min_payout: 50,
   },
 

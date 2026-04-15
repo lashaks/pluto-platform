@@ -42,7 +42,7 @@ const TABLES = [
     max_daily_loss_pct REAL DEFAULT 5.0,
     max_total_loss_pct REAL DEFAULT 8.0,
     profit_split_pct REAL DEFAULT 80.0,
-    leverage TEXT DEFAULT '1:100',
+    leverage TEXT DEFAULT '1:30',
     starting_balance REAL NOT NULL,
     current_balance REAL,
     current_equity REAL,

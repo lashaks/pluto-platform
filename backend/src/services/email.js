@@ -126,7 +126,7 @@ async function sendChallengePurchased(to, name, details) {
       ${details.server ? row('Server', details.server) : ''}
     </table>
     <p><strong style="color:#fbbf24">Important Rules:</strong></p>
-    <p style="font-size:13px">• 30% consistency rule applies — no single day can exceed 30% of total profit<br>
+    <p style="font-size:13px">• 20% consistency rule applies — no single day can exceed 20% of total profit<br>
     • News trading is restricted — close positions 2 min before/after high-impact events<br>
     • 30-day inactivity = account closure<br>
     • All positions must be closed before profit target counts</p>

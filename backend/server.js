@@ -116,8 +116,8 @@ app.get('/api/dashboard/stats', authenticate, async (req, res) => {
 app.get('/api/pricing', (req, res) => {
   const plans = Object.entries(config.challengePricing).map(([size, fee]) => ({
     size: Number(size), fee,
-    one_step: { target: 10, daily: 5, dd: 8, split: 80, leverage: '1:100' },
-    two_step: { target: '8 / 5', daily: 5, dd: 10, split: 80, leverage: '1:100' },
+    one_step: { target: 10, daily: 5, dd: 8, split: 80, leverage: '1:30' },
+    two_step: { target: '8 / 5', daily: 5, dd: 10, split: 80, leverage: '1:30' },
   }));
   res.json(plans);
 });
@@ -149,7 +149,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
       // Create cTrader account
       const ctraderResult = await ctraderService.createAccount({
         balance: challenge.account_size,
-        leverage: challenge.leverage || '1:100',
+        leverage: challenge.leverage || '1:30',
         group: 'demo_prop_evaluation',
       });
 
