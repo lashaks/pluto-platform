@@ -1,9 +1,9 @@
-const { Pool } = require('pg');
+	const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres.ngjhujhzwlhyrfmbblbq:Plutoproject1.1@aws-1-eu-west-2.pooler.supabase.com:5432/postgres',
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Plutoproject1.1@db.ngjhujhzwlhyrfmbblbq.supabase.co:5432/postgres',
   ssl: { rejectUnauthorized: false }
 });
 
