@@ -39,7 +39,7 @@ router.get('/overview', requireAdmin, async (req, res) => {
 
 // GET /api/admin/users
 router.get('/users', requireAdmin, async (req, res) => {
-  const users = await queryAll(`SELECT id, email, first_name, last_name, country, kyc_status, role, is_active, created_at, last_login FROM users ORDER BY created_at DESC`);
+  const users = await queryAll(`SELECT id, email, first_name, last_name, country, kyc_status, role, is_active, terms_accepted_at, created_at, last_login FROM users ORDER BY created_at DESC`);
   res.json(users);
 });
 
