@@ -2,6 +2,7 @@ const express = require('express');
 const { requireAdmin } = require('../middleware/auth');
 const { queryAll, queryOne, run } = require('../models/database');
 const { generateId, sanitize } = require('../utils/helpers');
+const email = require('../services/email');
 
 const router = express.Router();
 
@@ -93,6 +94,18 @@ router.post('/payouts/:id/pay', requireAdmin, async (req, res) => {
 
   await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'PAYOUT_PAID', 'payout', ?, ?)`,
     [generateId(), req.user.id, req.params.id, `Paid $${payout.trader_amount} via ${payout.payout_method}`]);
+
+  // Send payout email to trader
+  const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${payout.user_id}'`);
+  if (usr) {
+    email.sendPayoutProcessed(usr.email, usr.first_name || 'Trader', {
+      gross: '$' + Number(payout.gross_profit).toLocaleString(),
+      split: payout.split_pct,
+      amount: '$' + Number(payout.trader_amount).toLocaleString(),
+      method: (payout.payout_method || '').replace(/_/g, ' ').toUpperCase(),
+      tx_ref: payout.tx_reference || '',
+    }).catch(e => console.error('[Admin] Payout email error:', e.message));
+  }
 
   res.json({ success: true });
 });
