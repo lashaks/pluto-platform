@@ -24,6 +24,7 @@
       <button onclick="showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
       <button onclick="showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
     </div>
+    <button class="mobile-menu-btn" onclick="toggleMobile()">&#9776;</button>
   </div></nav>
 
   <section class="hero"><div class="container">
@@ -111,6 +112,7 @@
       <div class="field"><label>Password</label><input type="password" id="loginPass" required placeholder="Enter your password"></div>
       <button type="submit" class="btn btn-primary btn-full">Sign In</button>
     </form>
+    <div style="text-align:center;margin-top:10px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="toast('Password reset coming soon. Contact support@plutocapitalfunding.com','info')">Forgot password?</a></div>
     <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
   </div>
   <div id="formRegister" class="hidden">
