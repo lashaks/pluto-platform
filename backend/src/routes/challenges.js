@@ -22,10 +22,22 @@ router.get('/:id', authenticate, async (req, res) => {
   res.json(ch);
 });
 
+// GET /api/challenges/validate-code?code=XXX
+router.get('/validate-code', async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.json({ valid: false });
+  const dc = await queryOne(`SELECT code, discount_pct, max_uses, current_uses, valid_until FROM discount_codes WHERE code=$1 AND is_active=1`, [code.toUpperCase().trim()]);
+  if (!dc) return res.json({ valid: false, error: 'Invalid code' });
+  const now = new Date().toISOString();
+  if (dc.valid_until && dc.valid_until < now) return res.json({ valid: false, error: 'Code expired' });
+  if (dc.max_uses > 0 && dc.current_uses >= dc.max_uses) return res.json({ valid: false, error: 'Code fully redeemed' });
+  res.json({ valid: true, code: dc.code, discount_pct: dc.discount_pct });
+});
+
 // POST /api/challenges/purchase — buy a new challenge
 router.post('/purchase', authenticate, async (req, res) => {
   try {
-    const { account_size, profit_split, challenge_type, payment_method } = req.body;
+    const { account_size, profit_split, challenge_type, payment_method, discount_code } = req.body;
     const fee = config.challengePricing[account_size];
     if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(config.challengePricing).map(Number) });
 
@@ -36,6 +48,23 @@ router.post('/purchase', authenticate, async (req, res) => {
 
     // 2-step is 20% cheaper
     if (type === 'two_step') totalFee = Math.round(totalFee * 0.8);
+
+    // Apply discount code
+    let discountApplied = null;
+    if (discount_code) {
+      const dc = await queryOne(`SELECT * FROM discount_codes WHERE code=$1 AND is_active=1`, [discount_code.toUpperCase().trim()]);
+      if (dc) {
+        const now = new Date().toISOString();
+        const expired = dc.valid_until && dc.valid_until < now;
+        const maxedOut = dc.max_uses > 0 && dc.current_uses >= dc.max_uses;
+        if (!expired && !maxedOut) {
+          const discount = Math.round(totalFee * dc.discount_pct / 100);
+          totalFee = totalFee - discount;
+          discountApplied = { code: dc.code, pct: dc.discount_pct, saved: discount };
+          await run(`UPDATE discount_codes SET current_uses = current_uses + 1 WHERE id=?`, [dc.id]);
+        }
+      }
+    }
 
     // Profit targets from rules
     const profitTarget = type === 'two_step' ? rules.phase1_target_pct : rules.profit_target_pct;

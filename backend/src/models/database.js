@@ -165,6 +165,18 @@ const TABLES = [
     details TEXT,
     ip_address TEXT,
     created_at TEXT DEFAULT (NOW()::TEXT)
+  )`,
+  `CREATE TABLE IF NOT EXISTS discount_codes (
+    id TEXT PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL,
+    discount_pct REAL NOT NULL,
+    max_uses INTEGER DEFAULT 0,
+    current_uses INTEGER DEFAULT 0,
+    valid_from TEXT,
+    valid_until TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_by TEXT,
+    created_at TEXT DEFAULT (NOW()::TEXT)
   )`
 ];
 

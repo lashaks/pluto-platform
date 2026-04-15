@@ -13,6 +13,8 @@
 </head>
 <body>
 <div id="landing">
+  <!-- DISCLAIMER BANNER -->
+  <div style="position:fixed;top:0;left:0;right:0;z-index:101;background:var(--bg2);border-bottom:1px solid var(--brd);padding:6px 16px;text-align:center;font-size:.7rem;color:var(--t3);letter-spacing:.02em" id="disclaimerBar">All trading takes place in a simulated environment. Pluto Capital does not act as a broker. <a href="javascript:void(0)" onclick="showRisk()" style="color:var(--ac2)">Risk Disclosure</a></div>
   <!-- FULLSCREEN ANIMATED BACKGROUND -->
   <canvas id="heroCanvas"></canvas>
 
@@ -50,6 +52,17 @@
       <div class="hs"><div class="hs-v">80%</div><div class="hs-l">Profit Split</div></div>
       <div class="hs"><div class="hs-v">AI</div><div class="hs-l">Trade Coach</div></div>
       <div class="hs"><div class="hs-v">0</div><div class="hs-l">Min Trading Days</div></div>
+    </div>
+  </div></section>
+
+  <!-- TRUST SIGNALS -->
+  <section style="padding:40px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:var(--sf)"><div class="container">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;text-align:center">
+      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--t1)">$200K</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Max Funded Account</div></div>
+      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--gr)">80%</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Profit Split</div></div>
+      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--ac2)">1:100</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Leverage</div></div>
+      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--bl)">cTrader + MT5</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Professional Platforms</div></div>
+      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--am)">24hr</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Payout Processing</div></div>
     </div>
   </div></section>
 
@@ -194,6 +207,7 @@
       </div>
       <div class="field"><label>Email</label><input type="email" id="regEmail" required placeholder="trader@example.com"></div>
       <div class="field"><label>Password</label><input type="password" id="regPass" required minlength="6" placeholder="Min 6 characters"></div>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--t2);cursor:pointer;line-height:1.5"><input type="checkbox" id="regTerms" required style="margin-top:3px;accent-color:var(--ac)"> I agree to the <a onclick="showTerms()" style="color:var(--ac2);cursor:pointer">Terms of Service</a>, <a onclick="showPrivacy()" style="color:var(--ac2);cursor:pointer">Privacy Policy</a>, and <a onclick="showRisk()" style="color:var(--ac2);cursor:pointer">Risk Disclosure</a>.</label>
       <button type="submit" class="btn btn-primary btn-full">Create Account</button>
     </form>
     <div class="modal-switch">Have an account? <a onclick="showAuth('login')">Sign In</a></div>
@@ -247,7 +261,7 @@
   <!-- OVERLAY -->
   <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobile()"></div>
   <aside class="sidebar" id="dashSidebar">
-    <div class="sb-logo"><div class="logo" style="gap:8px"><img src="/img/favicon.svg" alt="Pluto" style="width:24px;height:24px"><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
+    <div class="sb-logo"><div class="logo" style="gap:10px"><img src="/img/favicon.svg" alt="Pluto" style="width:32px;height:32px"><div class="logo-text" style="font-size:1.1rem">PLUTO<span>CAPITAL</span></div></div></div>
     <nav class="sb-nav">
       <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
       <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>

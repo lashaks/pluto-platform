@@ -80,7 +80,9 @@ router.post('/payouts/:id/pay', requireAdmin, async (req, res) => {
   const payout = await queryOne(`SELECT * FROM payouts WHERE id='${sanitize(req.params.id)}'`);
   if (!payout) return res.status(404).json({ error: 'Payout not found' });
 
-  await run(`UPDATE payouts SET status='paid', paid_at=NOW()::TEXT WHERE id=?`, [req.params.id]);
+  const { tx_reference } = req.body;
+
+  await run(`UPDATE payouts SET status='paid', paid_at=NOW()::TEXT, tx_reference=? WHERE id=?`, [tx_reference || '', req.params.id]);
 
   // Update funded account totals AND reset balance to starting_balance (standard prop firm logic)
   if (payout.funded_account_id) {
@@ -160,6 +162,27 @@ router.get('/audit-log', requireAdmin, async (req, res) => {
 router.get('/transactions', requireAdmin, async (req, res) => {
   const txns = await queryAll(`SELECT t.*, u.email, u.first_name, u.last_name FROM transactions t JOIN users u ON t.user_id = u.id ORDER BY t.created_at DESC LIMIT 200`);
   res.json(txns);
+});
+
+// === DISCOUNT CODES ===
+router.get('/discount-codes', requireAdmin, async (req, res) => {
+  const codes = await queryAll(`SELECT * FROM discount_codes ORDER BY created_at DESC`);
+  res.json(codes);
+});
+
+router.post('/discount-codes', requireAdmin, async (req, res) => {
+  const { code, discount_pct, max_uses, valid_until } = req.body;
+  if (!code || !discount_pct) return res.status(400).json({ error: 'Code and discount_pct required' });
+  if (discount_pct < 1 || discount_pct > 100) return res.status(400).json({ error: 'Discount must be 1-100%' });
+  const id = generateId();
+  await run(`INSERT INTO discount_codes (id, code, discount_pct, max_uses, valid_until, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, code.toUpperCase().trim(), discount_pct, max_uses || 0, valid_until || '', req.user.id]);
+  res.status(201).json({ id, code: code.toUpperCase().trim(), discount_pct, max_uses: max_uses || 0 });
+});
+
+router.delete('/discount-codes/:id', requireAdmin, async (req, res) => {
+  await run(`UPDATE discount_codes SET is_active=0 WHERE id=?`, [req.params.id]);
+  res.json({ success: true });
 });
 
 module.exports = router;
