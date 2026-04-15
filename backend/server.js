@@ -18,9 +18,36 @@ const app = express();
 // ============================================================
 // MIDDLEWARE
 // ============================================================
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://pluto-platform.vercel.app',
+    'https://plutocapitalfunding.com',
+    'https://www.plutocapitalfunding.com',
+    'http://localhost:3000',
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Simple rate limiter for auth routes
+const rateLimits = {};
+function rateLimit(key, maxPerMin) {
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const k = key + ':' + ip;
+    const now = Date.now();
+    if (!rateLimits[k]) rateLimits[k] = [];
+    rateLimits[k] = rateLimits[k].filter(t => now - t < 60000);
+    if (rateLimits[k].length >= maxPerMin) {
+      return res.status(429).json({ error: 'Too many requests. Please wait a moment.' });
+    }
+    rateLimits[k].push(now);
+    next();
+  };
+}
+// Clean up every 5 minutes
+setInterval(() => { const now = Date.now(); for (const k in rateLimits) { rateLimits[k] = rateLimits[k].filter(t => now - t < 60000); if (!rateLimits[k].length) delete rateLimits[k]; } }, 300000);
 
 // Request logging (dev)
 if (config.nodeEnv === 'development') {
@@ -35,7 +62,7 @@ if (config.nodeEnv === 'development') {
 // ============================================================
 // API ROUTES
 // ============================================================
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', rateLimit('auth', 20), authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/funded', fundedRoutes);
@@ -133,6 +160,23 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
          `Crypto payment confirmed: ${actually_paid} ${pay_currency}. Challenge activated.`]);
 
       console.log(`[Webhook] Challenge ${order_id} activated!`);
+
+      // Send purchase confirmation email
+      const emailService = require('./src/services/email');
+      const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${challenge.user_id}'`);
+      if (usr) {
+        emailService.sendChallengePurchased(usr.email, usr.first_name || 'Trader', {
+          account_size: challenge.account_size,
+          challenge_type: challenge.challenge_type || 'one_step',
+          profit_target: challenge.profit_target_pct,
+          daily_loss: challenge.max_daily_loss_pct,
+          max_drawdown: challenge.max_total_loss_pct,
+          profit_split: challenge.profit_split_pct,
+          fee: challenge.fee_paid,
+          login: ctraderResult.login,
+          server: ctraderResult.server,
+        }).catch(e => console.error('[Webhook] Email error:', e.message));
+      }
     }
 
     res.json({ success: true });
