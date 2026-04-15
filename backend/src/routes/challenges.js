@@ -142,11 +142,8 @@ router.get('/:id/risk-check', authenticate, async (req, res) => {
 router.get('/info/pricing', async (req, res) => {
   const plans = Object.entries(config.challengePricing).map(([size, fee]) => ({
     size: Number(size), fee,
-    profit_target: 10,
-    daily_loss: maxDaily,
-    max_drawdown: maxDrawdown,
-    split: 80,
-    leverage: Number(size) >= 50000 ? '1:20' : '1:30',
+    one_step: { target: 10, daily: 5, dd: 8, split: 80, leverage: '1:100' },
+    two_step: { target: '8 / 5', daily: 5, dd: 10, split: 80, leverage: '1:100' },
   }));
   res.json(plans);
 });

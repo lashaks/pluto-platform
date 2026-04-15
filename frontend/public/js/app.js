@@ -76,14 +76,89 @@ window.render_trades=async function(){$('page-trades').innerHTML=LOADING;const d
 $('page-trades').innerHTML=`<div class="page-head"><h1>Trade History</h1><p>Closed positions across all accounts</p></div>${d.length?`<div class="stats"><div class="stat s-green"><div class="stat-label">Total P&L</div><div class="stat-value" style="color:${totalPnl>=0?'var(--gr)':'var(--rd)'}">${F(totalPnl)}</div></div><div class="stat s-blue"><div class="stat-label">Trades</div><div class="stat-value">${d.length}</div></div><div class="stat s-purple"><div class="stat-label">Win Rate</div><div class="stat-value">${Math.round(wins/d.length*100)}%</div></div></div>`:''}<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Closed Positions</div>${d.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Symbol</th><th>Dir</th><th>Vol</th><th>Open</th><th>Close</th><th>P&L</th><th>Time</th></tr></thead><tbody>${d.map(t=>`<tr><td class="fw">${t.symbol}</td><td>${B(t.direction==='BUY'?'active':'failed')}</td><td class="mono">${t.volume}</td><td class="mono">${t.open_price?.toFixed(5)||'—'}</td><td class="mono">${t.close_price?.toFixed(5)||'—'}</td><td class="${t.profit>=0?'pos':'neg'}" style="font-weight:700">${F(t.profit)}</td><td class="muted" style="font-size:.74rem;white-space:nowrap">${t.close_time?new Date(t.close_time).toLocaleString():'—'}</td></tr>`).join('')}</tbody></table></div>`:`<div style="padding:48px;text-align:center;color:var(--t3);font-size:.88rem">No trades yet.</div>`}</div>`};
 
 // AI COACH
-window.render_coach=function(){$('page-coach').innerHTML=`<div class="page-head"><h1>AI Trade Coach</h1><p>Intelligent analysis to sharpen your trading edge</p></div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px"><div class="stat s-purple"><div class="stat-label">AI Score</div><div class="stat-value" style="color:var(--ac2)">—</div></div><div class="stat s-green"><div class="stat-label">Consistency</div><div class="stat-value" style="color:var(--gr)">—</div></div><div class="stat s-blue"><div class="stat-label">Risk Rating</div><div class="stat-value" style="color:var(--bl)">—</div></div><div class="stat s-amber"><div class="stat-label">Edge Score</div><div class="stat-value" style="color:var(--am)">—</div></div></div>
+window.render_coach=async function(){$('page-coach').innerHTML=LOADING;
+try{
+  const s=await api('/api/dashboard/stats');
+  const trades=await api('/api/trades');
+  const ch=s.challenges.filter(c=>c.status==='active'||c.status==='passed'||c.status==='failed');
+  const hasTrades=trades.length>0;
+  const wins=trades.filter(t=>t.profit>0);
+  const losses=trades.filter(t=>t.profit<=0);
+  const wr=trades.length?Math.round(wins.length/trades.length*100):0;
+  const avgWin=wins.length?(wins.reduce((a,t)=>a+t.profit,0)/wins.length):0;
+  const avgLoss=losses.length?Math.abs(losses.reduce((a,t)=>a+t.profit,0)/losses.length):0;
+  const pf=avgLoss>0?(avgWin*wins.length)/(avgLoss*losses.length):0;
+  const totalPnl=trades.reduce((a,t)=>a+t.profit,0);
+
+  // Calculate AI scores
+  const consistencyScore=hasTrades?Math.min(100,Math.round(wr*0.5+(pf>1?30:pf*30)+(trades.length>10?20:trades.length*2))):0;
+  const riskScore=hasTrades?Math.min(100,Math.round((avgLoss<avgWin?40:20)+(wr>50?30:wr*0.6)+(pf>1.5?30:pf*20))):0;
+  const edgeScore=hasTrades?Math.min(100,Math.round(pf*25+(wr>55?30:wr*0.55)+(trades.length>20?20:trades.length))):0;
+  const aiScore=hasTrades?Math.round((consistencyScore+riskScore+edgeScore)/3):0;
+
+  // Find best/worst symbols
+  const symbolMap={};
+  trades.forEach(t=>{if(!symbolMap[t.symbol])symbolMap[t.symbol]={wins:0,losses:0,pnl:0,count:0};symbolMap[t.symbol].count++;symbolMap[t.symbol].pnl+=t.profit;if(t.profit>0)symbolMap[t.symbol].wins++;else symbolMap[t.symbol].losses++});
+  const symbols=Object.entries(symbolMap).sort((a,b)=>b[1].pnl-a[1].pnl);
+  const bestSymbol=symbols[0];
+  const worstSymbol=symbols[symbols.length-1];
+
+  function scoreColor(v){return v>=70?'var(--gr)':v>=40?'var(--am)':'var(--rd)'}
+
+  $('page-coach').innerHTML=`<div class="page-head"><h1>AI Trade Coach</h1><p>${hasTrades?'Analysis based on '+trades.length+' closed trade'+(trades.length>1?'s':''):'Start trading to unlock AI insights'}</p></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px">
+  <div class="stat s-purple"><div class="stat-label">AI Score</div><div class="stat-value" style="color:${hasTrades?scoreColor(aiScore):'var(--t3)'}">${hasTrades?aiScore+'/100':'—'}</div></div>
+  <div class="stat s-green"><div class="stat-label">Consistency</div><div class="stat-value" style="color:${hasTrades?scoreColor(consistencyScore):'var(--t3)'}">${hasTrades?consistencyScore+'/100':'—'}</div></div>
+  <div class="stat s-blue"><div class="stat-label">Risk Rating</div><div class="stat-value" style="color:${hasTrades?scoreColor(riskScore):'var(--t3)'}">${hasTrades?riskScore+'/100':'—'}</div></div>
+  <div class="stat s-amber"><div class="stat-label">Edge Score</div><div class="stat-value" style="color:${hasTrades?scoreColor(edgeScore):'var(--t3)'}">${hasTrades?edgeScore+'/100':'—'}</div></div>
+</div>
+
+${hasTrades?`<div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem">Performance Summary</div>
+  <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+    ${M('Win Rate',wr+'%',wr>=50?'var(--gr)':'var(--rd)')}
+    ${M('Profit Factor',pf.toFixed(2),pf>=1?'var(--gr)':'var(--rd)')}
+    ${M('Avg Win',F(avgWin),'var(--gr)')}
+    ${M('Avg Loss',F(avgLoss),'var(--rd)')}
+    ${M('Total P&L',F(totalPnl),totalPnl>=0?'var(--gr)':'var(--rd)')}
+    ${M('Trades',String(trades.length))}
+  </div>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:8px"><span>&#128200;</span> Entry &amp; Exit Analysis</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">AI evaluates every entry and exit against optimal levels, support/resistance zones, and structure.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--ac)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"EURUSD long entered 12 pips above support. Limit at 1.0842 improves R:R from 1.8 to 2.4."</div></div></div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:8px"><span>&#128202;</span> Risk Management</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Real-time monitoring of drawdown trajectory, position sizing, and lot exposure vs limits.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--rd)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"3.8% daily loss with 2 open. A 30-pip move triggers breach."</div></div></div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:8px"><span>&#128337;</span> Pattern Detection</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Discover which sessions, pairs, and timeframes produce your best results.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--gr)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"78% win rate XAUUSD London vs 34% Asian. Avoid gold before 8:00 GMT."</div></div></div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:8px"><span>&#127919;</span> Discipline Score</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Each session scored on sizing, compliance, consistency, and risk-adjusted return.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--am)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"Tuesday: 87/100. Strong entries. Deducted for holding through NFP."</div></div></div></div></div>
-<div class="card" style="background:linear-gradient(135deg,rgba(139,92,246,.03),transparent);border-color:var(--ac-gl);display:flex;align-items:center;gap:20px;flex-wrap:wrap"><div style="width:48px;height:48px;border-radius:12px;background:var(--ac-bg);border:1px solid var(--ac-gl);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">&#129302;</div><div style="flex:1;min-width:240px"><div style="font-weight:700;font-size:1rem;margin-bottom:4px">Activating When You Trade</div><div style="color:var(--t2);font-size:.86rem;line-height:1.6">Connects to your cTrader account. Insights generated within 24 hours of your first closed trade.</div></div><button class="btn btn-primary btn-sm" onclick="navigate('buy')" style="flex-shrink:0">Start Challenge</button></div>`};
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem">&#128200; Instrument Analysis</div>
+    <div style="padding:16px 20px">
+      ${symbols.map(([sym,d])=>{const swr=d.count?Math.round(d.wins/d.count*100):0;return`<div class="row"><span class="row-label">${sym} <span style="color:var(--t3);font-size:.74rem">(${d.count} trades)</span></span><span class="row-value" style="color:${d.pnl>=0?'var(--gr)':'var(--rd)'}"> ${F(d.pnl)} &bull; ${swr}% WR</span></div>`}).join('')}
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem">&#127919; AI Insights</div>
+    <div style="padding:16px 20px;font-size:.86rem;color:var(--t2);line-height:1.8">
+      ${wr>=55?`<div style="padding:8px 12px;background:var(--gr-bg);border-left:3px solid var(--gr);border-radius:0 var(--r) var(--r) 0;margin-bottom:8px">Your ${wr}% win rate is strong. Maintain your edge by keeping position sizes consistent.</div>`:`<div style="padding:8px 12px;background:var(--rd-bg);border-left:3px solid var(--rd);border-radius:0 var(--r) var(--r) 0;margin-bottom:8px">Win rate at ${wr}%. Focus on entry quality over frequency.</div>`}
+      ${pf>=1.2?`<div style="padding:8px 12px;background:var(--gr-bg);border-left:3px solid var(--gr);border-radius:0 var(--r) var(--r) 0;margin-bottom:8px">Profit factor of ${pf.toFixed(2)} shows your winners outpace your losers.</div>`:`<div style="padding:8px 12px;background:var(--am-bg);border-left:3px solid var(--am);border-radius:0 var(--r) var(--r) 0;margin-bottom:8px">Profit factor at ${pf.toFixed(2)}. Consider widening targets or tightening stops.</div>`}
+      ${bestSymbol?`<div style="padding:8px 12px;background:var(--bl-bg);border-left:3px solid var(--bl);border-radius:0 var(--r) var(--r) 0;margin-bottom:8px">Best instrument: ${bestSymbol[0]} with ${F(bestSymbol[1].pnl)} profit. Consider allocating more size here.</div>`:''}
+      ${worstSymbol&&worstSymbol[1].pnl<0?`<div style="padding:8px 12px;background:var(--rd-bg);border-left:3px solid var(--rd);border-radius:0 var(--r) var(--r) 0">Worst instrument: ${worstSymbol[0]} at ${F(worstSymbol[1].pnl)}. Review your setup criteria for this pair.</div>`:''}
+    </div>
+  </div>
+</div>`:
+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+  <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem"><span>&#128200;</span> Entry &amp; Exit Analysis</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">AI evaluates every entry and exit against optimal levels, support/resistance, and market structure.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--ac)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"EURUSD long entered 12 pips above support. Limit at 1.0842 improves R:R from 1.8 to 2.4."</div></div></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem"><span>&#128202;</span> Risk Management</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Real-time drawdown monitoring, position sizing analysis, and lot exposure tracking.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--rd)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"3.8% daily loss with 2 open. A 30-pip move triggers breach."</div></div></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem"><span>&#128337;</span> Pattern Detection</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Discover which sessions, pairs, and timeframes produce your best results.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--gr)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"78% win rate XAUUSD London vs 34% Asian. Avoid gold before 8:00 GMT."</div></div></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.92rem"><span>&#127919;</span> Discipline Score</div><div style="padding:16px 20px"><p style="color:var(--t2);font-size:.84rem;line-height:1.65;margin-bottom:14px">Each session scored on sizing, compliance, consistency, and risk-adjusted return.</p><div style="padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--brd);border-left:3px solid var(--am)"><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Sample</div><div style="font-size:.82rem;color:var(--t2);line-height:1.5">"Tuesday: 87/100. Strong entries. Deducted for holding through NFP."</div></div></div></div>
+</div>`}
+
+<div class="card" style="background:linear-gradient(135deg,rgba(139,92,246,.03),transparent);border-color:var(--ac-gl);display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+  <div style="width:48px;height:48px;border-radius:12px;background:var(--ac-bg);border:1px solid var(--ac-gl);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">&#129302;</div>
+  <div style="flex:1;min-width:240px">
+    <div style="font-weight:700;font-size:1rem;margin-bottom:4px">${hasTrades?'Coach is analyzing your trades':'Activating when you trade'}</div>
+    <div style="color:var(--t2);font-size:.86rem;line-height:1.6">${hasTrades?'Insights update automatically as you close more trades. The more data, the better the analysis.':'Start a challenge and place your first trades — insights generated within 24 hours.'}</div>
+  </div>
+  ${hasTrades?'':`<button class="btn btn-primary btn-sm" onclick="navigate('buy')" style="flex-shrink:0">Start Challenge</button>`}
+</div>`;
+}catch(e){$('page-coach').innerHTML=`<div class="card"><div class="empty">Failed to load AI Coach. <a onclick="navigate('coach')">Retry</a></div></div>`}};
 
 // RULES
 window.render_rules=function(){$('page-rules').innerHTML=`<div class="page-head"><h1>Trading Rules</h1><p>Complete rules for all accounts</p></div>

@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres.ngjhujhzwlhyrfmbblbq:Plutoproject1.1@aws-1-eu-west-2.pooler.supabase.com:5432/postgres',
-  ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 // ============================================================
@@ -40,7 +40,7 @@ const TABLES = [
     max_daily_loss_pct REAL DEFAULT 5.0,
     max_total_loss_pct REAL DEFAULT 8.0,
     profit_split_pct REAL DEFAULT 80.0,
-    leverage TEXT DEFAULT '1:20',
+    leverage TEXT DEFAULT '1:100',
     starting_balance REAL NOT NULL,
     current_balance REAL,
     current_equity REAL,
@@ -297,12 +297,12 @@ async function initDatabase() {
 // ============================================================
 // QUERY HELPERS (compatible with existing route code)
 // ============================================================
-function queryAll(sql) {
-  return pool.query(sql).then(r => r.rows).catch(e => { console.error('Query error:', e.message); return []; });
+function queryAll(sql, params = []) {
+  return pool.query(sql, params).then(r => r.rows).catch(e => { console.error('Query error:', e.message); return []; });
 }
 
-function queryOne(sql) {
-  return pool.query(sql).then(r => r.rows[0] || null).catch(e => { console.error('Query error:', e.message); return null; });
+function queryOne(sql, params = []) {
+  return pool.query(sql, params).then(r => r.rows[0] || null).catch(e => { console.error('Query error:', e.message); return null; });
 }
 
 function run(sql, params = []) {

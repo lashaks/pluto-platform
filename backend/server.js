@@ -87,13 +87,13 @@ app.use('/api/admin', adminRoutes);
 
 // Dashboard stats (authenticated)
 const { authenticate } = require('./src/middleware/auth');
-const { queryAll, queryOne } = require('./src/models/database');
+const { queryAll, queryOne, run } = require('./src/models/database');
 
 app.get('/api/dashboard/stats', authenticate, async (req, res) => {
-  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}'`);
-  const funded = await queryAll(`SELECT * FROM funded_accounts WHERE user_id='${req.user.id}'`);
-  const payouts = await queryAll(`SELECT * FROM payouts WHERE user_id='${req.user.id}'`);
-  const trades = await queryAll(`SELECT * FROM trades WHERE user_id='${req.user.id}'`);
+  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id=$1`, [req.user.id]);
+  const funded = await queryAll(`SELECT * FROM funded_accounts WHERE user_id=$1`, [req.user.id]);
+  const payouts = await queryAll(`SELECT * FROM payouts WHERE user_id=$1`, [req.user.id]);
+  const trades = await queryAll(`SELECT * FROM trades WHERE user_id=$1`, [req.user.id]);
 
   const totalProfit = funded.reduce((s, a) => s + (a.total_profit || 0), 0) + challenges.reduce((s, a) => s + (a.total_profit || 0), 0);
   const totalPayouts = payouts.filter(p => p.status === 'paid').reduce((s, p) => s + p.trader_amount, 0);
@@ -115,13 +115,9 @@ app.get('/api/dashboard/stats', authenticate, async (req, res) => {
 // Public pricing endpoint (no auth)
 app.get('/api/pricing', (req, res) => {
   const plans = Object.entries(config.challengePricing).map(([size, fee]) => ({
-    size: Number(size),
-    fee,
-    profit_target: config.defaultRules.profit_target_pct,
-    daily_loss: config.defaultRules.max_daily_loss_pct,
-    max_drawdown: config.defaultRules.max_total_loss_pct,
-    split: config.defaultRules.profit_split_pct,
-    leverage: Number(size) >= 50000 ? '1:20' : '1:30',
+    size: Number(size), fee,
+    one_step: { target: 10, daily: 5, dd: 8, split: 80, leverage: '1:100' },
+    two_step: { target: '8 / 5', daily: 5, dd: 10, split: 80, leverage: '1:100' },
   }));
   res.json(plans);
 });
@@ -144,7 +140,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
     if (payments.isPaymentComplete(payment_status)) {
       // Find the pending challenge
-      const challenge = await queryOne(`SELECT * FROM challenges WHERE id='${order_id}' AND status='pending_payment'`);
+      const challenge = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND status='pending_payment'`, [order_id]);
       if (!challenge) {
         console.log('[Webhook] Challenge not found or already activated:', order_id);
         return res.json({ success: true });
@@ -153,7 +149,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
       // Create cTrader account
       const ctraderResult = await ctraderService.createAccount({
         balance: challenge.account_size,
-        leverage: challenge.leverage || '1:20',
+        leverage: challenge.leverage || '1:100',
         group: 'demo_prop_evaluation',
       });
 
@@ -178,7 +174,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
       // Send purchase confirmation email
       const emailService = require('./src/services/email');
-      const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${challenge.user_id}'`);
+      const usr = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [challenge.user_id]);
       if (usr) {
         emailService.sendChallengePurchased(usr.email, usr.first_name || 'Trader', {
           account_size: challenge.account_size,
