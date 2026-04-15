@@ -276,6 +276,18 @@ async function initDatabase() {
       try { await client.query(sql); } catch (e) { /* already exists */ }
     }
     console.log('  ✓ Database schema created');
+
+    // Migrations — add columns that may not exist yet
+    const migrations = [
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS phase INTEGER DEFAULT 1`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS parent_challenge_id TEXT`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS consistency_best_day_pct REAL DEFAULT 0`,
+    ];
+    for (const sql of migrations) {
+      try { await client.query(sql); } catch (e) { /* column already exists */ }
+    }
+    console.log('  ✓ Migrations applied');
+
     await seedDatabase(client);
   } finally {
     client.release();

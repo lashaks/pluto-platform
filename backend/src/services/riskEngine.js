@@ -93,18 +93,62 @@ class RiskEngine {
   }
 
   /**
-   * Pass a challenge → create funded account
+   * Pass a challenge → create Phase 2 (for 2-Step) or funded account
    */
   async passChallenge(challengeId) {
-    const ch = queryOne(`SELECT * FROM challenges WHERE id='${challengeId}' AND status='active'`);
+    const ch = await queryOne(`SELECT * FROM challenges WHERE id='${challengeId}' AND status='active'`);
     if (!ch) return null;
 
+    const email = require('../services/email');
+    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${ch.user_id}'`);
+
+    // Check if this is a 2-Step Phase 1 — if so, create Phase 2 instead of funded account
+    if (ch.challenge_type === 'two_step' && (ch.phase === 1 || !ch.phase)) {
+      console.log(`[RISK ENGINE] 2-STEP PHASE 1 PASSED on ${challengeId} — creating Phase 2`);
+
+      await run(`UPDATE challenges SET status='passed', passed_at=NOW()::TEXT WHERE id=?`, [challengeId]);
+
+      // Create Phase 2 challenge
+      const phase2Id = require('uuid').v4();
+      const phase2Target = config.twoStepRules.phase2_target_pct;
+      const ctraderResult = await ctrader.createAccount({
+        balance: ch.account_size,
+        leverage: ch.leverage,
+        group: 'demo_prop_evaluation',
+      });
+
+      await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, phase, parent_challenge_id,
+           starting_balance, current_balance, current_equity, highest_balance, lowest_equity, day_start_balance,
+           fee_paid, profit_split_pct, leverage, profit_target_pct, max_daily_loss_pct, max_total_loss_pct,
+           ctrader_login, ctrader_account_id, ctrader_server, status, activated_at)
+           VALUES (?, ?, ?, 'two_step', 2, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
+        [phase2Id, ch.user_id, ch.account_size, challengeId,
+         ch.account_size, ch.account_size, ch.account_size, ch.account_size, ch.account_size, ch.account_size,
+         ch.profit_split_pct, ch.leverage, phase2Target, ch.max_daily_loss_pct, ch.max_total_loss_pct,
+         ctraderResult.login, ctraderResult.accountId, ctraderResult.server]);
+
+      await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
+           VALUES (?, ?, 'PHASE1_PASSED', 'challenge', ?, 'Phase 1 passed — Phase 2 created')`,
+        [require('uuid').v4(), ch.user_id, challengeId]);
+
+      // Email: Phase 1 passed, Phase 2 starting
+      if (usr) {
+        email.sendChallengePassed(usr.email, usr.first_name || 'Trader', {
+          account_size: '$' + Number(ch.account_size).toLocaleString(),
+          profit: '$' + (ch.current_balance - ch.starting_balance).toFixed(2),
+          trades: String(ch.total_trades),
+          win_rate: ch.total_trades ? Math.round(ch.winning_trades / ch.total_trades * 100) + '%' : '0%',
+        }).catch(e => console.error('[RiskEngine] Email error:', e.message));
+      }
+
+      return { phase2_created: true, phase2_id: phase2Id, ctrader_login: ctraderResult.login };
+    }
+
+    // Either 1-Step or 2-Step Phase 2 passed → create funded account
     console.log(`[RISK ENGINE] PASS on challenge ${challengeId} — creating funded account`);
 
-    // 1. Update challenge status
-    run(`UPDATE challenges SET status='passed', passed_at=datetime('now') WHERE id=?`, [challengeId]);
+    await run(`UPDATE challenges SET status='passed', passed_at=NOW()::TEXT WHERE id=?`, [challengeId]);
 
-    // 2. Create funded account
     const fundedId = require('uuid').v4();
     const ctraderResult = await ctrader.createAccount({
       balance: ch.account_size,
@@ -112,7 +156,7 @@ class RiskEngine {
       group: 'demo_prop_funded',
     });
 
-    run(`INSERT INTO funded_accounts (id, user_id, challenge_id, account_size, starting_balance,
+    await run(`INSERT INTO funded_accounts (id, user_id, challenge_id, account_size, starting_balance,
          current_balance, current_equity, highest_balance, lowest_equity, day_start_balance,
          profit_split_pct, ctrader_login, ctrader_account_id, max_daily_loss_pct, max_total_loss_pct)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -121,12 +165,19 @@ class RiskEngine {
        ch.profit_split_pct, ctraderResult.login, ctraderResult.accountId,
        ch.max_daily_loss_pct, ch.max_total_loss_pct]);
 
-    // 3. Audit log
-    run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
+    await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details)
          VALUES (?, ?, 'CHALLENGE_PASSED', 'challenge', ?, 'Profit target reached — funded account created')`,
       [require('uuid').v4(), ch.user_id, challengeId]);
 
-    // 4. Send congratulations email (integrate in Sprint 7)
+    // Send congratulations email
+    if (usr) {
+      email.sendChallengePassed(usr.email, usr.first_name || 'Trader', {
+        account_size: '$' + Number(ch.account_size).toLocaleString(),
+        profit: '$' + (ch.current_balance - ch.starting_balance).toFixed(2),
+        trades: String(ch.total_trades),
+        win_rate: ch.total_trades ? Math.round(ch.winning_trades / ch.total_trades * 100) + '%' : '0%',
+      }).catch(e => console.error('[RiskEngine] Email error:', e.message));
+    }
 
     return {
       funded_account_id: fundedId,

@@ -1,6 +1,6 @@
 // Pluto Capital Funding — Email Service via Resend
 const API_KEY = process.env.EMAIL_API_KEY || '';
-const FROM = process.env.EMAIL_FROM || 'Pluto Capital Funding <support@plutocapitalfunding.com>';
+const FROM = process.env.EMAIL_FROM || 'Pluto Capital Funding <noreply@plutocapitalfunding.com>';
 
 function wrap(title, content) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -23,8 +23,9 @@ function wrap(title, content) {
   </td></tr>
   <!-- Footer -->
   <tr><td style="padding:24px 40px;border-top:1px solid rgba(255,255,255,0.05);text-align:center">
-    <p style="margin:0;font-size:12px;color:#5a5672">&copy; 2026 Pluto Capital Funding. All rights reserved.</p>
-    <p style="margin:4px 0 0;font-size:11px;color:#3d3955">All trading takes place in a simulated environment.</p>
+    <p style="margin:0;font-size:12px;color:#5a5672">This is an automated message. Please do not reply to this email.</p>
+    <p style="margin:4px 0 0;font-size:12px;color:#5a5672">For support, contact <a href="mailto:support@plutocapitalfunding.com" style="color:#a78bfa">support@plutocapitalfunding.com</a></p>
+    <p style="margin:8px 0 0;font-size:11px;color:#3d3955">&copy; 2026 Pluto Capital Funding. All trading takes place in a simulated environment.</p>
   </td></tr>
 </table>
 </td></tr></table></body></html>`;
@@ -92,7 +93,7 @@ async function sendWelcome(to, name) {
     </table>
     ${btn('Go to Dashboard', dashUrl)}
     <p style="font-size:13px">Your login email: <strong style="color:#eeedf4">${to}</strong></p>
-    <p style="font-size:13px">Questions? Reply to this email or contact <a href="mailto:support@plutocapitalfunding.com" style="color:#a78bfa">support@plutocapitalfunding.com</a></p>`
+    <p style="font-size:13px">Need help? Contact <a href="mailto:support@plutocapitalfunding.com" style="color:#a78bfa">support@plutocapitalfunding.com</a></p>`
   ));
 }
 
