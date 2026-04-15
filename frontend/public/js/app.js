@@ -9,13 +9,20 @@ const LOADING='<div style="text-align:center;padding:60px;color:var(--t3)"><div 
 
 async function api(u,o={}){const h={'Content-Type':'application/json'};if(token)h['Authorization']='Bearer '+token;const r=await fetch(API+u,{...o,headers:h});const d=await r.json();if(!r.ok)throw new Error(d.error||'Request failed');return d}
 
-function showAuth(m){$('authModal').classList.remove('hidden');$('formLogin').classList.toggle('hidden',m!=='login');$('formRegister').classList.toggle('hidden',m!=='register')}
+function showAuth(m){$('authModal').classList.remove('hidden');showAuthScreen(m==='login'?'formLogin':'formRegister')}
+function showAuthScreen(id){['formLogin','formRegister','formVerify','formForgot','formReset'].forEach(f=>{const el=$(f);if(el)el.classList.add('hidden')});const t=$(id);if(t)t.classList.remove('hidden')}
 function hideAuth(){$('authModal').classList.add('hidden')}
 function selectPlan(size){selectedPlan={size,type:currentEval};showAuth('register')}
 function toast(m,t='info'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateY(-10px)';e.style.transition='all .3s';setTimeout(()=>e.remove(),300)},3000)}
 
+let pendingVerifyEmail='';
 async function doLogin(e){e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('loginEmail').value,password:$('loginPass').value})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;hideAuth();enterDashboard()}catch(x){toast(x.message,'error')}}
-async function doRegister(e){e.preventDefault();try{const d=await api('/api/auth/register',{method:'POST',body:JSON.stringify({email:$('regEmail').value,password:$('regPass').value,first_name:$('regFirst').value,last_name:$('regLast').value})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;hideAuth();enterDashboard();if(selectedPlan){setTimeout(()=>{navigate('buy');toast('Select your plan to continue','info')},500)}}catch(x){toast(x.message,'error')}}
+async function doRegister(e){e.preventDefault();try{const email=$('regEmail').value;const d=await api('/api/auth/register',{method:'POST',body:JSON.stringify({email,password:$('regPass').value,first_name:$('regFirst').value,last_name:$('regLast').value})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;pendingVerifyEmail=email;$('verifyEmailDisplay').textContent=email;showAuthScreen('formVerify');toast('Check your email for a verification code','info')}catch(x){toast(x.message,'error')}}
+async function doVerify(e){e.preventDefault();try{await api('/api/auth/verify-email',{method:'POST',body:JSON.stringify({email:pendingVerifyEmail,code:$('verifyCode').value})});toast('Email verified! Welcome to Pluto Capital.','success');hideAuth();enterDashboard();if(selectedPlan){setTimeout(()=>{navigate('buy');toast('Select your plan to continue','info')},500)}}catch(x){toast(x.message,'error')}}
+async function resendCode(){try{await api('/api/auth/resend-code',{method:'POST',body:JSON.stringify({email:pendingVerifyEmail})});toast('New code sent! Check your email.','success')}catch(x){toast(x.message,'error')}}
+let pendingResetEmail='';
+async function doForgot(e){e.preventDefault();try{pendingResetEmail=$('forgotEmail').value;await api('/api/auth/forgot-password',{method:'POST',body:JSON.stringify({email:pendingResetEmail})});showAuthScreen('formReset');toast('If this email is registered, you will receive a reset code.','info')}catch(x){toast(x.message,'error')}}
+async function doReset(e){e.preventDefault();try{await api('/api/auth/reset-password',{method:'POST',body:JSON.stringify({email:pendingResetEmail,code:$('resetCode').value,new_password:$('resetNewPass').value})});toast('Password reset! You can now sign in.','success');showAuth('login')}catch(x){toast(x.message,'error')}}
 function logout(){token=null;user=null;localStorage.removeItem('pcf_token');$('app').style.display='none';$('landing').style.display='block'}
 function toggleMobile(){document.querySelector('.sidebar').classList.toggle('mobile-open')}
 

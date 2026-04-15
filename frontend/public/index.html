@@ -118,7 +118,7 @@
       <div class="field"><label>Password</label><input type="password" id="loginPass" required placeholder="Enter your password"></div>
       <button type="submit" class="btn btn-primary btn-full">Sign In</button>
     </form>
-    <div style="text-align:center;margin-top:10px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="toast('Password reset coming soon. Contact support@plutocapitalfunding.com','info')">Forgot password?</a></div>
+    <div style="text-align:center;margin-top:10px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="showAuthScreen('formForgot')">Forgot password?</a></div>
     <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
   </div>
   <div id="formRegister" class="hidden">
@@ -135,6 +135,37 @@
       <button type="submit" class="btn btn-primary btn-full">Create Account</button>
     </form>
     <div class="modal-switch">Have an account? <a onclick="showAuth('login')">Sign In</a></div>
+  </div>
+  <div id="formVerify" class="hidden">
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <h2>Verify Your Email</h2>
+    <p>We sent a 6-digit code to <strong id="verifyEmailDisplay"></strong></p>
+    <form onsubmit="doVerify(event)">
+      <div class="field"><label>Verification Code</label><input type="text" id="verifyCode" required placeholder="123456" maxlength="6" style="text-align:center;font-size:1.4rem;letter-spacing:8px;font-family:var(--fm)"></div>
+      <button type="submit" class="btn btn-primary btn-full">Verify Email</button>
+    </form>
+    <div style="text-align:center;margin-top:12px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="resendCode()">Didn't receive it? Resend code</a></div>
+  </div>
+  <div id="formForgot" class="hidden">
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <h2>Reset Password</h2>
+    <p>Enter your email and we'll send a reset code</p>
+    <form onsubmit="doForgot(event)">
+      <div class="field"><label>Email</label><input type="email" id="forgotEmail" required placeholder="trader@example.com"></div>
+      <button type="submit" class="btn btn-primary btn-full">Send Reset Code</button>
+    </form>
+    <div class="modal-switch"><a onclick="showAuth('login')">Back to Sign In</a></div>
+  </div>
+  <div id="formReset" class="hidden">
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <h2>Enter New Password</h2>
+    <p>Check your email for the 6-digit code</p>
+    <form onsubmit="doReset(event)">
+      <div class="field"><label>Reset Code</label><input type="text" id="resetCode" required placeholder="123456" maxlength="6" style="text-align:center;font-size:1.4rem;letter-spacing:8px;font-family:var(--fm)"></div>
+      <div class="field"><label>New Password</label><input type="password" id="resetNewPass" required minlength="6" placeholder="Min 6 characters"></div>
+      <button type="submit" class="btn btn-primary btn-full">Reset Password</button>
+    </form>
+    <div class="modal-switch"><a onclick="showAuth('login')">Back to Sign In</a></div>
   </div>
 </div></div>
 

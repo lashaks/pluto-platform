@@ -137,30 +137,6 @@ class RiskEngine {
   }
 
   /**
-   * Check scaling eligibility for a funded account
-   */
-  async checkScaling(fundedAccountId) {
-    const acct = queryOne(`SELECT * FROM funded_accounts WHERE id='${fundedAccountId}'`);
-    if (!acct) return null;
-
-    const nextLevel = config.scalingLevels.find(l => l.level === acct.scaling_level + 1);
-    if (!nextLevel) return { eligible: false, reason: 'Already at max level' };
-
-    const profitPct = (acct.total_profit / acct.account_size) * 100;
-    const eligible = acct.payout_count >= nextLevel.required_payouts && profitPct >= nextLevel.required_profit_pct;
-
-    return {
-      eligible,
-      currentLevel: acct.scaling_level,
-      nextLevel: nextLevel.level,
-      nextSize: acct.account_size * nextLevel.multiplier,
-      nextSplit: nextLevel.split,
-      payoutsNeeded: Math.max(0, nextLevel.required_payouts - acct.payout_count),
-      profitNeeded: Math.max(0, nextLevel.required_profit_pct - profitPct),
-    };
-  }
-
-  /**
    * Reset daily balances at server midnight
    * Run this as a daily cron job at 00:00 server time
    */

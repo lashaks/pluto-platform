@@ -1,6 +1,6 @@
 // Pluto Capital Funding — Email Service via Resend
 const API_KEY = process.env.EMAIL_API_KEY || '';
-const FROM = 'Pluto Capital Funding <support@plutocapitalfunding.com>';
+const FROM = process.env.EMAIL_FROM || 'Pluto Capital Funding <support@plutocapitalfunding.com>';
 
 function wrap(title, content) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
