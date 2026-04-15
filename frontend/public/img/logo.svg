@@ -1,35 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
   <defs>
-    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7c3aed"/>
-      <stop offset="100%" style="stop-color:#a78bfa"/>
+    <linearGradient id="pl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9333ea"/>
+      <stop offset="60%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#c084fc"/>
     </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="50%" style="stop-color:#a78bfa"/>
-      <stop offset="100%" style="stop-color:#c4b5fd"/>
+    <linearGradient id="ri" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#c084fc" stop-opacity=".9"/>
+      <stop offset="70%" stop-color="#c084fc" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <radialGradient id="sh" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#d8b4fe" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="cp"><circle cx="24" cy="24" r="15"/></clipPath>
+    <filter id="gl"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
-  
-  <!-- Background rounded square -->
-  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g1)"/>
-  
-  <!-- Inner subtle highlight -->
-  <rect x="32" y="32" width="448" height="224" rx="96" fill="rgba(255,255,255,0.06)"/>
-  
-  <!-- Letter P — bold geometric -->
-  <path d="M 170 140 L 170 380 L 210 380 L 210 300 L 290 300 C 345 300 380 265 380 220 C 380 175 345 140 290 140 Z M 210 175 L 285 175 C 322 175 345 192 345 220 C 345 248 322 265 285 265 L 210 265 Z" 
-        fill="white" filter="url(#glow)"/>
-  
-  <!-- Orbital ring — representing Pluto's orbit -->
-  <ellipse cx="256" cy="256" rx="220" ry="60" 
-           fill="none" stroke="url(#g2)" stroke-width="4" opacity="0.35"
-           transform="rotate(-25, 256, 256)"/>
-  
-  <!-- Small orbital dot -->
-  <circle cx="440" cy="188" r="10" fill="#c4b5fd" opacity="0.8"/>
+  <!-- Glow -->
+  <circle cx="24" cy="24" r="18" fill="#9333ea" opacity=".08"/>
+  <!-- Planet -->
+  <circle cx="24" cy="24" r="15" fill="url(#pl)"/>
+  <!-- Surface features -->
+  <g clip-path="url(#cp)">
+    <circle cx="24" cy="24" r="15" fill="url(#sh)"/>
+    <ellipse cx="18" cy="19" rx="5" ry="4" fill="rgba(255,255,255,.1)" transform="rotate(-15,18,19)"/>
+    <ellipse cx="30" cy="28" rx="3.5" ry="3" fill="rgba(255,255,255,.07)" transform="rotate(10,30,28)"/>
+    <circle cx="21" cy="28" r="2" fill="rgba(255,255,255,.06)"/>
+  </g>
+  <!-- Atmosphere rim -->
+  <circle cx="24" cy="24" r="15" fill="none" stroke="rgba(196,181,253,.2)" stroke-width=".7"/>
+  <!-- Ring behind (clip to show behind) -->
+  <ellipse cx="24" cy="24" rx="22" ry="5.5" fill="none" stroke="url(#ri)" stroke-width="2" transform="rotate(-20,24,24)" filter="url(#gl)"/>
 </svg>

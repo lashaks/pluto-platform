@@ -1,21 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48">
   <defs>
-    <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7c3aed"/>
-      <stop offset="100%" style="stop-color:#a78bfa"/>
+    <linearGradient id="pl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9333ea"/>
+      <stop offset="60%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#c084fc"/>
     </linearGradient>
+    <linearGradient id="ri" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#c084fc" stop-opacity=".9"/>
+      <stop offset="70%" stop-color="#c084fc" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="sh" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#d8b4fe" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="cp"><circle cx="24" cy="24" r="15"/></clipPath>
+    <filter id="gl"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
-  
-  <!-- Icon -->
-  <rect x="4" y="8" width="64" height="64" rx="14" fill="url(#lg)"/>
-  <path d="M 20 22 L 20 58 L 26 58 L 26 46 L 38 46 C 44 46 49 41 49 34 C 49 27 44 22 38 22 Z M 26 27 L 37 27 C 42 27 44 30 44 34 C 44 38 42 41 37 41 L 26 41 Z" fill="white"/>
-  
-  <!-- Orbital ring on icon -->
-  <ellipse cx="36" cy="40" rx="30" ry="9" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3" transform="rotate(-25, 36, 40)"/>
-  
-  <!-- PLUTO text -->
-  <text x="84" y="46" font-family="Manrope, -apple-system, sans-serif" font-weight="900" font-size="36" fill="white" letter-spacing="-0.5">PLUTO</text>
-  
-  <!-- CAPITAL text -->
-  <text x="260" y="46" font-family="Manrope, -apple-system, sans-serif" font-weight="900" font-size="36" fill="#a78bfa" letter-spacing="-0.5">CAPITAL</text>
+  <!-- Planet -->
+  <circle cx="24" cy="24" r="18" fill="#9333ea" opacity=".08"/>
+  <circle cx="24" cy="24" r="15" fill="url(#pl)"/>
+  <g clip-path="url(#cp)">
+    <circle cx="24" cy="24" r="15" fill="url(#sh)"/>
+    <ellipse cx="18" cy="19" rx="5" ry="4" fill="rgba(255,255,255,.1)" transform="rotate(-15,18,19)"/>
+    <ellipse cx="30" cy="28" rx="3.5" ry="3" fill="rgba(255,255,255,.07)"/>
+    <circle cx="21" cy="28" r="2" fill="rgba(255,255,255,.06)"/>
+  </g>
+  <circle cx="24" cy="24" r="15" fill="none" stroke="rgba(196,181,253,.2)" stroke-width=".7"/>
+  <ellipse cx="24" cy="24" rx="22" ry="5.5" fill="none" stroke="url(#ri)" stroke-width="2" transform="rotate(-20,24,24)" filter="url(#gl)"/>
+  <!-- Text -->
+  <text x="56" y="22" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="16" fill="#f0eef5" letter-spacing="-.3">PLUTO</text>
+  <text x="56" y="38" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="16" fill="#a855f7" letter-spacing="-.3">CAPITAL</text>
 </svg>

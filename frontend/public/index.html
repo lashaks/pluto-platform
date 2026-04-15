@@ -18,7 +18,7 @@
 
   <nav class="nav" id="topNav"><div class="container nav-inner">
     <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-      <img src="/img/favicon.svg" alt="P" class="logo-img">
+      <img src="/img/favicon.svg" alt="Pluto" class="logo-img">
       <div class="logo-text">PLUTO<span>CAPITAL</span></div>
     </div>
     <div class="nav-links">
@@ -155,7 +155,7 @@
 
   <footer class="footer"><div class="container">
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px">
-      <img src="/img/favicon.svg" alt="P" style="width:20px;height:20px">
+      <img src="/img/favicon.svg" alt="Pluto" style="width:20px;height:20px">
       <span style="font-weight:700;font-size:.85rem">PLUTO<span style="color:var(--ac2)">CAPITAL</span></span>
     </div>
     <p>&copy; 2026 Pluto Capital Funding. All rights reserved.</p>
@@ -169,7 +169,7 @@
 <div class="modal-bg hidden" id="authModal"><div class="modal">
   <button class="modal-close" onclick="hideAuth()">&times;</button>
   <div id="formLogin">
-    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="Pluto" style="width:36px;height:36px"></div>
     <h2>Welcome back</h2>
     <p>Sign in to your Pluto Capital dashboard</p>
     <form onsubmit="doLogin(event)">
@@ -181,7 +181,7 @@
     <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
   </div>
   <div id="formRegister" class="hidden">
-    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="Pluto" style="width:36px;height:36px"></div>
     <h2>Get Funded</h2>
     <p>Create your Pluto Capital account</p>
     <form onsubmit="doRegister(event)">
@@ -196,7 +196,7 @@
     <div class="modal-switch">Have an account? <a onclick="showAuth('login')">Sign In</a></div>
   </div>
   <div id="formVerify" class="hidden">
-    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="Pluto" style="width:36px;height:36px"></div>
     <h2>Verify Your Email</h2>
     <p>We sent a 6-digit code to <strong id="verifyEmailDisplay"></strong></p>
     <form onsubmit="doVerify(event)">
@@ -206,7 +206,7 @@
     <div style="text-align:center;margin-top:12px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="resendCode()">Didn't receive it? Resend code</a></div>
   </div>
   <div id="formForgot" class="hidden">
-    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="Pluto" style="width:36px;height:36px"></div>
     <h2>Reset Password</h2>
     <p>Enter your email and we'll send a reset code</p>
     <form onsubmit="doForgot(event)">
@@ -216,7 +216,7 @@
     <div class="modal-switch"><a onclick="showAuth('login')">Back to Sign In</a></div>
   </div>
   <div id="formReset" class="hidden">
-    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="Pluto" style="width:36px;height:36px"></div>
     <h2>Enter New Password</h2>
     <p>Check your email for the 6-digit code</p>
     <form onsubmit="doReset(event)">
@@ -231,7 +231,7 @@
 <!-- DASHBOARD -->
 <div id="app"><div class="app-layout">
   <aside class="sidebar">
-    <div class="sb-logo"><div class="logo" style="gap:8px"><img src="/img/favicon.svg" alt="P" style="width:24px;height:24px"><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
+    <div class="sb-logo"><div class="logo" style="gap:8px"><img src="/img/favicon.svg" alt="Pluto" style="width:24px;height:24px"><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
     <nav class="sb-nav">
       <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
       <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
@@ -276,117 +276,113 @@
   const c=document.getElementById('heroCanvas');
   if(!c)return;
   const ctx=c.getContext('2d');
-  let W,H,mx=window.innerWidth/2,my=window.innerHeight/2,particles=[];
-  const COUNT=200,LINK=110,MOUSE_R=220;
+  let W,H,mx=0.5,my=0.5;
 
-  function resize(){
-    W=c.width=window.innerWidth;
-    H=c.height=window.innerHeight;
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}
+  window.addEventListener('resize',resize);
+  resize();
+
+  document.addEventListener('mousemove',e=>{mx=e.clientX/W;my=e.clientY/H});
+
+  // Orbital rings
+  const rings=[];
+  for(let i=0;i<5;i++){
+    rings.push({
+      rx:200+i*120,ry:40+i*20,
+      rot:-25+i*8,speed:.15+i*.08,phase:i*1.2,
+      alpha:.06+i*.02,width:1+i*.4
+    });
   }
 
-  function init(){
-    particles=[];
-    for(let i=0;i<COUNT;i++){
-      particles.push({
-        x:Math.random()*W,y:Math.random()*H,
-        vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,
-        r:Math.random()*2+.8,
-        a:Math.random()*.5+.2,
-        pulse:Math.random()*Math.PI*2
-      });
-    }
+  // Floating orbs
+  const orbs=[];
+  for(let i=0;i<30;i++){
+    orbs.push({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*2.5+.5,
+      speed:.2+Math.random()*.3,
+      drift:Math.random()*Math.PI*2,
+      alpha:Math.random()*.4+.1
+    });
   }
 
   function draw(){
     ctx.clearRect(0,0,W,H);
     const t=Date.now()*.001;
+    const cx=W*.45+mx*W*.1;
+    const cy=H*.45+my*H*.1;
 
-    for(let i=0;i<particles.length;i++){
-      const p=particles[i];
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;
-      if(p.y<-10)p.y=H+10;if(p.y>H+10)p.y=-10;
+    // Nebula glow (large soft gradient that shifts)
+    const g1=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.5);
+    g1.addColorStop(0,'rgba(139,92,246,.07)');
+    g1.addColorStop(.3,'rgba(88,28,195,.03)');
+    g1.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g1;
+    ctx.fillRect(0,0,W,H);
 
-      // Mouse attraction (gentle pull toward cursor)
-      const dx=mx-p.x,dy=my-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<MOUSE_R&&dist>10){
-        p.vx+=dx/dist*.008;
-        p.vy+=dy/dist*.008;
-      }
-      p.vx*=.995;p.vy*=.995;
+    // Secondary glow
+    const g2=ctx.createRadialGradient(W*.7,H*.6,0,W*.7,H*.6,300);
+    g2.addColorStop(0,'rgba(96,165,250,.04)');
+    g2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g2;
+    ctx.fillRect(0,0,W,H);
 
-      // Pulsing alpha
-      const alpha=p.a+Math.sin(t+p.pulse)*.1;
-
-      // Glow effect
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r*3,0,Math.PI*2);
-      ctx.fillStyle='rgba(139,92,246,'+(alpha*.15)+')';
-      ctx.fill();
-
-      // Core dot
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(167,139,250,'+alpha+')';
-      ctx.fill();
-
-      // Connect nearby
-      for(let j=i+1;j<particles.length;j++){
-        const q=particles[j];
-        const dx2=p.x-q.x,dy2=p.y-q.y,d=Math.sqrt(dx2*dx2+dy2*dy2);
-        if(d<LINK){
-          const lineAlpha=(1-d/LINK)*.12;
-          ctx.beginPath();
-          ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
-          ctx.strokeStyle='rgba(139,92,246,'+lineAlpha+')';
-          ctx.lineWidth=.6;
-          ctx.stroke();
-        }
-      }
-
-      // Mouse connection lines
-      if(dist<MOUSE_R&&dist>20){
-        ctx.beginPath();
-        ctx.moveTo(p.x,p.y);ctx.lineTo(mx,my);
-        ctx.strokeStyle='rgba(167,139,250,'+(1-dist/MOUSE_R)*.2+')';
-        ctx.lineWidth=1;
-        ctx.stroke();
-      }
-    }
-
-    // Orbital rings
-    for(let ring=0;ring<3;ring++){
-      const cx2=W*(0.65+ring*0.08),cy2=H*(0.35+ring*0.08);
-      const rx=180+ring*100,ry=45+ring*25;
+    // Draw orbital rings
+    ctx.save();
+    ctx.translate(cx,cy);
+    for(const r of rings){
       ctx.save();
-      ctx.translate(cx2,cy2);
-      ctx.rotate(t*.15+ring*.7);
+      ctx.rotate((r.rot+Math.sin(t*r.speed+r.phase)*3)*Math.PI/180);
       ctx.beginPath();
-      ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
-      ctx.strokeStyle='rgba(139,92,246,'+(0.06-ring*0.015)+')';
-      ctx.lineWidth=1.2;
-      ctx.setLineDash([4,8]);
+      ctx.ellipse(0,0,r.rx,r.ry,0,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(147,51,234,${r.alpha+Math.sin(t*.5+r.phase)*.02})`;
+      ctx.lineWidth=r.width;
       ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Moving dot on ring
-      const a=t*.4+ring*2.1;
-      ctx.beginPath();
-      ctx.arc(Math.cos(a)*rx,Math.sin(a)*ry,3+ring,0,Math.PI*2);
-      ctx.fillStyle='rgba(167,139,250,'+(0.35-ring*0.08)+')';
-      ctx.fill();
       ctx.restore();
+
+      // Small orbiting dot on each ring
+      const angle=t*r.speed+r.phase;
+      const ox=Math.cos(angle)*r.rx;
+      const oy=Math.sin(angle)*r.ry;
+      const rotRad=r.rot*Math.PI/180;
+      const fx=ox*Math.cos(rotRad)-oy*Math.sin(rotRad);
+      const fy=ox*Math.sin(rotRad)+oy*Math.cos(rotRad);
+      
+      // Glow
+      const gOrb=ctx.createRadialGradient(fx,fy,0,fx,fy,8);
+      gOrb.addColorStop(0,'rgba(196,181,253,.5)');
+      gOrb.addColorStop(1,'rgba(196,181,253,0)');
+      ctx.fillStyle=gOrb;
+      ctx.fillRect(fx-8,fy-8,16,16);
+      
+      ctx.beginPath();
+      ctx.arc(fx,fy,1.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(196,181,253,.7)';
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Floating orbs
+    for(const o of orbs){
+      o.y-=o.speed;
+      o.x+=Math.sin(t+o.drift)*.3;
+      if(o.y<-10){o.y=H+10;o.x=Math.random()*W}
+
+      const a=o.alpha+Math.sin(t*2+o.drift)*.1;
+      ctx.beginPath();
+      ctx.arc(o.x,o.y,o.r*4,0,Math.PI*2);
+      ctx.fillStyle=`rgba(139,92,246,${a*.15})`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(o.x,o.y,o.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(196,181,253,${a})`;
+      ctx.fill();
     }
 
     requestAnimationFrame(draw);
   }
-
-  window.addEventListener('resize',()=>{resize()});
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
-  resize();
-  init();
   draw();
-})();
+})()
 
 // ============================================================
 // CONFETTI CELEBRATION — call celebrate() for big moments
