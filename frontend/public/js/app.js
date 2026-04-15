@@ -113,7 +113,7 @@ window.switchBuyEval=function(type,btn){
   renderPricing(PLANS[type],$('buyGrid'),'purchase');
 };
 
-async function purchase(s){if(!confirm('Purchase '+F(s)+' challenge? (Demo \u2014 no real payment)'))return;try{const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify({account_size:s})});toast('Challenge purchased! Login: '+d.ctrader.login,'success');navigate('challenges')}catch(x){toast(x.message,'error')}}
+async function purchase(s){if(!confirm('Purchase '+F(s)+' challenge?\n\nYou will be redirected to pay with crypto (USDT, BTC, ETH, etc.)'))return;try{const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify({account_size:s,challenge_type:currentEval,payment_method:'crypto'})});if(d.payment_url){window.location.href=d.payment_url}else if(d.ctrader){toast('Challenge activated! Login: '+d.ctrader.login,'success');navigate('challenges')}else{toast('Challenge created','success');navigate('challenges')}}catch(x){toast(x.message,'error')}}
 
 // PAYOUTS
 window.render_payouts=async function(){const d=await api('/api/payouts');const paid=d.filter(p=>p.status==='paid').reduce((s,p)=>s+p.trader_amount,0);const pending=d.filter(p=>['requested','approved','processing'].includes(p.status)).reduce((s,p)=>s+p.trader_amount,0);$('page-payouts').innerHTML=`
