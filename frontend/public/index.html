@@ -29,6 +29,9 @@
       <button onclick="showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
       <button onclick="showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
     </div>
+    <button class="nav-mobile-btn" onclick="this.parentElement.querySelector('.nav-links').classList.toggle('nav-open')" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <button class="mobile-menu-btn" onclick="toggleMobile()">&#9776;</button>
   </div></nav>
 
@@ -92,7 +95,7 @@
   <section class="section"><div class="container">
     <div class="section-label">Getting Started</div>
     <h2 class="section-title">Three steps to funded.</h2>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;text-align:center">
       <div style="padding:32px 20px;border-radius:var(--r3);background:var(--sf);border:1px solid var(--brd)">
         <div style="width:48px;height:48px;border-radius:50%;background:var(--ac-bg);border:2px solid var(--ac-gl);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.2rem;font-weight:800;color:var(--ac2)">1</div>
         <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px">Buy a Challenge</h3>
@@ -230,7 +233,20 @@
 
 <!-- DASHBOARD -->
 <div id="app"><div class="app-layout">
-  <aside class="sidebar">
+  <!-- MOBILE TOP BAR -->
+  <div class="mobile-topbar">
+    <button class="mobile-menu-btn" onclick="toggleMobile()" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo" style="gap:6px" onclick="navigate('dashboard')">
+      <img src="/img/favicon.svg" alt="Pluto" style="width:22px;height:22px">
+      <div class="logo-text" style="font-size:.88rem">PLUTO<span>CAPITAL</span></div>
+    </div>
+    <div style="width:22px"></div>
+  </div>
+  <!-- OVERLAY -->
+  <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobile()"></div>
+  <aside class="sidebar" id="dashSidebar">
     <div class="sb-logo"><div class="logo" style="gap:8px"><img src="/img/favicon.svg" alt="Pluto" style="width:24px;height:24px"><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
     <nav class="sb-nav">
       <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
