@@ -13,53 +13,51 @@
 </head>
 <body>
 <div id="landing">
+  <!-- FULLSCREEN ANIMATED BACKGROUND -->
+  <canvas id="heroCanvas"></canvas>
+
   <nav class="nav" id="topNav"><div class="container nav-inner">
     <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-      <img src="/img/favicon.svg" alt="Pluto Capital" class="logo-img">
+      <img src="/img/favicon.svg" alt="P" class="logo-img">
       <div class="logo-text">PLUTO<span>CAPITAL</span></div>
     </div>
-    <div class="nav-links" id="navLinks">
+    <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#rules">Rules</a>
       <a href="#pricing">Pricing</a>
       <button onclick="showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
       <button onclick="showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
     </div>
-    <button class="mobile-menu-btn" onclick="toggleMobileNav()">&#9776;</button>
+    <button class="mobile-menu-btn" onclick="toggleMobile()">&#9776;</button>
   </div></nav>
 
-  <!-- HERO WITH CANVAS ANIMATION -->
-  <section class="hero" id="heroSection">
-    <canvas id="heroCanvas"></canvas>
-    <div class="hero-grid-overlay"></div>
-    <div class="container" style="position:relative;z-index:2">
-      <div class="hero-inner">
-        <div class="hero-tag"><span class="hero-tag-dot"></span> Proprietary Trading Firm</div>
-        <h1>Trade Beyond<br><em>Limits.</em></h1>
-        <p class="hero-desc">1-Step and 2-Step evaluations. No hidden rules. No time limits. Get funded with up to $200,000 and keep up to 90% of your profits.</p>
-        <div class="hero-btns">
-          <button class="btn btn-primary btn-glow" onclick="showAuth('register')">Start Your Challenge &rarr;</button>
-          <button class="btn btn-outline" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View Pricing</button>
-        </div>
-      </div>
-      <div class="hero-stats">
-        <div class="hs"><div class="hs-v" data-count="200">$200K</div><div class="hs-l">Max Funding</div></div>
-        <div class="hs"><div class="hs-v">90%</div><div class="hs-l">Profit Split</div></div>
-        <div class="hs"><div class="hs-v">2</div><div class="hs-l">Platforms</div></div>
+  <section class="hero"><div class="container">
+    <div class="hero-inner">
+      <div class="hero-tag">Proprietary Trading Firm</div>
+      <h1>Trade Beyond<br><em>Limits.</em></h1>
+      <p class="hero-desc">1-Step and 2-Step evaluations. No hidden rules. No time limits. Get funded with up to $200,000 and keep up to 90% of your profits.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="showAuth('register')">Start Your Challenge &rarr;</button>
+        <button class="btn btn-outline" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View Pricing</button>
       </div>
     </div>
-  </section>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-v">$200K</div><div class="hs-l">Max Funding</div></div>
+      <div class="hs"><div class="hs-v">90%</div><div class="hs-l">Profit Split</div></div>
+      <div class="hs"><div class="hs-v">2</div><div class="hs-l">Platforms</div></div>
+    </div>
+  </div></section>
 
   <section class="section" id="features"><div class="container">
     <div class="section-label">Why Pluto Capital</div>
     <h2 class="section-title">Built for traders who<br>demand better.</h2>
     <div class="features-grid">
-      <div class="feat"><div class="feat-icon fi-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><h3>1-Step &amp; 2-Step Evaluations</h3><p>Choose your path. 1-Step for confident traders, 2-Step for a more gradual approach. No time limits on either.</p></div>
-      <div class="feat"><div class="feat-icon fi-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Static Drawdown</h3><p>Your max loss floor is fixed from day one. It never trails upward. The more you profit, the safer you get.</p></div>
-      <div class="feat"><div class="feat-icon fi-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><h3>Crypto &amp; Bank Payouts</h3><p>Request payouts via USDT, USDC, or bank transfer. Fast processing through Rise.</p></div>
-      <div class="feat"><div class="feat-icon fi-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h3>cTrader &amp; MetaTrader 5</h3><p>Trade on your preferred platform. Full EA support, advanced charting, desktop, web, and mobile.</p></div>
-      <div class="feat"><div class="feat-icon fi-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div><h3>No Hidden Rules</h3><p>If the rule isn't on our website, it's not a rule. Period. Zero surprises, zero small print.</p></div>
-      <div class="feat"><div class="feat-icon fi-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg></div><h3>Scale to $2M</h3><p>Consistent performers scale through our 4-level plan, growing up to $2,000,000 in funding.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--ac-bg)">&#9889;</div><h3>1-Step &amp; 2-Step Evaluations</h3><p>Choose your path. 1-Step for confident traders, 2-Step for a more gradual approach. No time limits on either.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--gr-bg)">&#128737;</div><h3>Static Drawdown</h3><p>Your max loss floor is fixed from day one. It never trails upward. The more you profit, the safer you get.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--bl-bg)">&#128176;</div><h3>Crypto &amp; Bank Payouts</h3><p>Request payouts via USDT, USDC, or bank transfer. Fast processing through Rise.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--cy-bg)">&#128200;</div><h3>cTrader &amp; MetaTrader 5</h3><p>Trade on your preferred platform. Full EA support, advanced charting, desktop, web, and mobile.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--am-bg)">&#127919;</div><h3>No Hidden Rules</h3><p>If the rule isn't on our website, it's not a rule. Period. Zero surprises, zero small print.</p></div>
+      <div class="feat"><div class="feat-icon" style="background:var(--rd-bg)">&#128640;</div><h3>Scale to $2M</h3><p>Consistent performers scale through our 4-level plan, growing up to $2,000,000 in funding.</p></div>
     </div>
   </div></section>
 
@@ -90,20 +88,19 @@
 
   <section class="section"><div class="container">
     <div class="cta-box">
-      <canvas id="ctaCanvas"></canvas>
       <h2>Ready to trade beyond limits?</h2>
       <p>Join Pluto Capital Funding. No hidden rules, no trailing drawdown, up to 90% profit split.</p>
-      <button class="btn btn-primary btn-glow" onclick="showAuth('register')">Get Funded Now &rarr;</button>
+      <button class="btn btn-primary" onclick="showAuth('register')">Get Funded Now &rarr;</button>
     </div>
   </div></section>
 
   <footer class="footer"><div class="container">
-    <div class="footer-brand">
-      <img src="/img/favicon.svg" alt="" style="width:22px;height:22px">
-      <span>PLUTO<span style="color:var(--ac2)">CAPITAL</span></span>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px">
+      <img src="/img/favicon.svg" alt="P" style="width:20px;height:20px">
+      <span style="font-weight:700;font-size:.85rem">PLUTO<span style="color:var(--ac2)">CAPITAL</span></span>
     </div>
     <p>&copy; 2026 Pluto Capital Funding. All rights reserved.</p>
-    <p style="margin-top:3px">All trading takes place in a simulated environment.</p>
+    <p style="margin-top:4px">All trading takes place in a simulated environment.</p>
     <p style="margin-top:8px"><a href="#">Terms of Service</a> &middot; <a href="#">Privacy Policy</a> &middot; <a href="#">Risk Disclosure</a></p>
   </div></footer>
 </div>
@@ -112,7 +109,7 @@
 <div class="modal-bg hidden" id="authModal"><div class="modal">
   <button class="modal-close" onclick="hideAuth()">&times;</button>
   <div id="formLogin">
-    <div style="text-align:center;margin-bottom:20px"><img src="/img/favicon.svg" alt="" style="width:40px;height:40px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
     <h2>Welcome back</h2>
     <p>Sign in to your Pluto Capital dashboard</p>
     <form onsubmit="doLogin(event)">
@@ -124,7 +121,7 @@
     <div class="modal-switch">No account? <a onclick="showAuth('register')">Get Funded</a></div>
   </div>
   <div id="formRegister" class="hidden">
-    <div style="text-align:center;margin-bottom:20px"><img src="/img/favicon.svg" alt="" style="width:40px;height:40px"></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="/img/favicon.svg" alt="P" style="width:36px;height:36px"></div>
     <h2>Get Funded</h2>
     <p>Create your Pluto Capital account</p>
     <form onsubmit="doRegister(event)">
@@ -142,22 +139,18 @@
 
 <!-- DASHBOARD -->
 <div id="app"><div class="app-layout">
-  <div class="mobile-overlay hidden" id="mobileOverlay" onclick="toggleMobileSidebar()"></div>
-  <aside class="sidebar" id="sidebar">
-    <div class="sb-logo"><div class="logo" style="gap:8px">
-      <img src="/img/favicon.svg" alt="" style="width:24px;height:24px">
-      <div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div>
-    </div></div>
+  <aside class="sidebar">
+    <div class="sb-logo"><div class="logo" style="gap:8px"><img src="/img/favicon.svg" alt="P" style="width:24px;height:24px"><div class="logo-text" style="font-size:.95rem">PLUTO<span>CAPITAL</span></div></div></div>
     <nav class="sb-nav">
-      <button class="sb-link active" onclick="navigate('dashboard');closeMobile()" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
-      <button class="sb-link" onclick="navigate('challenges');closeMobile()" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
-      <button class="sb-link" onclick="navigate('funded');closeMobile()" data-page="funded"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>Funded Accounts</button>
-      <button class="sb-link" onclick="navigate('buy');closeMobile()" data-page="buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Buy Challenge</button>
-      <button class="sb-link" onclick="navigate('payouts');closeMobile()" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H3v16h18V4z"/><path d="M3 10h18"/></svg>Payouts</button>
-      <button class="sb-link" onclick="navigate('trades');closeMobile()" data-page="trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Trade History</button>
+      <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
+      <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
+      <button class="sb-link" onclick="navigate('funded')" data-page="funded"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>Funded Accounts</button>
+      <button class="sb-link" onclick="navigate('buy')" data-page="buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Buy Challenge</button>
+      <button class="sb-link" onclick="navigate('payouts')" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H3v16h18V4z"/><path d="M3 10h18"/></svg>Payouts</button>
+      <button class="sb-link" onclick="navigate('trades')" data-page="trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Trade History</button>
       <div class="sb-sep"></div>
-      <button class="sb-link" onclick="navigate('profile');closeMobile()" data-page="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
-      <div id="adminMenuItem" class="hidden"><button class="sb-link" onclick="navigate('admin');closeMobile()" data-page="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.17.39.4.74.7 1.01"/></svg>Admin Panel</button></div>
+      <button class="sb-link" onclick="navigate('profile')" data-page="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+      <div id="adminMenuItem" class="hidden"><button class="sb-link" onclick="navigate('admin')" data-page="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.17.39.4.74.7 1.01"/></svg>Admin Panel</button></div>
     </nav>
     <div class="sb-user">
       <div class="sb-user-name" id="userName">&mdash;</div>
@@ -166,11 +159,6 @@
     </div>
   </aside>
   <main class="main">
-    <div class="mobile-topbar">
-      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">&#9776;</button>
-      <img src="/img/favicon.svg" alt="" style="width:22px;height:22px">
-      <span style="font-weight:700;font-size:.9rem">PLUTO<span style="color:var(--ac2)">CAPITAL</span></span>
-    </div>
     <div id="page-dashboard" class="page fade"></div>
     <div id="page-challenges" class="page hidden fade"></div>
     <div id="page-funded" class="page hidden fade"></div>
@@ -181,6 +169,112 @@
     <div id="page-admin" class="page hidden fade"></div>
   </main>
 </div></div>
+
 <script src="/js/app.js"></script>
+
+<!-- HERO ANIMATION — particle grid with connections, fullscreen, reactive to mouse -->
+<script>
+(function(){
+  const c=document.getElementById('heroCanvas');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  let W,H,mx=0,my=0,particles=[];
+  const PARTICLE_COUNT=80,CONNECT_DIST=140,MOUSE_DIST=180;
+
+  function resize(){W=c.width=window.innerWidth;H=c.height=document.getElementById('landing')?.scrollHeight||window.innerHeight;init()}
+  function init(){
+    particles=[];
+    for(let i=0;i<PARTICLE_COUNT;i++){
+      particles.push({
+        x:Math.random()*W,y:Math.random()*H,
+        vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+        r:Math.random()*1.5+.5,
+        a:Math.random()*.3+.1
+      });
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // Update & draw particles
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+
+      // Mouse repulsion
+      const dx=p.x-mx,dy=p.y-my,dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<MOUSE_DIST){
+        const force=(MOUSE_DIST-dist)/MOUSE_DIST*.02;
+        p.vx+=dx*force;p.vy+=dy*force;
+      }
+      // Dampen velocity
+      p.vx*=.99;p.vy*=.99;
+
+      // Draw particle
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(139,92,246,'+p.a+')';
+      ctx.fill();
+
+      // Connect nearby particles
+      for(let j=i+1;j<particles.length;j++){
+        const p2=particles[j];
+        const dx2=p.x-p2.x,dy2=p.y-p2.y,d=Math.sqrt(dx2*dx2+dy2*dy2);
+        if(d<CONNECT_DIST){
+          ctx.beginPath();
+          ctx.moveTo(p.x,p.y);ctx.lineTo(p2.x,p2.y);
+          ctx.strokeStyle='rgba(139,92,246,'+(1-d/CONNECT_DIST)*.08+')';
+          ctx.lineWidth=.5;
+          ctx.stroke();
+        }
+      }
+
+      // Connect to mouse if close
+      if(dist<MOUSE_DIST&&dist>10){
+        ctx.beginPath();
+        ctx.moveTo(p.x,p.y);ctx.lineTo(mx,my);
+        ctx.strokeStyle='rgba(167,139,250,'+(1-dist/MOUSE_DIST)*.15+')';
+        ctx.lineWidth=.8;
+        ctx.stroke();
+      }
+    }
+
+    // Draw orbital rings (decorative)
+    const t=Date.now()*.0002;
+    for(let ring=0;ring<3;ring++){
+      const cx2=W*(0.7+ring*0.05),cy2=H*(0.25+ring*0.1);
+      const rx=200+ring*80,ry=50+ring*20;
+      ctx.save();
+      ctx.translate(cx2,cy2);
+      ctx.rotate(t+ring*.8);
+      ctx.beginPath();
+      ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+      ctx.strokeStyle='rgba(139,92,246,'+(0.03-ring*0.008)+')';
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      // Orbital dot
+      const dotAngle=t*2+ring*2;
+      const dotX=Math.cos(dotAngle)*rx,dotY=Math.sin(dotAngle)*ry;
+      ctx.beginPath();
+      ctx.arc(dotX,dotY,2+ring,0,Math.PI*2);
+      ctx.fillStyle='rgba(167,139,250,'+(0.2-ring*0.05)+')';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize',resize);
+  window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY+window.scrollY});
+  window.addEventListener('scroll',()=>{/* keep my updated with scroll */});
+  resize();
+  draw();
+})();
+</script>
 </body>
 </html>
