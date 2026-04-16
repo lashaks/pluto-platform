@@ -77,8 +77,12 @@ router.post('/purchase', authenticate, async (req, res) => {
 
     const id = generateId();
 
-    // If crypto payment — create invoice and return URL
-    if (payment_method === 'crypto' || !payment_method) {
+    // Check if demo mode is enabled (admin toggle)
+    const demoSetting = await queryOne(`SELECT value FROM platform_settings WHERE key='demo_mode'`);
+    const isDemoMode = demoSetting?.value === 'true';
+
+    // If crypto payment AND not demo mode — create invoice and return URL
+    if ((payment_method === 'crypto' || !payment_method) && !isDemoMode) {
       try {
         const invoice = await payments.createCryptoInvoice({
           amount: totalFee,

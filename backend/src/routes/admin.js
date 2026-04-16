@@ -221,4 +221,21 @@ router.post('/challenges/:id/risk-check', requireAdmin, async (req, res) => {
   }
 });
 
+// === PLATFORM SETTINGS ===
+router.get('/settings', requireAdmin, async (req, res) => {
+  const settings = await queryAll(`SELECT key, value FROM platform_settings`);
+  const obj = {};
+  settings.forEach(s => { obj[s.key] = s.value; });
+  res.json(obj);
+});
+
+router.post('/settings/demo-mode', requireAdmin, async (req, res) => {
+  const { enabled } = req.body;
+  const val = enabled ? 'true' : 'false';
+  await run(`UPDATE platform_settings SET value=$1, updated_at=NOW()::TEXT WHERE key='demo_mode'`, [val]);
+  await run(`INSERT INTO audit_log (id, user_id, action, details) VALUES ($1, $2, 'DEMO_MODE_TOGGLED', $3)`,
+    [generateId(), req.user.id, `Demo mode ${enabled ? 'ENABLED' : 'DISABLED'}`]);
+  res.json({ demo_mode: enabled });
+});
+
 module.exports = router;

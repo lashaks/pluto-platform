@@ -179,6 +179,11 @@ const TABLES = [
     is_active INTEGER DEFAULT 1,
     created_by TEXT,
     created_at TEXT DEFAULT (NOW()::TEXT)
+  )`,
+  `CREATE TABLE IF NOT EXISTS platform_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT DEFAULT (NOW()::TEXT)
   )`
 ];
 
@@ -300,6 +305,7 @@ async function initDatabase() {
       `ALTER TABLE funded_accounts ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'ctrader'`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT DEFAULT 'v1'`,
+      `INSERT INTO platform_settings (key, value) VALUES ('demo_mode', 'false') ON CONFLICT (key) DO NOTHING`,
     ];
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* column already exists */ }
