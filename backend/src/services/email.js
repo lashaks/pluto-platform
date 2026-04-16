@@ -123,9 +123,16 @@ async function sendChallengePurchased(to, name, details) {
       ${row('Max Drawdown', details.max_drawdown + '%')}
       ${row('Profit Split', details.profit_split + '%')}
       ${row('Fee Paid', '$' + details.fee)}
-      ${details.login ? row('Platform Login', details.login) : ''}
-      ${details.server ? row('Server', details.server) : ''}
     </table>
+    ${details.login ? `<div style="margin:24px 0;padding:20px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15);border-radius:10px">
+      <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px">Your cTrader Credentials</div>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        ${row('Login', details.login)}
+        ${details.password ? row('Password', details.password) : ''}
+        ${row('Server', details.server || 'PlutoCapital-Demo')}
+      </table>
+      <p style="font-size:12px;color:#8b87a0;margin:12px 0 0">Open cTrader Web, Desktop or Mobile app and log in with these credentials to start trading.</p>
+    </div>` : ''}
     <p><strong style="color:#fbbf24">Important Rules:</strong></p>
     <p style="font-size:13px">• 20% consistency rule applies — no single day can exceed 20% of total profit<br>
     • News trading is restricted — close positions 2 min before/after high-impact events<br>

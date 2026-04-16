@@ -132,12 +132,12 @@ router.post('/purchase', authenticate, async (req, res) => {
     await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
          highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
          profit_target_pct, max_daily_loss_pct, max_total_loss_pct, platform,
-         ctrader_login, ctrader_account_id, ctrader_server, status, activated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
+         ctrader_login, ctrader_account_id, ctrader_server, ctrader_password, status, activated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
       [id, req.user.id, account_size, type, account_size, account_size, account_size,
        account_size, account_size, account_size, totalFee, split, rules.leverage,
        profitTarget, maxDaily, maxDrawdown, selectedPlatform,
-       ctraderResult.login, ctraderResult.accountId, ctraderResult.server]);
+       ctraderResult.login, ctraderResult.accountId, ctraderResult.server, ctraderResult.password]);
 
     await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method)
          VALUES (?, ?, 'purchase', ?, ?, ?, ?)`,
@@ -153,7 +153,7 @@ router.post('/purchase', authenticate, async (req, res) => {
       email.sendChallengePurchased(usr.email, usr.first_name || 'Trader', {
         account_size, challenge_type: type, profit_target: profitTarget,
         daily_loss: maxDaily, max_drawdown: maxDrawdown, profit_split: split,
-        fee: totalFee, login: ctraderResult.login, server: ctraderResult.server,
+        fee: totalFee, login: ctraderResult.login, password: ctraderResult.password, server: ctraderResult.server,
       }).catch(e => console.error('[Challenge] Email error:', e.message));
     }
 

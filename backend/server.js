@@ -188,6 +188,7 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
           profit_split: challenge.profit_split_pct,
           fee: challenge.fee_paid,
           login: ctraderResult.login,
+          password: ctraderResult.password,
           server: ctraderResult.server,
         }).catch(e => console.error('[Webhook] Email error:', e.message));
       }

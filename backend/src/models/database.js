@@ -306,6 +306,7 @@ async function initDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT DEFAULT 'v1'`,
       `INSERT INTO platform_settings (key, value) VALUES ('demo_mode', 'false') ON CONFLICT (key) DO NOTHING`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS ctrader_password TEXT`,
     ];
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* column already exists */ }
