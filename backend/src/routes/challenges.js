@@ -11,13 +11,13 @@ const router = express.Router();
 
 // GET /api/challenges — list user's challenges
 router.get('/', authenticate, async (req, res) => {
-  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id='${req.user.id}' ORDER BY created_at DESC`);
+  const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id=$1 ORDER BY created_at DESC`, [req.user.id]);
   res.json(challenges);
 });
 
 // GET /api/challenges/:id — single challenge
 router.get('/:id', authenticate, async (req, res) => {
-  const ch = await queryOne(`SELECT * FROM challenges WHERE id='${sanitize(req.params.id)}' AND user_id='${req.user.id}'`);
+  const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
   if (!ch) return res.status(404).json({ error: 'Challenge not found' });
   res.json(ch);
 });
@@ -109,11 +109,16 @@ router.post('/purchase', authenticate, async (req, res) => {
       }
     }
 
+    // Fetch user for name/email on the cTrader account
+    const creatorUser = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [req.user.id]);
+
     // Demo/fallback mode — activate immediately (for testing or when payment processor is down)
     const ctraderResult = await ctrader.createAccount({
       balance: account_size,
       leverage: rules.leverage,
       group: 'demo_prop_evaluation',
+      name: creatorUser ? `${creatorUser.first_name || ''} ${creatorUser.last_name || ''}`.trim() : '',
+      email: creatorUser?.email || '',
     });
 
     await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
@@ -135,7 +140,7 @@ router.post('/purchase', authenticate, async (req, res) => {
       [generateId(), req.user.id, id, `$${(account_size/1000)}K ${type} challenge purchased for $${totalFee}`]);
 
     // Send purchase confirmation email
-    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${req.user.id}'`);
+    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [req.user.id]);
     if (usr) {
       email.sendChallengePurchased(usr.email, usr.first_name || 'Trader', {
         account_size, challenge_type: type, profit_target: profitTarget,

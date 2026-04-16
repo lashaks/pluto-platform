@@ -245,6 +245,15 @@ app.use((err, req, res, next) => {
 async function start() {
   await initDatabase();
 
+  // Start cTrader event listener (will no-op if CTRADER_ENABLED=false)
+  try {
+    const ctraderEvents = require('./src/services/ctraderEvents');
+    // Delay start slightly to let cTrader client authenticate
+    setTimeout(() => ctraderEvents.start(), 3000);
+  } catch (e) {
+    console.error('[Boot] cTrader event listener init failed:', e.message);
+  }
+
   app.listen(config.port, () => {
     console.log('');
     console.log('  ╔═══════════════════════════════════════════════╗');

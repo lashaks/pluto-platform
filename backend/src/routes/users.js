@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/profile', authenticate, async (req, res) => {
   const user = await queryOne(`SELECT id, email, first_name, last_name, phone, country, kyc_status,
     role, affiliate_code, balance_wallet, created_at, last_login
-    FROM users WHERE id='${req.user.id}'`);
+    FROM users WHERE id=$1`, [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
 });
@@ -24,7 +24,7 @@ router.put('/profile', authenticate, async (req, res) => {
 
 // POST /api/users/kyc/start — initiate KYC verification
 router.post('/kyc/start', authenticate, async (req, res) => {
-  const user = await queryOne(`SELECT kyc_status FROM users WHERE id='${req.user.id}'`);
+  const user = await queryOne(`SELECT kyc_status FROM users WHERE id=$1`, [req.user.id]);
   if (user?.kyc_status === 'approved') return res.json({ status: 'already_approved' });
 
   

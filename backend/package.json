@@ -1,7 +1,7 @@
 {
   "name": "pluto-capital-backend",
   "version": "1.0.0",
-  "description": "Pluto Capital Funding \u2014 Prop Firm Backend API",
+  "description": "Pluto Capital Funding — Prop Firm Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,9 +11,10 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.21.0",
+    "helmet": "*",
     "jsonwebtoken": "^9.0.2",
-    "uuid": "^10.0.0",
     "pg": "^8.13.0",
-    "helmet": "*"
+    "protobufjs": "^7.5.5",
+    "uuid": "^10.0.0"
   }
 }

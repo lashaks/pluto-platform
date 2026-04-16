@@ -20,7 +20,7 @@ class RiskEngine {
    * Returns: { breached: boolean, reason?: string }
    */
   async checkChallenge(challengeId) {
-    const ch = queryOne(`SELECT * FROM challenges WHERE id='${challengeId}' AND status='active'`);
+    const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND status='active'`, [challengeId]);
     if (!ch) return { breached: false, reason: 'Not active' };
 
     const equity = ch.current_equity || ch.current_balance;
@@ -78,7 +78,7 @@ class RiskEngine {
       [reason, challengeId]);
 
     // 2. Disable on cTrader (production)
-    const ch = queryOne(`SELECT ctrader_account_id FROM challenges WHERE id='${challengeId}'`);
+    const ch = await queryOne(`SELECT ctrader_account_id FROM challenges WHERE id=$1`, [challengeId]);
     if (ch?.ctrader_account_id) {
       await ctrader.disableAccount(ch.ctrader_account_id, 'CLOSE_ONLY');
       await ctrader.closeAllPositions(ch.ctrader_account_id);
@@ -96,11 +96,11 @@ class RiskEngine {
    * Pass a challenge → create Phase 2 (for 2-Step) or funded account
    */
   async passChallenge(challengeId) {
-    const ch = await queryOne(`SELECT * FROM challenges WHERE id='${challengeId}' AND status='active'`);
+    const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND status='active'`, [challengeId]);
     if (!ch) return null;
 
     const email = require('../services/email');
-    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id='${ch.user_id}'`);
+    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [ch.user_id]);
 
     // Check if this is a 2-Step Phase 1 — if so, create Phase 2 instead of funded account
     if (ch.challenge_type === 'two_step' && (ch.phase === 1 || !ch.phase)) {
@@ -195,6 +195,34 @@ class RiskEngine {
     console.log('[RISK ENGINE] Resetting daily start balances');
     run(`UPDATE challenges SET day_start_balance = current_balance WHERE status = 'active'`);
     run(`UPDATE funded_accounts SET day_start_balance = current_balance WHERE status = 'active'`);
+  }
+
+  /**
+   * Check a funded account for breaches (no profit target on funded — just risk rules)
+   */
+  async checkFundedAccount(fundedId) {
+    const fa = await queryOne(`SELECT * FROM funded_accounts WHERE id=$1 AND status='active'`, [fundedId]);
+    if (!fa) return { breached: false, reason: 'Not active' };
+
+    const equity = fa.current_equity || fa.current_balance;
+    const dayStart = fa.day_start_balance || fa.starting_balance;
+
+    // Max total drawdown (from starting_balance)
+    const totalFloor = fa.starting_balance * (1 - fa.max_total_loss_pct / 100);
+    if (equity <= totalFloor) {
+      await run(`UPDATE funded_accounts SET status='breached', breach_reason='MAX_TOTAL_DRAWDOWN', breached_at=NOW()::TEXT WHERE id=?`, [fundedId]);
+      return { breached: true, reason: 'MAX_TOTAL_DRAWDOWN' };
+    }
+
+    // Daily loss
+    const dailyPnL = equity - dayStart;
+    const dailyLimit = -(dayStart * fa.max_daily_loss_pct / 100);
+    if (dailyPnL <= dailyLimit) {
+      await run(`UPDATE funded_accounts SET status='breached', breach_reason='MAX_DAILY_LOSS', breached_at=NOW()::TEXT WHERE id=?`, [fundedId]);
+      return { breached: true, reason: 'MAX_DAILY_LOSS' };
+    }
+
+    return { breached: false };
   }
 }
 

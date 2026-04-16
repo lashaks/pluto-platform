@@ -185,4 +185,38 @@ router.delete('/discount-codes/:id', requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
+// === CTRADER HEALTH + SYNC ===
+router.get('/ctrader/status', requireAdmin, async (req, res) => {
+  const ctrader = require('../services/ctrader');
+  const raw = ctrader.raw;
+  res.json({
+    enabled: ctrader.enabled,
+    connected: !!(raw && raw.connected),
+    authenticated: !!(raw && raw.authenticated),
+    host: raw?.host,
+    managerId: raw?.login,
+    groupId: raw?.groupId,
+  });
+});
+
+router.post('/ctrader/sync-trader/:traderId', requireAdmin, async (req, res) => {
+  const ctrader = require('../services/ctrader');
+  try {
+    const info = await ctrader.getAccountInfo(req.params.traderId);
+    res.json({ success: true, info });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/challenges/:id/risk-check', requireAdmin, async (req, res) => {
+  const riskEngine = require('../services/riskEngine');
+  try {
+    const result = await riskEngine.checkChallenge(req.params.id);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;
