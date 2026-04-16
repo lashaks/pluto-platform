@@ -357,16 +357,19 @@ class CTraderManagerClient extends EventEmitter {
 // SINGLETON
 // ============================================================
 let singleton = null;
+// Clean env var values — strips leading/trailing whitespace and stray '=' signs
+const env = (key, fallback = '') => (process.env[key] || fallback).replace(/^\s*=?\s*/, '').trim();
+
 function getClient() {
   if (!singleton) {
     singleton = new CTraderManagerClient({
-      host: process.env.CTRADER_HOST || 'uat-demo.p.ctrader.com',
-      port: parseInt(process.env.CTRADER_PORT || '5011', 10),
-      plantId: process.env.CTRADER_PLANT_ID || 'propsandbox',
-      environmentName: process.env.CTRADER_ENV || 'demo',
-      login: parseInt(process.env.CTRADER_MANAGER_LOGIN || '30054', 10),
-      password: process.env.CTRADER_MANAGER_PASSWORD || 'Wwee3456#',
-      groupId: parseInt(process.env.CTRADER_GROUP_ID || '0', 10),
+      host: env('CTRADER_HOST', 'uat-demo.p.ctrader.com'),
+      port: parseInt(env('CTRADER_PORT', '5011'), 10),
+      plantId: env('CTRADER_PLANT_ID', 'propsandbox'),
+      environmentName: env('CTRADER_ENV', 'demo'),
+      login: parseInt(env('CTRADER_MANAGER_LOGIN', '30054'), 10),
+      password: env('CTRADER_MANAGER_PASSWORD', 'Wwee3456#'),
+      groupId: parseInt(env('CTRADER_GROUP_ID', '0'), 10),
     });
   }
   return singleton;
@@ -378,7 +381,7 @@ function getClient() {
 class CTraderService {
   constructor() {
     this.client = null;
-    this.enabled = process.env.CTRADER_ENABLED === 'true';
+    this.enabled = env('CTRADER_ENABLED') === 'true';
     if (this.enabled) {
       this.client = getClient();
       this.client.on('error', (err) => {
