@@ -190,4 +190,59 @@ router.get('/info/pricing', async (req, res) => {
   res.json(plans);
 });
 
+// POST /api/challenges/:id/reset — reset a failed challenge with 10% discount
+router.post('/:id/reset', authenticate, async (req, res) => {
+  try {
+    const old = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+    if (!old) return res.status(404).json({ error: 'Challenge not found' });
+    if (old.status !== 'failed') return res.status(400).json({ error: 'Only failed challenges can be reset' });
+
+    const baseFee = config.challengePricing[old.account_size];
+    if (!baseFee) return res.status(400).json({ error: 'Invalid account size' });
+    const resetFee = Math.round(baseFee * 0.9); // 10% discount
+
+    // Check demo mode
+    const demoSetting = await queryOne(`SELECT value FROM platform_settings WHERE key='demo_mode'`);
+    const isDemoMode = demoSetting?.value === 'true';
+
+    const type = old.challenge_type;
+    const rules = type === 'two_step' ? config.twoStepRules : config.oneStepRules;
+    const profitTarget = type === 'two_step' ? rules.phase1_target_pct : rules.profit_target_pct;
+    const id = generateId();
+
+    if (!isDemoMode) {
+      // In live mode, create pending challenge (would need payment)
+      return res.status(400).json({ error: 'Account reset requires payment. Use the Buy Challenge page with promo code RESET10.' });
+    }
+
+    // Demo mode — activate immediately
+    const creatorUser = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [req.user.id]);
+    const ctraderResult = await ctrader.createAccount({
+      balance: old.account_size,
+      leverage: rules.leverage,
+      group: 'demo_prop_evaluation',
+      name: creatorUser ? `${creatorUser.first_name || ''} ${creatorUser.last_name || ''}`.trim() : '',
+      email: creatorUser?.email || '',
+    });
+
+    await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
+         highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
+         profit_target_pct, max_daily_loss_pct, max_total_loss_pct, platform,
+         ctrader_login, ctrader_account_id, ctrader_server, ctrader_password, status, activated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
+      [id, req.user.id, old.account_size, type, old.account_size, old.account_size, old.account_size,
+       old.account_size, old.account_size, old.account_size, resetFee, old.profit_split_pct, rules.leverage,
+       profitTarget, rules.max_daily_loss_pct, rules.max_total_loss_pct, old.platform || 'ctrader',
+       ctraderResult.login, ctraderResult.accountId, ctraderResult.server, ctraderResult.password]);
+
+    await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'CHALLENGE_RESET', 'challenge', ?, ?)`,
+      [generateId(), req.user.id, id, `Reset from ${old.id.slice(0,8)} — $${resetFee} (10% off $${baseFee})`]);
+
+    res.status(201).json({ challenge_id: id, fee_paid: resetFee, original_fee: baseFee, discount: '10%', ctrader: { login: ctraderResult.login, server: ctraderResult.server } });
+  } catch (e) {
+    console.error('Reset error:', e);
+    res.status(500).json({ error: 'Failed to reset challenge' });
+  }
+});
+
 module.exports = router;

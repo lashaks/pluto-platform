@@ -105,6 +105,21 @@ router.post('/payouts/:id/pay', requireAdmin, async (req, res) => {
   await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id) VALUES (?, ?, 'payout', ?, ?, ?)`,
     [generateId(), payout.user_id, payout.trader_amount, `Profit payout: $${payout.trader_amount}`, payout.id]);
 
+  // Fee refund on first payout (if not already refunded)
+  if (payout.funded_account_id) {
+    const funded = await queryOne(`SELECT challenge_id FROM funded_accounts WHERE id=$1`, [payout.funded_account_id]);
+    if (funded?.challenge_id) {
+      const ch = await queryOne(`SELECT fee_paid, fee_refunded FROM challenges WHERE id=$1`, [funded.challenge_id]);
+      if (ch && !ch.fee_refunded) {
+        await run(`UPDATE challenges SET fee_refunded=1 WHERE id=?`, [funded.challenge_id]);
+        await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id) VALUES (?, ?, 'fee_refund', ?, ?, ?)`,
+          [generateId(), payout.user_id, ch.fee_paid, `Challenge fee refund: $${ch.fee_paid}`, funded.challenge_id]);
+        await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'FEE_REFUNDED', 'challenge', ?, ?)`,
+          [generateId(), payout.user_id, funded.challenge_id, `Fee $${ch.fee_paid} refunded with first payout`]);
+      }
+    }
+  }
+
   await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'PAYOUT_PAID', 'payout', ?, ?)`,
     [generateId(), req.user.id, req.params.id, `Paid $${payout.trader_amount} via ${payout.payout_method}`]);
 

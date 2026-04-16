@@ -307,6 +307,11 @@ async function initDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT DEFAULT 'v1'`,
       `INSERT INTO platform_settings (key, value) VALUES ('demo_mode', 'false') ON CONFLICT (key) DO NOTHING`,
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS ctrader_password TEXT`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS fee_refunded INTEGER DEFAULT 0`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS trading_days INTEGER DEFAULT 0`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS affiliate_earnings REAL DEFAULT 0`,
     ];
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* column already exists */ }

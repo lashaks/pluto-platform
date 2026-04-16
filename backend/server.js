@@ -122,6 +122,46 @@ app.get('/api/pricing', (req, res) => {
   res.json(plans);
 });
 
+// Public leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+  const traders = await queryAll(`
+    SELECT u.first_name, u.country,
+      c.account_size, c.challenge_type, c.current_balance, c.starting_balance,
+      c.total_trades, c.winning_trades, c.created_at
+    FROM challenges c JOIN users u ON c.user_id = u.id
+    WHERE c.status IN ('active','passed') AND c.total_trades > 0
+    ORDER BY (c.current_balance - c.starting_balance) DESC LIMIT 50
+  `);
+  res.json(traders.map((t, i) => ({
+    rank: i + 1,
+    name: (t.first_name || 'Trader').slice(0, 1) + '***',
+    country: t.country || '—',
+    size: t.account_size,
+    type: t.challenge_type,
+    profit: +(t.current_balance - t.starting_balance).toFixed(2),
+    profit_pct: +((t.current_balance - t.starting_balance) / t.starting_balance * 100).toFixed(1),
+    trades: t.total_trades,
+    win_rate: t.total_trades ? Math.round(t.winning_trades / t.total_trades * 100) : 0,
+  })));
+});
+
+// Affiliate tracking — register with referral
+app.get('/api/affiliate/stats', authenticate, async (req, res) => {
+  const referrals = await queryAll(`SELECT id, first_name, created_at FROM users WHERE referred_by=$1`, [req.user.id]);
+  const commissions = await queryAll(`SELECT * FROM affiliate_commissions WHERE referrer_id=$1 ORDER BY created_at DESC`, [req.user.id]);
+  const totalEarned = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.commission_amount, 0);
+  const pending = commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.commission_amount, 0);
+  res.json({
+    referral_code: req.user.affiliate_code,
+    referral_link: `https://plutocapitalfunding.com?ref=${req.user.affiliate_code}`,
+    total_referrals: referrals.length,
+    total_earned: +totalEarned.toFixed(2),
+    pending: +pending.toFixed(2),
+    referrals: referrals.map(r => ({ name: r.first_name, joined: r.created_at })),
+    commissions,
+  });
+});
+
 // NOWPayments webhook — activates challenge after crypto payment
 const payments = require('./src/services/payments');
 const ctraderService = require('./src/services/ctrader');

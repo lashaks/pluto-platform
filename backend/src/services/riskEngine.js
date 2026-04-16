@@ -49,7 +49,11 @@ class RiskEngine {
     // --- PROFIT TARGET CHECK ---
     const targetBalance = ch.starting_balance * (1 + ch.profit_target_pct / 100);
     if (balance >= targetBalance) {
-      // Check if positions are closed (in production, query cTrader)
+      // Min 3 trading days required
+      const tradingDays = await queryOne(`SELECT COUNT(DISTINCT DATE(close_time)) as days FROM trades WHERE challenge_id=$1 AND status='closed'`, [challengeId]);
+      if (!tradingDays || tradingDays.days < 3) {
+        return { breached: false, targetReached: false, reason: 'TARGET_MET_BUT_MIN_DAYS_NOT_MET', trading_days: tradingDays?.days || 0 };
+      }
       return { breached: false, targetReached: true, reason: 'PROFIT_TARGET_REACHED' };
     }
 
