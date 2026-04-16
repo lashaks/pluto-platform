@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -58,11 +58,11 @@
   <!-- TRUST SIGNALS -->
   <section style="padding:40px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);background:var(--sf)"><div class="container">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;text-align:center">
-      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--t1)">$200K</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Max Funded Account</div></div>
-      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--gr)">80%</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Profit Split</div></div>
-      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--ac2)">1:30</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Leverage</div></div>
-      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--bl)">cTrader + MT5</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Professional Platforms</div></div>
-      <div><div style="font-size:1.5rem;font-weight:800;font-family:var(--fm);color:var(--am)">24hr</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Payout Processing</div></div>
+      <div><div style="font-size:1.55rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--t1)">$200K</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Max Funded Account</div></div>
+      <div><div style="font-size:1.55rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--gr)">80%</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Profit Split</div></div>
+      <div><div style="font-size:1.55rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--ac2)">1:30</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Leverage</div></div>
+      <div><div style="font-size:1.55rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--bl)">cTrader + MT5</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Professional Platforms</div></div>
+      <div><div style="font-size:1.55rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--am)">24hr</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">Payout Processing</div></div>
     </div>
   </div></section>
 
@@ -485,8 +485,8 @@ function celebrateWithMessage(title,subtitle){
   overlay.innerHTML=`
     <div style="background:rgba(17,16,27,.95);border:1px solid rgba(139,92,246,.3);border-radius:24px;padding:48px 64px;text-align:center;animation:fadeUp .5s ease;box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 80px rgba(139,92,246,.1)">
       <div style="font-size:3rem;margin-bottom:16px">&#127881;</div>
-      <h2 style="font-size:1.6rem;font-weight:900;margin-bottom:8px;font-family:Manrope,sans-serif;color:#eeedf4">${title}</h2>
-      <p style="color:#8b87a0;font-size:.95rem;font-family:Manrope,sans-serif">${subtitle}</p>
+      <h2 style="font-size:1.65rem;font-weight:600;margin-bottom:8px;font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.025em;color:#eeedf4">${title}</h2>
+      <p style="color:#8b87a0;font-size:.95rem;font-family:Inter,sans-serif">${subtitle}</p>
     </div>`;
   document.body.appendChild(overlay);
   setTimeout(()=>{overlay.style.opacity='0';overlay.style.transition='opacity .5s';setTimeout(()=>overlay.remove(),500)},3500);
