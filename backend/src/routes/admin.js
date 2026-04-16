@@ -175,13 +175,13 @@ router.post('/discount-codes', requireAdmin, async (req, res) => {
   if (!code || !discount_pct) return res.status(400).json({ error: 'Code and discount_pct required' });
   if (discount_pct < 1 || discount_pct > 100) return res.status(400).json({ error: 'Discount must be 1-100%' });
   const id = generateId();
-  await run(`INSERT INTO discount_codes (id, code, discount_pct, max_uses, valid_until, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
+  await run(`INSERT INTO discount_codes (id, code, discount_pct, max_uses, valid_until, created_by) VALUES ($1, $2, $3, $4, $5, $6)`,
     [id, code.toUpperCase().trim(), discount_pct, max_uses || 0, valid_until || '', req.user.id]);
   res.status(201).json({ id, code: code.toUpperCase().trim(), discount_pct, max_uses: max_uses || 0 });
 });
 
 router.delete('/discount-codes/:id', requireAdmin, async (req, res) => {
-  await run(`UPDATE discount_codes SET is_active=0 WHERE id=?`, [req.params.id]);
+  await run(`UPDATE discount_codes SET is_active=0 WHERE id=$1`, [req.params.id]);
   res.json({ success: true });
 });
 

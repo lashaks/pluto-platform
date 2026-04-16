@@ -15,14 +15,7 @@ router.get('/', authenticate, async (req, res) => {
   res.json(challenges);
 });
 
-// GET /api/challenges/:id — single challenge
-router.get('/:id', authenticate, async (req, res) => {
-  const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
-  if (!ch) return res.status(404).json({ error: 'Challenge not found' });
-  res.json(ch);
-});
-
-// GET /api/challenges/validate-code?code=XXX
+// GET /api/challenges/validate-code?code=XXX — MUST be before /:id
 router.get('/validate-code', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.json({ valid: false });
@@ -32,6 +25,13 @@ router.get('/validate-code', async (req, res) => {
   if (dc.valid_until && dc.valid_until < now) return res.json({ valid: false, error: 'Code expired' });
   if (dc.max_uses > 0 && dc.current_uses >= dc.max_uses) return res.json({ valid: false, error: 'Code fully redeemed' });
   res.json({ valid: true, code: dc.code, discount_pct: dc.discount_pct });
+});
+
+// GET /api/challenges/:id — single challenge (must be AFTER named routes)
+router.get('/:id', authenticate, async (req, res) => {
+  const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+  if (!ch) return res.status(404).json({ error: 'Challenge not found' });
+  res.json(ch);
 });
 
 // POST /api/challenges/purchase — buy a new challenge
@@ -65,7 +65,7 @@ router.post('/purchase', authenticate, async (req, res) => {
           const discount = Math.round(totalFee * dc.discount_pct / 100);
           totalFee = totalFee - discount;
           discountApplied = { code: dc.code, pct: dc.discount_pct, saved: discount };
-          await run(`UPDATE discount_codes SET current_uses = current_uses + 1 WHERE id=?`, [dc.id]);
+          await run(`UPDATE discount_codes SET current_uses = current_uses + 1 WHERE id=$1`, [dc.id]);
         }
       }
     }
