@@ -10,8 +10,9 @@ function wrap(title, content) {
 <table width="600" cellpadding="0" cellspacing="0" style="background:#11101b;border-radius:16px;border:1px solid rgba(255,255,255,0.06);overflow:hidden">
   <!-- Header -->
   <tr><td style="padding:32px 40px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05)">
-    <div style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:9px;margin-bottom:12px"></div>
-    <div style="font-size:18px;font-weight:800;color:#eeedf4;letter-spacing:-0.02em">PLUTO<span style="color:#a78bfa">CAPITAL</span></div>
+    <img src="https://pluto-platform.vercel.app/img/favicon.svg" alt="Pluto Capital" width="40" height="40" style="display:block;margin:0 auto 12px;border-radius:10px">
+    <div style="font-size:20px;font-weight:800;color:#eeedf4;letter-spacing:-0.02em">PLUTO<span style="color:#a78bfa">CAPITAL</span></div>
+    <div style="font-size:11px;color:#5a5672;letter-spacing:0.15em;margin-top:4px">FUNDING</div>
   </td></tr>
   <!-- Title -->
   <tr><td style="padding:32px 40px 8px">
