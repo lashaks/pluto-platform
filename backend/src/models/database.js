@@ -296,6 +296,8 @@ async function initDatabase() {
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS phase INTEGER DEFAULT 1`,
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS parent_challenge_id TEXT`,
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS consistency_best_day_pct REAL DEFAULT 0`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'ctrader'`,
+      `ALTER TABLE funded_accounts ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'ctrader'`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT DEFAULT 'v1'`,
     ];

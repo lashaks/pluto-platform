@@ -37,9 +37,13 @@ router.get('/validate-code', async (req, res) => {
 // POST /api/challenges/purchase — buy a new challenge
 router.post('/purchase', authenticate, async (req, res) => {
   try {
-    const { account_size, profit_split, challenge_type, payment_method, discount_code } = req.body;
+    const { account_size, profit_split, challenge_type, payment_method, discount_code, platform } = req.body;
     const fee = config.challengePricing[account_size];
     if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(config.challengePricing).map(Number) });
+
+    // Platform selection — only cTrader live at launch; MT5 and Match-Trader coming soon
+    const validPlatforms = ['ctrader']; // add 'mt5', 'matchtrader' when integrated
+    const selectedPlatform = validPlatforms.includes(platform) ? platform : 'ctrader';
 
     const type = challenge_type === 'two_step' ? 'two_step' : 'one_step';
     const rules = type === 'two_step' ? config.twoStepRules : config.oneStepRules;
@@ -87,11 +91,11 @@ router.post('/purchase', authenticate, async (req, res) => {
         // Create challenge in pending_payment status
         await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
              highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
-             profit_target_pct, max_daily_loss_pct, max_total_loss_pct, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment')`,
+             profit_target_pct, max_daily_loss_pct, max_total_loss_pct, platform, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment')`,
           [id, req.user.id, account_size, type, account_size, account_size, account_size,
            account_size, account_size, account_size, totalFee, split, rules.leverage,
-           profitTarget, maxDaily, maxDrawdown]);
+           profitTarget, maxDaily, maxDrawdown, selectedPlatform]);
 
         await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'PAYMENT_INITIATED', 'challenge', ?, ?)`,
           [generateId(), req.user.id, id, `Crypto payment initiated: $${totalFee} for $${(account_size/1000)}K ${type}`]);
@@ -123,12 +127,12 @@ router.post('/purchase', authenticate, async (req, res) => {
 
     await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
          highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
-         profit_target_pct, max_daily_loss_pct, max_total_loss_pct,
+         profit_target_pct, max_daily_loss_pct, max_total_loss_pct, platform,
          ctrader_login, ctrader_account_id, ctrader_server, status, activated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
       [id, req.user.id, account_size, type, account_size, account_size, account_size,
        account_size, account_size, account_size, totalFee, split, rules.leverage,
-       profitTarget, maxDaily, maxDrawdown,
+       profitTarget, maxDaily, maxDrawdown, selectedPlatform,
        ctraderResult.login, ctraderResult.accountId, ctraderResult.server]);
 
     await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method)
