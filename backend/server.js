@@ -162,6 +162,30 @@ app.get('/api/affiliate/stats', authenticate, async (req, res) => {
   });
 });
 
+// Balance history for chart
+app.get('/api/challenges/:id/balance-history', authenticate, async (req, res) => {
+  const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+  if (!ch) return res.status(404).json({ error: 'Challenge not found' });
+  const trades = await queryAll(`SELECT close_time, profit FROM trades WHERE challenge_id=$1 AND status='closed' ORDER BY close_time ASC`, [req.params.id]);
+  let balance = ch.starting_balance;
+  const points = [{ time: ch.activated_at || ch.created_at, balance }];
+  trades.forEach(t => { balance += t.profit; points.push({ time: t.close_time, balance: +balance.toFixed(2) }); });
+  points.push({ time: new Date().toISOString(), balance: ch.current_balance });
+  res.json(points);
+});
+
+// Scaling plan info
+app.get('/api/scaling-plan', (req, res) => {
+  res.json({
+    levels: [
+      { level: 1, name: 'Launchpad', min_profit_pct: 0, split: 80, max_balance: null, requirements: 'Pass evaluation' },
+      { level: 2, name: 'Ascender', min_profit_pct: 10, split: 85, max_balance: null, requirements: '10% profit over 2 months + 2 payouts' },
+      { level: 3, name: 'Trailblazer', min_profit_pct: 10, split: 90, max_balance: null, requirements: '10% profit over 4 months + 4 payouts + 25% balance increase' },
+      { level: 4, name: 'Hot Seat', min_profit_pct: 10, split: 100, max_balance: 2000000, requirements: '10% profit over 6 months + consistent performance + up to $2M funding' },
+    ],
+  });
+});
+
 // NOWPayments webhook — activates challenge after crypto payment
 const payments = require('./src/services/payments');
 const ctraderService = require('./src/services/ctrader');

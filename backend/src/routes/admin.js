@@ -253,4 +253,15 @@ router.post('/settings/demo-mode', requireAdmin, async (req, res) => {
   res.json({ demo_mode: enabled });
 });
 
+// === ADMIN USER MANAGEMENT ===
+router.post('/users/:id/promote', requireAdmin, async (req, res) => {
+  const { role } = req.body; // 'admin', 'support_admin', 'finance_admin'
+  const validRoles = ['admin', 'support_admin', 'finance_admin', 'trader'];
+  if (!validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  await run(`UPDATE users SET role=$1, updated_at=NOW()::TEXT WHERE id=$2`, [role, req.params.id]);
+  await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES ($1, $2, 'USER_ROLE_CHANGED', 'user', $3, $4)`,
+    [generateId(), req.user.id, req.params.id, `Role changed to ${role}`]);
+  res.json({ success: true, role });
+});
+
 module.exports = router;
