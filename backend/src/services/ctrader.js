@@ -113,6 +113,22 @@ class CTraderManagerClient extends EventEmitter {
     this.authenticated = true;
     console.log(`[cTrader] Authenticated as manager ${this.login}`);
     this.emit('authenticated', res);
+
+    // Auto-discover USD asset ID for account creation
+    try {
+      const assetRes = await this._request(465, 'ProtoAssetListReq', {}, 466);
+      const assets = assetRes.asset || [];
+      const usd = assets.find(a => a.name === 'USD' || a.displayName === 'USD');
+      if (usd) {
+        this.depositAssetId = Number(usd.assetId);
+        console.log(`[cTrader] USD asset ID: ${this.depositAssetId}`);
+      } else if (assets.filter(a => a.depositAsset).length > 0) {
+        this.depositAssetId = Number(assets.filter(a => a.depositAsset)[0].assetId);
+        console.log(`[cTrader] Using first deposit asset ID: ${this.depositAssetId}`);
+      }
+    } catch (e) {
+      console.warn(`[cTrader] Asset discovery failed (using default ${this.depositAssetId}):`, e.message);
+    }
   }
 
   _startHeartbeat() {
@@ -233,6 +249,8 @@ class CTraderManagerClient extends EventEmitter {
       [PT.PROTO_POSITION_LIST_RES]: 'ProtoPositionListRes',
       [PT.PROTO_TRADER_LIST_RES]: 'ProtoTraderListRes',
       [PT.PROTO_MANAGER_DEAL_LIST_RES]: 'ProtoManagerDealListRes',
+      466: 'ProtoAssetListRes',
+      474: 'ProtoLightGroupListRes',
     };
     return map[pt] || 'ProtoMessage';
   }

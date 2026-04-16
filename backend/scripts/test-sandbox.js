@@ -38,6 +38,7 @@ const PT = {
   HEARTBEAT: 51, ERROR: 50,
   AUTH_REQ: 301, AUTH_RES: 302,
   GROUP_LIST_REQ: 473, GROUP_LIST_RES: 474,
+  ASSET_LIST_REQ: 465, ASSET_LIST_RES: 466,
   TRADER_LIST_REQ: 403, TRADER_LIST_RES: 404,
   CRUD_TRADER_REQ: 501, CRUD_TRADER_RES: 502,
   CHANGE_BALANCE_REQ: 519, CHANGE_BALANCE_RES: 520,
@@ -204,46 +205,79 @@ async function run() {
     clearInterval(hb); socket.end(); process.exit(1);
   }
 
+  // ── TEST 2.5: DISCOVER USD ASSET ID ─────────────────
+  console.log('');
+  console.log('TEST 2.5: Find USD deposit asset');
+  let usdAssetId = null;
+  try {
+    const assetRes = await request(PT.ASSET_LIST_REQ, 'ProtoAssetListReq', {}, PT.ASSET_LIST_RES, 'ProtoAssetListRes');
+    const assets = assetRes.asset || [];
+    const depositAssets = assets.filter(a => a.depositAsset);
+    ok(`Found ${assets.length} total assets, ${depositAssets.length} deposit-capable`);
+    depositAssets.forEach(a => {
+      const marker = (a.name === 'USD' || a.displayName === 'USD') ? ' ◀── THIS ONE' : '';
+      console.log(`      Asset ID: ${a.assetId}  Name: "${a.name}"  Display: "${a.displayName || a.name}"  Digits: ${a.digits || 2}${marker}`);
+      if (a.name === 'USD' || a.displayName === 'USD') usdAssetId = Number(a.assetId);
+    });
+    if (!usdAssetId && depositAssets.length > 0) {
+      // Fallback: use first deposit asset
+      usdAssetId = Number(depositAssets[0].assetId);
+      info(`No "USD" found — using first deposit asset: "${depositAssets[0].name}" (ID: ${usdAssetId})`);
+    }
+    if (usdAssetId) {
+      ok(`USD Asset ID: ${usdAssetId}`);
+    } else {
+      fail('No deposit assets found. Contact Lev.');
+    }
+  } catch (e) {
+    fail(`Asset discovery failed: ${e.message}`);
+  }
+
   // ── TEST 3: CREATE TEST TRADER ─────────────────────
   console.log('');
   console.log('TEST 3: Create $10,000 test trader');
   let traderId = null;
   let traderPassword = null;
-  try {
-    traderPassword = 'TestPluto' + Math.floor(Math.random() * 9000 + 1000);
-    const passwordHash = crypto.createHash('md5').update(traderPassword).digest('hex');
-    const res = await request(PT.CRUD_TRADER_REQ, 'ProtoCrudTraderReq', {
-      operation: 1, // CREATE
-      trader: {
-        traderId: 0, login: 0, groupId,
-        balance: 1000000, // $10,000 in cents (newWay=true, digits=2)
-        accountType: 0, // HEDGED
-        accessRights: 0, // FULL_ACCESS
-        name: 'Pluto Test Trader',
-        email: 'test@plutocapitalfunding.com',
-        passwordHash,
-        swapFree: true,
-        leverageInCents: 3000, // 1:30
-      },
-    }, PT.CRUD_TRADER_RES, 'ProtoCrudTraderRes');
+  if (usdAssetId) {
+    try {
+      traderPassword = 'TestPluto' + Math.floor(Math.random() * 9000 + 1000);
+      const passwordHash = crypto.createHash('md5').update(traderPassword).digest('hex');
+      const res = await request(PT.CRUD_TRADER_REQ, 'ProtoCrudTraderReq', {
+        operation: 1, // CREATE
+        trader: {
+          traderId: 0, login: 0, groupId,
+          depositAssetId: usdAssetId,
+          balance: 1000000, // $10,000 in cents (moneyDigits=2)
+          accountType: 0, // HEDGED
+          accessRights: 0, // FULL_ACCESS
+          name: 'Pluto Test Trader',
+          email: 'test@plutocapitalfunding.com',
+          passwordHash,
+          swapFree: true,
+          leverageInCents: 3000, // 1:30
+        },
+      }, PT.CRUD_TRADER_RES, 'ProtoCrudTraderRes');
 
-    traderId = Number(res.traderId);
-    ok(`Created trader — ID: ${traderId}`);
+      traderId = Number(res.traderId);
+      ok(`Created trader — ID: ${traderId}`);
 
-    // Fetch to get the assigned login
-    await sleep(500);
-    const list = await request(PT.TRADER_LIST_REQ, 'ProtoTraderListReq', {
-      fromTimestamp: 0, toTimestamp: Date.now(), groupId,
-    }, PT.TRADER_LIST_RES, 'ProtoTraderListRes');
-    const trader = (list.trader || []).find(t => Number(t.traderId) === traderId);
-    const login = trader ? trader.login : traderId;
-    ok(`Login: ${login}  |  Password: ${traderPassword}`);
-    info('You can log into cTrader Web with these credentials');
-  } catch (e) {
-    fail(`Create failed: ${e.message}`);
-    if (e.message.includes('CANT_ROUTE')) {
-      info('This usually means the group ID is wrong or manager lacks permissions.');
+      // Fetch to get the assigned login
+      await sleep(500);
+      const list = await request(PT.TRADER_LIST_REQ, 'ProtoTraderListReq', {
+        fromTimestamp: 0, toTimestamp: Date.now(), groupId,
+      }, PT.TRADER_LIST_RES, 'ProtoTraderListRes');
+      const trader = (list.trader || []).find(t => Number(t.traderId) === traderId);
+      const login = trader ? trader.login : traderId;
+      ok(`Login: ${login}  |  Password: ${traderPassword}`);
+      info('You can log into cTrader Web with these credentials');
+    } catch (e) {
+      fail(`Create failed: ${e.message}`);
+      if (e.message.includes('CANT_ROUTE')) {
+        info('This usually means the group ID is wrong or manager lacks permissions.');
+      }
     }
+  } else {
+    fail('Skipped — no USD asset ID discovered');
   }
 
   // ── TEST 4: DEPOSIT $500 (CRITICAL) ────────────────
