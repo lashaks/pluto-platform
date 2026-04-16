@@ -90,7 +90,6 @@ class CTraderManagerClient extends EventEmitter {
       this.socket.on('error', (err) => {
         console.error('[cTrader] Socket error:', err.message);
         if (!this.authenticated) reject(err);
-        this.emit('error', err);
       });
 
       this.once('hello', async () => {
@@ -382,6 +381,9 @@ class CTraderService {
     this.enabled = process.env.CTRADER_ENABLED === 'true';
     if (this.enabled) {
       this.client = getClient();
+      this.client.on('error', (err) => {
+        console.error('[cTrader] Client error (non-fatal):', err.message);
+      });
       this.client.connect()
         .then(() => console.log('[cTrader] Live client ready'))
         .catch(err => {

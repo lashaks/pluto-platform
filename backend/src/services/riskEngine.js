@@ -74,7 +74,7 @@ class RiskEngine {
     console.log(`[RISK ENGINE] BREACH on challenge ${challengeId}: ${reason} — ${details}`);
 
     // 1. Update database
-    run(`UPDATE challenges SET status='failed', failed_at=datetime('now'), breach_reason=? WHERE id=?`,
+    run(`UPDATE challenges SET status='failed', failed_at=NOW()::TEXT, breach_reason=? WHERE id=?`,
       [reason, challengeId]);
 
     // 2. Disable on cTrader (production)
