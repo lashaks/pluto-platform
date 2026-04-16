@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     if (!terms_accepted) return res.status(400).json({ error: 'You must accept the Terms of Service, Privacy Policy, and Risk Disclosure' });
 
-    const existing = await queryOne(`SELECT id FROM users WHERE email='${sanitize(userEmail)}'`);
+    const existing = await queryOne(`SELECT id FROM users WHERE email=$1`, [userEmail]);
     if (existing) return res.status(400).json({ error: 'An account with this email already exists' });
 
     const id = generateId();
@@ -91,7 +91,7 @@ router.post('/resend-code', async (req, res) => {
     const { email: userEmail } = req.body;
     if (!userEmail) return res.status(400).json({ error: 'Email is required' });
 
-    const user = await queryOne(`SELECT id, first_name FROM users WHERE email='${sanitize(userEmail)}'`);
+    const user = await queryOne(`SELECT id, first_name FROM users WHERE email=$1`, [userEmail]);
     if (!user) return res.status(404).json({ error: 'Account not found' });
 
     const code = generateCode();
@@ -111,7 +111,7 @@ router.post('/login', async (req, res) => {
     const { email: userEmail, password } = req.body;
     if (!userEmail || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    const user = await queryOne(`SELECT * FROM users WHERE email='${sanitize(userEmail)}'`);
+    const user = await queryOne(`SELECT * FROM users WHERE email=$1`, [userEmail]);
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
     if (user.is_active === 0 || user.is_active === '0' || user.is_active === false) return res.status(401).json({ error: 'Account is suspended' });
     if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'Invalid email or password' });
@@ -138,7 +138,7 @@ router.post('/forgot-password', async (req, res) => {
     const { email: userEmail } = req.body;
     if (!userEmail) return res.status(400).json({ error: 'Email is required' });
 
-    const user = await queryOne(`SELECT id, first_name FROM users WHERE email='${sanitize(userEmail)}'`);
+    const user = await queryOne(`SELECT id, first_name FROM users WHERE email=$1`, [userEmail]);
     if (!user) {
       // Don't reveal if email exists
       return res.json({ success: true, message: 'If this email is registered, you will receive a reset code.' });

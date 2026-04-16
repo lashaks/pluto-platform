@@ -147,10 +147,13 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
       }
 
       // Create cTrader account
+      const creatorUsr = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [challenge.user_id]);
       const ctraderResult = await ctraderService.createAccount({
         balance: challenge.account_size,
         leverage: challenge.leverage || '1:30',
         group: 'demo_prop_evaluation',
+        name: creatorUsr ? `${creatorUsr.first_name || ''} ${creatorUsr.last_name || ''}`.trim() : '',
+        email: creatorUsr?.email || '',
       });
 
       // Activate the challenge

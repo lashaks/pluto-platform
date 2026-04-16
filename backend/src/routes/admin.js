@@ -47,9 +47,10 @@ router.get('/users', requireAdmin, async (req, res) => {
 router.get('/challenges', requireAdmin, async (req, res) => {
   const { status } = req.query;
   let sql = `SELECT c.*, u.email, u.first_name, u.last_name FROM challenges c JOIN users u ON c.user_id = u.id`;
-  if (status) sql += ` WHERE c.status='${sanitize(status)}'`;
+  const params = [];
+  if (status) { sql += ` WHERE c.status=$1`; params.push(status); }
   sql += ` ORDER BY c.created_at DESC`;
-  res.json(await queryAll(sql));
+  res.json(await queryAll(sql, params));
 });
 
 // GET /api/admin/funded
@@ -62,9 +63,10 @@ router.get('/funded', requireAdmin, async (req, res) => {
 router.get('/payouts', requireAdmin, async (req, res) => {
   const { status } = req.query;
   let sql = `SELECT p.*, u.email, u.first_name, u.last_name FROM payouts p JOIN users u ON p.user_id = u.id`;
-  if (status) sql += ` WHERE p.status='${sanitize(status)}'`;
+  const params = [];
+  if (status) { sql += ` WHERE p.status=$1`; params.push(status); }
   sql += ` ORDER BY p.requested_at DESC`;
-  res.json(await queryAll(sql));
+  res.json(await queryAll(sql, params));
 });
 
 // POST /api/admin/payouts/:id/approve
@@ -77,7 +79,7 @@ router.post('/payouts/:id/approve', requireAdmin, async (req, res) => {
 
 // POST /api/admin/payouts/:id/pay
 router.post('/payouts/:id/pay', requireAdmin, async (req, res) => {
-  const payout = await queryOne(`SELECT * FROM payouts WHERE id='${sanitize(req.params.id)}'`);
+  const payout = await queryOne(`SELECT * FROM payouts WHERE id=$1`, [req.params.id]);
   if (!payout) return res.status(404).json({ error: 'Payout not found' });
 
   const { tx_reference } = req.body;
