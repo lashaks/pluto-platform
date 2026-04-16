@@ -10,7 +10,7 @@ async function api(u,o={}){const h={'Content-Type':'application/json'};if(token)
 function showAuth(m){$('authModal').classList.remove('hidden');showAuthScreen(m==='login'?'formLogin':'formRegister')}
 function showAuthScreen(id){['formLogin','formRegister','formVerify','formForgot','formReset'].forEach(f=>{const el=$(f);if(el)el.classList.add('hidden')});const t=$(id);if(t)t.classList.remove('hidden')}
 function hideAuth(){$('authModal').classList.add('hidden')}
-function selectPlan(size){selectedPlan={size,type:currentEval};showAuth('register')}
+function selectPlan(size){window._buySize=size;window._buyType=currentEval;if(token){navigate('buy')}else{selectedPlan={size,type:currentEval};showAuth('register')}}
 function toast(m,t='info'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateY(-10px)';e.style.transition='all .3s';setTimeout(()=>e.remove(),300)},3000)}
 let pendingVerifyEmail='';
 async function doLogin(e){e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('loginEmail').value,password:$('loginPass').value})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;hideAuth();enterDashboard()}catch(x){toast(x.message,'error')}}
@@ -59,37 +59,166 @@ window.render_funded=async function(){$('page-funded').innerHTML=LOADING;const d
 $('page-funded').innerHTML=`<div class="page-head"><h1>Funded Accounts</h1><p>Your active funded accounts</p></div>${d.map(a=>{const profit=a.current_balance-a.starting_balance;return`<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px"><div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd)"><div style="font-size:1.1rem;font-weight:700">${F(a.account_size)} Funded</div>${B(a.status)}</div><div style="padding:24px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:20px">${M('Balance',F(a.current_balance))}${M('Profit',F(profit),profit>=0?'var(--gr)':'var(--rd)')}${M('Split',a.profit_split_pct+'%','var(--ac2)')}${M('Payouts',F(a.total_payouts),'var(--gr)')}</div>${R('Login',a.ctrader_login||'—','var(--ac2)')}${R('Total Trades',a.total_trades||0)}${R('Payout Count',a.payout_count||0)}<button class="btn btn-primary btn-full" style="margin-top:20px" onclick="showPayoutModal('${a.id}')">Request Payout</button></div></div>`}).join('')}`;};
 
 // BUY
-window.render_buy=async function(){$('page-buy').innerHTML=`<div class="page-head"><h1>Buy Challenge</h1><p>Choose your evaluation type, platform, and account size</p></div><div class="eval-tabs"><button class="eval-tab active" onclick="switchBuyEval('one_step',this)">1-Step Evaluation</button><button class="eval-tab" onclick="switchBuyEval('two_step',this)">2-Step Evaluation</button></div>
+window.render_buy=async function(){
+const sz=window._buySize||100000;
+const tp=window._buyType||'one_step';
+$('page-buy').innerHTML=`<div class="page-head"><h1>New Challenge</h1><p>Configure your evaluation and start trading</p></div>
+<div style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start">
+<div>
 
-<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><span style="font-weight:700;font-size:.95rem">Trading Platform</span><span id="platformNote" style="font-size:.74rem;color:var(--t3)">Your choice is locked once trading begins</span></div><div id="platformGrid" style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"></div></div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Challenge Type</div>
+<div style="padding:14px 20px;font-size:.82rem;color:var(--t3);margin-bottom:-4px">Choose the type of challenge you want to take</div>
+<div style="padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px" id="buyTypeGrid"></div>
+</div>
 
-<div class="buy-grid" id="buyGrid"></div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Account Size</div>
+<div style="padding:14px 20px;font-size:.82rem;color:var(--t3);margin-bottom:-4px">Choose your preferred account size</div>
+<div style="padding:0 20px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="buySizeGrid"></div>
+</div>
 
-<div class="card" style="margin-top:20px;padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Included With Every Plan</div><div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;font-size:.84rem;color:var(--t2)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> No time limit</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> No min trading days</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> Static drawdown</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> EAs allowed</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> Hedging permitted</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> cTrader &amp; MT5</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> 1:30 leverage</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> 20% consistency</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> AI Trade Coach</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> Crypto payouts</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--gr)">&#10004;</span> No swap fees</div></div></div><div class="card" style="margin-top:14px;padding:0;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Discount Code</div><div style="padding:16px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="discountInput" placeholder="Enter promo code" style="flex:1;min-width:180px;padding:10px 14px;background:var(--bg);border:1px solid var(--brd2);border-radius:var(--r);color:var(--t1);font-family:var(--ff);font-size:.88rem"><button class="btn btn-outline btn-sm" onclick="validateCode()">Apply</button><div id="discountStatus" style="font-size:.82rem"></div></div></div>`;renderPlatformSelector();renderPricing(PLANS[currentEval],$('buyGrid'),'purchase')};
-window.switchBuyEval=function(type,btn){document.querySelectorAll('#page-buy .eval-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');currentEval=type;renderPricing(PLANS[type],$('buyGrid'),'purchase')};
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Trading Platform</div>
+<div style="padding:14px 20px;font-size:.82rem;color:var(--t3);margin-bottom:-4px">Choose your preferred trading platform</div>
+<div style="padding:0 20px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="buyPlatGrid"></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:8px;background:var(--ac-bg);display:flex;align-items:center;justify-content:center;font-size:.8rem">&#9881;</div><div><div style="font-family:var(--fd);font-weight:600;font-size:.95rem">Trading Rules</div><div style="font-size:.78rem;color:var(--t3)">Rules for your selected configuration</div></div></div>
+<div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px" id="buyRulesGrid"></div>
+</div>
+
+</div>
+<div style="position:sticky;top:20px">
+
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Coupon Code</div>
+<div style="padding:14px 20px;display:flex;gap:8px;align-items:center"><input id="discountInput" placeholder="Enter coupon code" style="flex:1;padding:10px 14px;background:var(--bg);border:1px solid var(--brd2);border-radius:var(--r);color:var(--t1);font-family:var(--ff);font-size:.84rem"><button class="btn btn-outline btn-sm" onclick="validateCode();updateOrderSummary()">Apply</button></div>
+<div id="discountStatus" style="padding:0 20px 14px;font-size:.8rem"></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;border-color:var(--ac-gl);margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Order Summary</div>
+<div id="orderSummary" style="padding:16px 20px"></div>
+</div>
+
+<div class="card" style="padding:16px 20px;margin-bottom:16px">
+<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.78rem;color:var(--t2);line-height:1.55"><input type="checkbox" id="buyTerms" style="margin-top:3px;accent-color:var(--ac)"><span>I agree with the <a href="#" style="color:var(--ac2)" onclick="event.preventDefault();navigate('rules')">Terms of Use</a>, <a href="#" style="color:var(--ac2)" onclick="event.preventDefault()">Terms &amp; Conditions</a>, and confirm that all information provided is correct. I confirm I am not a U.S. citizen or resident.</span></label>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div style="padding:16px 20px;border-bottom:1px solid var(--brd);font-family:var(--fd);font-weight:600;font-size:.95rem">Payment Method</div>
+<div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px" id="buyPayGrid"></div>
+</div>
+
+<button class="btn btn-primary btn-full" style="padding:16px;font-size:.95rem" onclick="submitChallengePurchase()">Continue to Payment</button>
+
+</div>
+</div>`;
+renderBuySelectors();
+};
+
+// === CONFIGURATOR STATE ===
+window._buySize=window._buySize||100000;
+window._buyType=window._buyType||'one_step';
+window._buyPay=window._buyPay||'crypto';
 let activeDiscount=null;
 let selectedPlatform='ctrader';
 window.PLATFORMS=[
-  {id:'ctrader',name:'cTrader',desc:'Premium charting, fast execution, C# EAs',status:'available',badge:'RECOMMENDED',surcharge:0},
-  {id:'mt5',name:'MetaTrader 5',desc:'Industry standard, large EA marketplace',status:'coming_soon',badge:'COMING SOON',surcharge:0},
-  {id:'matchtrader',name:'Match-Trader',desc:'Web-native, no install required',status:'coming_soon',badge:'COMING SOON',surcharge:0},
+  {id:'ctrader',name:'cTrader',status:'available',surcharge:0},
+  {id:'mt5',name:'MetaTrader 5',status:'coming_soon',surcharge:0},
+  {id:'matchtrader',name:'Match-Trader',status:'coming_soon',surcharge:0},
 ];
-window.renderPlatformSelector=function(){
-  const grid=$('platformGrid');if(!grid)return;
-  grid.innerHTML=window.PLATFORMS.map(p=>{
-    const isSel=selectedPlatform===p.id;
-    const disabled=p.status==='coming_soon';
-    const bgColor=isSel?'var(--ac-bg)':disabled?'rgba(255,255,255,.02)':'var(--bg)';
-    const borderColor=isSel?'var(--ac2)':'var(--brd)';
-    const textColor=disabled?'var(--t3)':'var(--t1)';
-    const badgeBg=p.badge==='RECOMMENDED'?'var(--gr-bg)':'rgba(255,255,255,.06)';
-    const badgeColor=p.badge==='RECOMMENDED'?'var(--gr)':'var(--t3)';
-    return`<div onclick="${disabled?'':'selectPlatform(\''+p.id+'\')'}" style="position:relative;padding:14px 16px;background:${bgColor};border:1.5px solid ${borderColor};border-radius:var(--r2);cursor:${disabled?'not-allowed':'pointer'};opacity:${disabled?'.55':'1'};transition:.15s"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px"><div style="font-weight:700;font-size:.94rem;color:${textColor}">${p.name}</div><div style="font-size:.6rem;font-weight:700;padding:3px 7px;border-radius:4px;background:${badgeBg};color:${badgeColor};letter-spacing:.08em;white-space:nowrap">${p.badge||''}</div></div><div style="font-size:.75rem;color:var(--t3);line-height:1.4">${p.desc}</div>${isSel?'<div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--ac2);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700">&#10004;</div>':''}</div>`;
+
+function renderBuySelectors(){
+  // Type
+  const types=[{id:'one_step',label:'One Step',desc:'Single phase evaluation'},{id:'two_step',label:'Two Step',desc:'Two phase evaluation'}];
+  $('buyTypeGrid').innerHTML=types.map(t=>{
+    const sel=window._buyType===t.id;
+    return`<div onclick="window._buyType='${t.id}';renderBuySelectors()" style="padding:14px 16px;border-radius:var(--r2);border:1.5px solid ${sel?'var(--ac2)':'var(--brd2)'};background:${sel?'var(--ac-bg)':'var(--bg)'};cursor:pointer;transition:.15s"><div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;border:2px solid ${sel?'var(--ac2)':'var(--brd3)'};display:flex;align-items:center;justify-content:center">${sel?'<div style="width:8px;height:8px;border-radius:50%;background:var(--ac2)"></div>':''}</div><div><div style="font-weight:600;font-size:.88rem">${t.label}</div><div style="font-size:.74rem;color:var(--t3)">${t.desc}</div></div></div></div>`;
   }).join('');
-};
-window.selectPlatform=function(id){selectedPlatform=id;renderPlatformSelector();};
-async function validateCode(){const code=$('discountInput')?.value?.trim();if(!code){toast('Enter a code','info');return}try{const d=await api('/api/challenges/validate-code?code='+encodeURIComponent(code));if(d.valid){activeDiscount=d;$('discountStatus').innerHTML=`<span style="color:var(--gr)">&#10004; ${d.code}: ${d.discount_pct}% off applied!</span>`;toast(d.discount_pct+'% discount applied!','success')}else{activeDiscount=null;$('discountStatus').innerHTML=`<span style="color:var(--rd)">&#10006; ${d.error||'Invalid code'}</span>`}}catch(x){toast(x.message,'error')}}
-async function purchase(s){if(!token){showAuth('register');return}const dc=activeDiscount;const label=F(s)+' '+(currentEval==='two_step'?'2-Step':'1-Step');const plat=(window.PLATFORMS.find(p=>p.id===selectedPlatform)||{}).name||'cTrader';if(!confirm('Purchase '+label+' challenge on '+plat+'?'+(dc?'\nDiscount: '+dc.discount_pct+'% off':'')+'\n\nYou will be redirected to pay with crypto.'))return;try{const body={account_size:s,challenge_type:currentEval,payment_method:'crypto',platform:selectedPlatform};if(dc)body.discount_code=dc.code;const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify(body)});if(d.payment_url){window.location.href=d.payment_url}else{toast('Challenge activated!','success');navigate('challenges')}}catch(x){toast(x.message,'error')}}
+
+  // Sizes
+  const sizes=[5000,10000,25000,50000,100000,200000];
+  $('buySizeGrid').innerHTML=sizes.map(s=>{
+    const sel=window._buySize===s;
+    return`<div onclick="window._buySize=${s};renderBuySelectors()" style="padding:12px 14px;border-radius:var(--r2);border:1.5px solid ${sel?'var(--ac2)':'var(--brd2)'};background:${sel?'var(--ac-bg)':'var(--bg)'};cursor:pointer;transition:.15s;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div style="width:16px;height:16px;border-radius:50%;border:2px solid ${sel?'var(--ac2)':'var(--brd3)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${sel?'<div style="width:7px;height:7px;border-radius:50%;background:var(--ac2)"></div>':''}</div><span style="font-family:var(--fd);font-weight:600;font-size:.92rem">${F(s)}</span></div></div>`;
+  }).join('');
+
+  // Platform
+  $('buyPlatGrid').innerHTML=PLATFORMS.map(p=>{
+    const sel=selectedPlatform===p.id;
+    const dis=p.status==='coming_soon';
+    const click=dis?'':('selectPlatform(&quot;'+p.id+'&quot;)');
+    return'<div onclick="'+click+'" style="padding:12px 14px;border-radius:var(--r2);border:1.5px solid '+(sel?'var(--ac2)':'var(--brd2)')+';background:'+(sel?'var(--ac-bg)':dis?'rgba(255,255,255,.015)':'var(--bg)')+';cursor:'+(dis?'not-allowed':'pointer')+';opacity:'+(dis?'.45':'1')+';transition:.15s;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div style="width:16px;height:16px;border-radius:50%;border:2px solid '+(sel?'var(--ac2)':'var(--brd3)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(sel?'<div style="width:7px;height:7px;border-radius:50%;background:var(--ac2)"></div>':'')+'</div><span style="font-weight:600;font-size:.86rem">'+p.name+'</span></div>'+(p.surcharge?'<div style="font-size:.7rem;color:var(--am);margin-top:4px">+'+F(p.surcharge)+'</div>':'')+(dis?'<div style="font-size:.62rem;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.1em">Coming Soon</div>':'')+'</div>';
+  }).join('');
+
+  // Rules
+  const plan=PLANS[window._buyType].find(p=>p.size===window._buySize)||PLANS[window._buyType][4];
+  const ruleItem=(icon,label,value)=>`<div style="padding:10px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)"><div style="font-size:.68rem;color:var(--t3);margin-bottom:3px">${icon} ${label}</div><div style="font-weight:600;font-size:.88rem;font-family:var(--fd)">${value}</div></div>`;
+  $('buyRulesGrid').innerHTML=
+    ruleItem('&#127919;','Profit Target',plan.target+'%')+
+    ruleItem('&#128200;','Max Daily Loss',plan.daily+'%')+
+    ruleItem('&#128201;','Max Drawdown',plan.dd+'%')+
+    ruleItem('&#128176;','Profit Split',plan.split+'%')+
+    ruleItem('&#9878;','Leverage',plan.lev)+
+    ruleItem('&#128338;','Time Limit','Unlimited');
+
+  // Payment
+  const pays=[{id:'crypto',label:'Cryptocurrency',icon:'&#8383;',sub:'BTC, USDT, ETH, LTC & more'},{id:'card',label:'Credit / Debit Card',icon:'&#128179;',sub:'Visa, Mastercard',dis:true}];
+  $('buyPayGrid').innerHTML=pays.map(p=>{
+    const sel=window._buyPay===p.id;
+    const click=p.dis?'':('setBuyPay(&quot;'+p.id+'&quot;)');
+    return'<div onclick="'+click+'" style="padding:12px 16px;border-radius:var(--r2);border:1.5px solid '+(sel?'var(--ac2)':'var(--brd2)')+';background:'+(sel?'var(--ac-bg)':'var(--bg)')+';cursor:'+(p.dis?'not-allowed':'pointer')+';opacity:'+(p.dis?'.4':'1')+';transition:.15s;display:flex;align-items:center;gap:12px"><div style="width:16px;height:16px;border-radius:50%;border:2px solid '+(sel?'var(--ac2)':'var(--brd3)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(sel?'<div style="width:7px;height:7px;border-radius:50%;background:var(--ac2)"></div>':'')+'</div><div style="flex:1"><div style="font-weight:600;font-size:.86rem">'+p.label+'</div><div style="font-size:.72rem;color:var(--t3)">'+p.sub+'</div></div><div style="font-size:1.2rem">'+p.icon+'</div>'+(p.dis?'<div style="font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em">Soon</div>':'')+'</div>';
+  }).join('');
+
+  updateOrderSummary();
+}
+
+function updateOrderSummary(){
+  const plan=PLANS[window._buyType].find(p=>p.size===window._buySize)||PLANS[window._buyType][4];
+  let fee=plan.fee;
+  if(window._buyType==='two_step')fee=Math.round(fee*0.8);
+  const platSurcharge=(PLATFORMS.find(p=>p.id===selectedPlatform)||{}).surcharge||0;
+  fee+=platSurcharge;
+  let discount=0;
+  if(activeDiscount)discount=Math.round(fee*activeDiscount.discount_pct/100);
+  const total=fee-discount;
+  const typeLabel=window._buyType==='two_step'?'Two Step':'One Step';
+  const platLabel=(PLATFORMS.find(p=>p.id===selectedPlatform)||{}).name||'cTrader';
+  const el=$('orderSummary');if(!el)return;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--brd)">
+      <div><div style="font-weight:600;font-size:.88rem">${F(window._buySize)} — ${typeLabel}</div><div style="font-size:.74rem;color:var(--t3);margin-top:3px">Platform: ${platLabel}</div></div>
+      <div style="font-family:var(--fd);font-weight:600;font-size:.92rem">${F(fee+discount)}</div>
+    </div>
+    ${discount?`<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:.84rem"><span style="color:var(--gr)">Coupon discount (${activeDiscount.discount_pct}%)</span><span style="color:var(--gr);font-weight:600">-${F(discount)}</span></div>`:''}
+    ${platSurcharge?`<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:.84rem"><span>Platform fee</span><span style="font-weight:600">+${F(platSurcharge)}</span></div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid var(--brd)">
+      <span style="font-weight:600;font-size:.92rem">Total</span>
+      <span style="font-family:var(--fd);font-weight:600;font-size:1.5rem;color:var(--t1)">${F(total)}</span>
+    </div>`;
+}
+
+async function submitChallengePurchase(){
+  if(!token){showAuth('register');return}
+  if(!$('buyTerms')?.checked){toast('Please accept the terms to continue','error');return}
+  const plan=PLANS[window._buyType].find(p=>p.size===window._buySize);
+  if(!plan){toast('Select an account size','error');return}
+  try{
+    const body={account_size:window._buySize,challenge_type:window._buyType,payment_method:window._buyPay,platform:selectedPlatform};
+    if(activeDiscount)body.discount_code=activeDiscount.code;
+    const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify(body)});
+    if(d.payment_url){window.location.href=d.payment_url}
+    else{toast('Challenge activated!','success');navigate('challenges')}
+  }catch(x){toast(x.message,'error')}
+}
+window.switchBuyEval=function(){};
+window.renderPlatformSelector=function(){};
+window.selectPlatform=function(id){selectedPlatform=id;renderBuySelectors();};
+window.setBuyPay=function(id){window._buyPay=id;renderBuySelectors();};
+async function validateCode(){const code=$('discountInput')?.value?.trim();if(!code){toast('Enter a code','info');return}try{const d=await api('/api/challenges/validate-code?code='+encodeURIComponent(code));if(d.valid){activeDiscount=d;$('discountStatus').innerHTML=`<span style="color:var(--gr)">&#10004; ${d.code}: ${d.discount_pct}% off</span>`;toast(d.discount_pct+'% discount applied!','success')}else{activeDiscount=null;$('discountStatus').innerHTML=`<span style="color:var(--rd)">&#10006; ${d.error||'Invalid code'}</span>`}}catch(x){toast(x.message,'error')}updateOrderSummary()}
 
 // PAYOUT MODAL
 function showPayoutModal(id){const m=document.createElement("div");m.className="modal-bg";m.id="payoutModal";m.innerHTML=`<div class="modal"><button class="modal-close" onclick="document.getElementById('payoutModal').remove()">&times;</button><div style="text-align:center;margin-bottom:20px"><div style="width:48px;height:48px;border-radius:12px;background:var(--gr-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.4rem">&#128179;</div><h2>Request Payout</h2><p style="color:var(--t2);font-size:.86rem">Choose method &amp; enter wallet</p></div><div style="padding:12px;background:var(--am-bg);border:1px solid rgba(251,191,36,.15);border-radius:var(--r2);margin-bottom:14px;font-size:.8rem;color:var(--t2);line-height:1.5"><strong style="color:var(--am)">Important:</strong> Close all positions first. Account goes view-only during processing. Balance resets after payout.</div><div class="field" style="margin-bottom:14px"><label style="font-size:.8rem;color:var(--t3);margin-bottom:4px;display:block">Wallet Address / Bank Details</label><input id="payoutWallet" placeholder="TRC-20 / ERC-20 address or bank IBAN" style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--brd2);border-radius:var(--r);color:var(--t1);font-family:var(--fm);font-size:.82rem"></div><div style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-primary btn-full" onclick="submitPayout('${id}','crypto_usdt')">USDT (TRC-20)</button><button class="btn btn-primary btn-full" onclick="submitPayout('${id}','crypto_usdc')">USDC (ERC-20)</button><button class="btn btn-outline btn-full" onclick="submitPayout('${id}','bank_transfer')">Bank Transfer</button></div></div>`;document.body.appendChild(m)}

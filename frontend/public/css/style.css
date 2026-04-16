@@ -243,6 +243,7 @@ a{color:inherit;text-decoration:none}
   .eval-tab{flex:1;text-align:center;padding:10px 12px;font-size:.8rem}
   .tbl{font-size:.74rem}
   .tbl th,.tbl td{padding:8px 10px}
+  #page-buy>div:first-child>div:last-child>div{grid-template-columns:1fr!important}
 }
 @media(max-width:480px){
   .container{padding:0 16px}
@@ -255,5 +256,6 @@ a{color:inherit;text-decoration:none}
   .page-head h1{font-size:1.25rem}
   .card{padding:16px}
   .detail{padding:16px}
+  #page-buy>div:first-child>div:last-child>div{grid-template-columns:1fr!important}
 }
 
