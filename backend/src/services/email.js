@@ -196,6 +196,27 @@ async function sendPayoutProcessed(to, name, details) {
   ));
 }
 
+async function sendLoginAlert(to, name, details) {
+  const { ip, location, device, time } = details;
+  const isUnknown = !location || location === 'Unknown';
+  return send(to, 'New Login Detected — Pluto Capital Funding', wrap(
+    'New Sign-In to Your Account',
+    `<p>Hey ${name},</p>
+    <p>We detected a new login to your Pluto Capital account. If this was you, no action is needed.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">
+      ${row('Time', time)}
+      ${row('IP Address', ip || 'Unknown')}
+      ${row('Location', location || 'Unknown')}
+      ${row('Device', device || 'Unknown')}
+    </table>
+    <div style="margin:24px 0;padding:16px 20px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:10px">
+      <p style="margin:0;font-size:14px;color:#fbbf24;font-weight:700">&#9888; Not you?</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#8b87a0">If you did not sign in, your account may be compromised. Change your password immediately and contact us at <a href="mailto:support@plutocapitalfunding.com" style="color:#a78bfa">support@plutocapitalfunding.com</a></p>
+    </div>
+    ${btn('Secure My Account', 'https://pluto-platform.vercel.app')}`
+  ));
+}
+
 module.exports = {
   sendVerification,
   sendWelcome,
@@ -204,4 +225,5 @@ module.exports = {
   sendChallengePassed,
   sendChallengeFailed,
   sendPayoutProcessed,
+  sendLoginAlert,
 };

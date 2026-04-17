@@ -124,6 +124,34 @@ router.post('/login', async (req, res) => {
 
     await run(`UPDATE users SET last_login=NOW()::TEXT WHERE id=?`, [user.id]);
 
+    // --- LOGIN ALERT EMAIL ---
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'Unknown';
+    const ua = req.headers['user-agent'] || 'Unknown';
+    const now = new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false }) + ' UTC';
+    // Simple device label from user-agent
+    let device = 'Unknown';
+    if (/iPhone|iPad/i.test(ua)) device = 'iPhone / iPad';
+    else if (/Android/i.test(ua)) device = 'Android Device';
+    else if (/Macintosh/i.test(ua)) device = 'Mac — ' + (/Chrome/i.test(ua) ? 'Chrome' : /Firefox/i.test(ua) ? 'Firefox' : /Safari/i.test(ua) ? 'Safari' : 'Browser');
+    else if (/Windows/i.test(ua)) device = 'Windows — ' + (/Chrome/i.test(ua) ? 'Chrome' : /Firefox/i.test(ua) ? 'Firefox' : /Edge/i.test(ua) ? 'Edge' : 'Browser');
+    else if (/Linux/i.test(ua)) device = 'Linux — Browser';
+
+    // Geo lookup via ip-api.com (free, no key needed)
+    let location = 'Unknown';
+    if (ip && ip !== 'Unknown' && ip !== '127.0.0.1' && !ip.startsWith('::')) {
+      try {
+        const geo = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,regionName,country`);
+        const gd = await geo.json();
+        if (gd.status === 'success') {
+          location = [gd.city, gd.regionName, gd.country].filter(Boolean).join(', ');
+        }
+      } catch (_) { /* geo lookup is best-effort */ }
+    }
+
+    email.sendLoginAlert(userEmail, user.first_name || 'Trader', { ip, location, device, time: now })
+      .catch(e => console.error('[Auth] Login alert email error:', e.message));
+    // --- END LOGIN ALERT ---
+
     delete user.password_hash;
     res.json({ token, user });
   } catch (e) {
