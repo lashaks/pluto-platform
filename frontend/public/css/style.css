@@ -307,3 +307,11 @@ a{color:inherit;text-decoration:none}
 /* GESTURE CONTROL */
 #gestureToggleBtn.active{color:var(--ac2)!important;background:var(--ac-bg)!important;border-color:var(--ac-gl)!important}
 #gestureToggleBtn.active svg{stroke:var(--ac2)}
+
+/* GESTURE MODE — UI panels become semi-transparent so camera shows through */
+body.gc-active .sidebar{background:rgba(11,10,18,.82)!important;backdrop-filter:blur(16px)}
+body.gc-active .main{background:transparent}
+body.gc-active .nav{background:rgba(6,5,10,.75)!important;backdrop-filter:blur(16px)}
+body.gc-active .card,body.gc-active .detail{background:rgba(17,16,27,.72)!important;backdrop-filter:blur(12px)}
+body.gc-active .modal{background:rgba(17,16,27,.88)!important;backdrop-filter:blur(20px)}
+body.gc-active .modal-bg{background:rgba(0,0,0,.6)!important}
