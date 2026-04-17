@@ -1,36 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="pl" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#9333ea"/>
-      <stop offset="60%" stop-color="#a855f7"/>
-      <stop offset="100%" stop-color="#c084fc"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
     </linearGradient>
-    <linearGradient id="ri" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
-      <stop offset="30%" stop-color="#c084fc" stop-opacity=".9"/>
-      <stop offset="70%" stop-color="#c084fc" stop-opacity=".9"/>
-      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#c4b5fd;stop-opacity:0"/>
+      <stop offset="40%" style="stop-color:#c4b5fd;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:0"/>
     </linearGradient>
-    <radialGradient id="sh" cx="35%" cy="30%">
-      <stop offset="0%" stop-color="#d8b4fe" stop-opacity=".3"/>
-      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
-    </radialGradient>
-    <clipPath id="cp"><circle cx="24" cy="24" r="15"/></clipPath>
-    <filter id="gl"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
-  <!-- Glow -->
-  <circle cx="24" cy="24" r="18" fill="#9333ea" opacity=".08"/>
-  <!-- Planet -->
-  <circle cx="24" cy="24" r="15" fill="url(#pl)"/>
-  <!-- Surface features -->
-  <g clip-path="url(#cp)">
-    <circle cx="24" cy="24" r="15" fill="url(#sh)"/>
-    <ellipse cx="18" cy="19" rx="5" ry="4" fill="rgba(255,255,255,.1)" transform="rotate(-15,18,19)"/>
-    <ellipse cx="30" cy="28" rx="3.5" ry="3" fill="rgba(255,255,255,.07)" transform="rotate(10,30,28)"/>
-    <circle cx="21" cy="28" r="2" fill="rgba(255,255,255,.06)"/>
-  </g>
-  <!-- Atmosphere rim -->
-  <circle cx="24" cy="24" r="15" fill="none" stroke="rgba(196,181,253,.2)" stroke-width=".7"/>
-  <!-- Ring behind (clip to show behind) -->
-  <ellipse cx="24" cy="24" rx="22" ry="5.5" fill="none" stroke="url(#ri)" stroke-width="2" transform="rotate(-20,24,24)" filter="url(#gl)"/>
+  <circle cx="32" cy="32" r="30" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <ellipse cx="32" cy="32" rx="38" ry="10" fill="none"
+    stroke="url(#ring)" stroke-width="2.5" opacity="0.7"
+    transform="rotate(-30 32 32)"/>
+  <path d="M21 16 L21 48 L26 48 L26 36 L36 36
+    C43 36 48 31 48 26 C48 21 43 16 36 16 Z
+    M26 21 L35 21 C40 21 43 23.5 43 26 C43 28.5 40 31 35 31 L26 31 Z"
+    fill="white"/>
 </svg>

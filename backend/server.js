@@ -39,8 +39,8 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
 
 // Patch express to catch async errors (express 4 doesn't catch rejected promises)
 const Layer = require('express/lib/router/layer');

@@ -12,6 +12,27 @@ const router = express.Router();
 const verificationCodes = {};
 // Reset codes stored in DB (not memory — survives server restarts)
 
+// Brute-force protection — lockout after 5 failed login attempts
+const loginAttempts = {}; // { email: { count, lockedUntil } }
+function checkLoginBrute(email) {
+  const now = Date.now();
+  const a = loginAttempts[email];
+  if (a && a.lockedUntil && now < a.lockedUntil) {
+    const mins = Math.ceil((a.lockedUntil - now) / 60000);
+    throw Object.assign(new Error(`Too many failed attempts. Try again in ${mins} minute(s).`), { status: 429 });
+  }
+}
+function recordLoginFail(email) {
+  const now = Date.now();
+  if (!loginAttempts[email]) loginAttempts[email] = { count: 0, lockedUntil: null };
+  loginAttempts[email].count++;
+  if (loginAttempts[email].count >= 5) {
+    loginAttempts[email].lockedUntil = now + 15 * 60 * 1000; // 15 min lockout
+    loginAttempts[email].count = 0;
+  }
+}
+function clearLoginAttempts(email) { delete loginAttempts[email]; }
+
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -111,10 +132,16 @@ router.post('/login', async (req, res) => {
     const { email: userEmail, password } = req.body;
     if (!userEmail || !password) return res.status(400).json({ error: 'Email and password are required' });
 
+    checkLoginBrute(userEmail); // throws if locked out
+
     const user = await queryOne(`SELECT * FROM users WHERE email=$1`, [userEmail]);
-    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!user) { recordLoginFail(userEmail); return res.status(401).json({ error: 'Invalid email or password' }); }
     if (user.is_active === 0 || user.is_active === '0' || user.is_active === false) return res.status(401).json({ error: 'Account is suspended' });
-    if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!bcrypt.compareSync(password, user.password_hash)) {
+      recordLoginFail(userEmail);
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    clearLoginAttempts(userEmail);
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
