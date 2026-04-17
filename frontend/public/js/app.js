@@ -333,8 +333,7 @@ window.render_rules=function(){$('page-rules').innerHTML=`<div class="page-head"
 <div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Max Lot Exposure</div><div style="padding:16px 20px">${R('$5K','2 lots')}${R('$10K','4 lots')}${R('$25K','10 lots')}${R('$50K','20 lots')}${R('$100K','40 lots')}${R('$200K','80 lots')}</div></div>
 <div class="card" style="padding:0;overflow:hidden;border-color:rgba(248,113,113,.12)"><div style="padding:14px 20px;border-bottom:1px solid rgba(248,113,113,.12);font-weight:700;font-size:.95rem;color:var(--rd);background:linear-gradient(135deg,rgba(248,113,113,.04),transparent)">Prohibited</div><div style="padding:16px 20px;color:var(--t2);font-size:.86rem;line-height:2"><div>&#10006; Arbitrage, latency exploitation, tick scalping</div><div>&#10006; HFT</div><div>&#10006; External copy trading</div><div>&#10006; Account sharing</div><div>&#10006; Cross-account hedging</div><div>&#10006; Gambling behavior</div><div>&#10006; News trading in restricted windows</div><div>&#10006; Environment exploitation</div><div>&#10006; VPN circumvention</div></div></div>
 <div style="padding:14px 20px;background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);margin-top:14px;font-size:.84rem;color:var(--t2)">Violations result in immediate termination. Contact <a href="mailto:support@plutocapitalfunding.com" style="color:var(--ac2)">support@plutocapitalfunding.com</a></div>
-<div class="card" style="padding:0;overflow:hidden;margin-top:20px"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem;background:linear-gradient(135deg,rgba(52,211,153,.04),transparent)">Scaling Plan</div><div style="padding:20px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">${[{l:1,n:'Launchpad',s:80,c:'var(--t2)',d:'Pass evaluation'},{l:2,n:'Ascender',s:85,c:'var(--bl)',d:'10% profit / 2 months + 2 payouts'},{l:3,n:'Trailblazer',s:90,c:'var(--ac2)',d:'10% over 4 months + balance increase'},{l:4,n:'Hot Seat',s:100,c:'var(--am)',d:'Consistent performance → up to $2M'}].map(x=>`<div style="padding:16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r2);border-top:3px solid ${x.c}"><div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Level ${x.l}</div><div style="font-size:1.05rem;font-weight:700;margin:4px 0;color:${x.c}">${x.n}</div><div style="font-size:1.1rem;font-weight:700;font-family:var(--fm);color:var(--gr);margin-bottom:6px">${x.s}% Split</div><div style="font-size:.76rem;color:var(--t3);line-height:1.5">${x.d}</div></div>`).join('')}</div></div></div>
-<div class="card" style="margin-top:14px;padding:16px 20px;background:linear-gradient(135deg,rgba(52,211,153,.04),transparent);border-color:rgba(52,211,153,.15)"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.1rem">&#127873;</span><div><div style="font-weight:700;font-size:.9rem;color:var(--gr)">Fee Refund Policy</div><div style="font-size:.82rem;color:var(--t2);margin-top:2px">Your challenge fee is refunded with your first payout from a funded account.</div></div></div></div>`};
+`};
 
 // PROFILE
 window.render_profile=async function(){$('page-profile').innerHTML=LOADING;const u=await api('/api/users/profile');
@@ -425,12 +424,94 @@ ${paidPayouts.length?`<div class="card" style="padding:0;overflow:hidden;margin-
 function showLegalModal(title,content){const m=document.createElement('div');m.className='modal-bg';m.id='legalModal';m.innerHTML=`<div class="modal" style="max-width:700px;max-height:80vh;overflow-y:auto"><button class="modal-close" onclick="document.getElementById('legalModal').remove()">&times;</button><h2>${title}</h2><div style="color:var(--t2);font-size:.84rem;line-height:1.75;margin-top:16px">${content}</div></div>`;document.body.appendChild(m)}
 
 // CERTIFICATE
-function showCertificate(type,data){const m=document.createElement('div');m.className='modal-bg';m.id='certModal';
-const isPass=type==='pass';
-const title=isPass?'Certificate of Achievement':'Payout Certificate';
-const body=isPass?`<div style="font-size:.9rem;color:var(--t2);margin-bottom:8px">This is to certify that</div><div style="font-size:1.7rem;font-weight:600;font-family:var(--fd);letter-spacing:-.025em;color:var(--t1);margin-bottom:8px">${data.name}</div><div style="font-size:.9rem;color:var(--t2);margin-bottom:24px">has successfully passed the</div><div style="font-size:1.3rem;font-weight:700;color:var(--ac2);margin-bottom:6px">${data.size} ${data.type} Evaluation</div><div style="font-size:.86rem;color:var(--t3);margin-bottom:24px">demonstrating consistent trading discipline and risk management</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;padding:16px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);margin-bottom:24px"><div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Account Size</div><div style="font-size:1.1rem;font-weight:700;margin-top:4px">${data.size}</div></div><div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Profit Split</div><div style="font-size:1.1rem;font-weight:700;margin-top:4px">80%</div></div><div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Date</div><div style="font-size:1.1rem;font-weight:700;margin-top:4px">${data.date}</div></div></div>`:`<div style="font-size:.9rem;color:var(--t2);margin-bottom:8px">Payout confirmation for</div><div style="font-size:1.7rem;font-weight:600;font-family:var(--fd);letter-spacing:-.025em;color:var(--t1);margin-bottom:24px">${data.name}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:center;padding:16px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);margin-bottom:24px"><div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Amount</div><div style="font-size:1.4rem;font-weight:800;color:var(--gr);margin-top:4px">${data.amount}</div></div><div><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Date</div><div style="font-size:1.1rem;font-weight:700;margin-top:4px">${data.date}</div></div></div>`;
-m.innerHTML=`<div class="modal" style="max-width:520px;text-align:center;padding:40px"><button class="modal-close" onclick="document.getElementById('certModal').remove()">&times;</button><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px"><img src="/img/favicon.svg" style="width:32px;height:32px"><span style="font-weight:800;font-size:1.1rem">PLUTO<span style="color:var(--ac2)">CAPITAL</span></span></div><div style="font-size:1.2rem;font-weight:800;color:var(--ac2);margin-bottom:20px;text-transform:uppercase;letter-spacing:.15em">${title}</div>${body}<div style="font-size:.74rem;color:var(--t3)">Certificate ID: ${data.id||'PCF-'+Date.now().toString(36).toUpperCase()}</div><button class="btn btn-outline btn-sm" style="margin-top:20px" onclick="window.print()">Print Certificate</button></div>`;
-document.body.appendChild(m)}
+function showCertificate(type,data){
+  const certId=data.id||'PCF-'+Date.now().toString(36).toUpperCase();
+  const isPass=type==='pass';
+  const m=document.createElement('div');
+  m.className='modal-bg';m.id='certModal';
+  m.style.cssText='display:flex;align-items:center;justify-content:center;z-index:1000';
+
+  if(isPass){
+    m.innerHTML=`<div id="certPrint" style="background:#0f0f14;border:1px solid rgba(139,92,246,.3);border-radius:16px;width:680px;max-width:96vw;overflow:hidden;position:relative;font-family:'Manrope',sans-serif">
+      <button onclick="document.getElementById('certModal').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.06);border:none;color:#aaa;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:10">&times;</button>
+      <!-- TOP ACCENT BAR -->
+      <div style="height:4px;background:linear-gradient(90deg,#7c3aed,#8b5cf6,#a78bfa,#60a5fa)"></div>
+      <!-- HEADER -->
+      <div style="padding:36px 40px 28px;text-align:center;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px">
+          <img src="/img/favicon.svg" style="width:28px;height:28px;opacity:.9">
+          <span style="font-size:.8rem;font-weight:800;letter-spacing:.22em;color:#a78bfa;text-transform:uppercase">Pluto Capital Funding</span>
+        </div>
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.3em;color:#6b7280;text-transform:uppercase;margin-bottom:14px">Certificate of Achievement</div>
+        <div style="font-size:.82rem;color:#9ca3af;margin-bottom:10px">This is to certify that</div>
+        <div style="font-size:2rem;font-weight:700;color:#f9fafb;letter-spacing:-.03em;margin-bottom:10px;line-height:1.1">${data.name}</div>
+        <div style="font-size:.82rem;color:#9ca3af;margin-bottom:8px">has successfully completed the</div>
+        <div style="font-size:1.15rem;font-weight:700;color:#a78bfa;margin-bottom:4px">${data.size} ${data.type} Evaluation</div>
+        <div style="font-size:.78rem;color:#6b7280">demonstrating consistent discipline, risk control, and trading proficiency</div>
+      </div>
+      <!-- STATS ROW -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="padding:20px;text-align:center;border-right:1px solid rgba(255,255,255,.07)">
+          <div style="font-size:.58rem;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Account Size</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#f9fafb">${data.size}</div>
+        </div>
+        <div style="padding:20px;text-align:center;border-right:1px solid rgba(255,255,255,.07)">
+          <div style="font-size:.58rem;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Profit Split</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#34d399">80%</div>
+        </div>
+        <div style="padding:20px;text-align:center">
+          <div style="font-size:.58rem;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Date Issued</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#f9fafb">${data.date}</div>
+        </div>
+      </div>
+      <!-- FOOTER -->
+      <div style="padding:18px 40px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.65rem;color:#4b5563;font-family:'JetBrains Mono',monospace">ID: ${certId}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="window.print()" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#a78bfa;padding:7px 16px;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif">Print</button>
+          <button onclick="document.getElementById('certModal').remove()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#9ca3af;padding:7px 16px;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif">Close</button>
+        </div>
+      </div>
+      <!-- BOTTOM ACCENT BAR -->
+      <div style="height:2px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.4),transparent)"></div>
+    </div>`;
+  } else {
+    m.innerHTML=`<div id="certPrint" style="background:#0f0f14;border:1px solid rgba(52,211,153,.2);border-radius:16px;width:560px;max-width:96vw;overflow:hidden;position:relative;font-family:'Manrope',sans-serif">
+      <button onclick="document.getElementById('certModal').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.06);border:none;color:#aaa;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:10">&times;</button>
+      <div style="height:4px;background:linear-gradient(90deg,#059669,#34d399,#6ee7b7)"></div>
+      <div style="padding:36px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px">
+          <img src="/img/favicon.svg" style="width:28px;height:28px;opacity:.9">
+          <span style="font-size:.8rem;font-weight:800;letter-spacing:.22em;color:#34d399;text-transform:uppercase">Pluto Capital Funding</span>
+        </div>
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.3em;color:#6b7280;text-transform:uppercase;margin-bottom:14px">Payout Confirmation</div>
+        <div style="font-size:.82rem;color:#9ca3af;margin-bottom:10px">Payout issued to</div>
+        <div style="font-size:1.8rem;font-weight:700;color:#f9fafb;letter-spacing:-.03em;margin-bottom:18px;line-height:1.1">${data.name}</div>
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.2em;color:#6b7280;text-transform:uppercase;margin-bottom:8px">Amount Paid</div>
+        <div style="font-size:2.4rem;font-weight:800;color:#34d399;letter-spacing:-.04em">${data.amount}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="padding:18px 24px;text-align:center;border-right:1px solid rgba(255,255,255,.07)">
+          <div style="font-size:.58rem;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Status</div>
+          <div style="font-size:.92rem;font-weight:700;color:#34d399">&#10003; Paid</div>
+        </div>
+        <div style="padding:18px 24px;text-align:center">
+          <div style="font-size:.58rem;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Date</div>
+          <div style="font-size:.92rem;font-weight:700;color:#f9fafb">${data.date}</div>
+        </div>
+      </div>
+      <div style="padding:16px 40px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.65rem;color:#4b5563;font-family:'JetBrains Mono',monospace">REF: ${certId}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="window.print()" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:#34d399;padding:7px 16px;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif">Print</button>
+          <button onclick="document.getElementById('certModal').remove()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#9ca3af;padding:7px 16px;border-radius:8px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:'Manrope',sans-serif">Close</button>
+        </div>
+      </div>
+      <div style="height:2px;background:linear-gradient(90deg,transparent,rgba(52,211,153,.3),transparent)"></div>
+    </div>`;
+  }
+  document.body.appendChild(m);
+}
 function showTerms(){showLegalModal('Terms of Service',`<p><strong>Last Updated: April 15, 2026</strong></p><p><strong>1. Nature of Services</strong><br>Pluto Capital Funding provides a simulated trading evaluation environment. All activity occurs in a demo environment using virtual funds. We are NOT a broker, financial advisor, or regulated financial entity.</p><p><strong>2. Eligibility</strong><br>Must be 18+. Accurate info required. KYC before funded account.</p><p><strong>3. Fees</strong><br>Non-refundable. Passing does not guarantee funding.</p><p><strong>4. Rules</strong><br>&bull; Targets: 1-Step 10%, 2-Step 8%/5%<br>&bull; Daily loss: 5%<br>&bull; Drawdown: 1-Step 8%, 2-Step 10% (static)<br>&bull; 20% consistency rule<br>&bull; Lot limits per account size<br>&bull; News: 2-min restriction<br>&bull; Weekend: funded must close Fri 3:45 PM EST<br>&bull; Min 2-min avg trade duration<br>&bull; 30-day inactivity = closure<br>Violations = termination without refund.</p><p><strong>5. Prohibited</strong><br>&bull; Arbitrage, HFT, tick scalping<br>&bull; External copy trading<br>&bull; Account sharing<br>&bull; Cross-account hedging (same-account OK)<br>&bull; Gambling behavior<br>&bull; Environment exploitation<br>&bull; VPN circumvention</p><p><strong>6. Funded Accounts</strong><br>Simulated. Performance-based rewards. KYC required. Weekend holding not permitted.</p><p><strong>7. Payouts</strong><br>USDT, USDC, or bank. Min $50. No open positions. Subject to review.</p><p><strong>8. Liability</strong><br>Limited to fee paid. AI Coach is educational only.</p><p><strong>9. Contact</strong><br>support@plutocapitalfunding.com</p>`)}
 function showPrivacy(){showLegalModal('Privacy Policy',`<p><strong>Last Updated: April 15, 2026</strong></p><p><strong>We collect:</strong> Name, email, phone, country, ID (KYC), trading data, IP, payment info.</p><p><strong>Use:</strong> Operations, payouts, KYC, communications, improvement.</p><p><strong>Sharing:</strong> Never sold. Shared with KYC (Sumsub), payments (NOWPayments, Rise), law enforcement.</p><p><strong>Rights:</strong> Access, correction, deletion via support@plutocapitalfunding.com.</p>`)}
 function showRisk(){showLegalModal('Risk Disclosure',`<p><strong>Last Updated: April 15, 2026</strong></p><p><strong>Simulated:</strong> All trading is demo. No real money at risk.</p><p><strong>No Guarantee:</strong> Most traders fail. Only use funds you can lose.</p><p><strong>Non-Refundable:</strong> All fees final.</p><p><strong>Payouts:</strong> Performance-based rewards. Subject to KYC and compliance review.</p><p><strong>No Swap Fees:</strong> All accounts are swap-free. No overnight charges on positions.</p><p><strong>AI Coach:</strong> Educational only. Not financial advice.</p><p><strong>Contact:</strong> support@plutocapitalfunding.com</p>`)}
