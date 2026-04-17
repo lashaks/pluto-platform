@@ -312,6 +312,7 @@ async function initDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS affiliate_earnings REAL DEFAULT 0`,
+      `CREATE TABLE IF NOT EXISTS password_reset_codes (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, code TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT DEFAULT (NOW()::TEXT))`,
     ];
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* column already exists */ }

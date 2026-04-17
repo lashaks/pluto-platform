@@ -243,10 +243,12 @@
     <h2>Enter New Password</h2>
     <p>Check your email for the 6-digit code</p>
     <form onsubmit="doReset(event)">
+      <div class="field"><label>Email</label><input type="email" id="resetEmail" required placeholder="trader@example.com"></div>
       <div class="field"><label>Reset Code</label><input type="text" id="resetCode" required placeholder="123456" maxlength="6" style="text-align:center;font-size:1.4rem;letter-spacing:8px;font-family:var(--fm)"></div>
       <div class="field"><label>New Password</label><input type="password" id="resetNewPass" required minlength="6" placeholder="Min 6 characters"></div>
       <button type="submit" class="btn btn-primary btn-full">Reset Password</button>
     </form>
+    <div style="text-align:center;margin-top:10px"><a style="color:var(--t3);font-size:.78rem;cursor:pointer" onclick="resendResetCode()">Didn't get the code? Resend</a></div>
     <div class="modal-switch"><a onclick="showAuth('login')">Back to Sign In</a></div>
   </div>
 </div></div>

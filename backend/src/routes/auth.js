@@ -10,7 +10,7 @@ const router = express.Router();
 
 // In-memory verification codes (move to Redis/DB in production at scale)
 const verificationCodes = {};
-const resetCodes = {};
+// Reset codes stored in DB (not memory — survives server restarts)
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -168,13 +168,19 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await queryOne(`SELECT id, first_name FROM users WHERE email=$1`, [userEmail]);
     if (!user) {
-      // Don't reveal if email exists
       return res.json({ success: true, message: 'If this email is registered, you will receive a reset code.' });
     }
 
     const code = generateCode();
-    resetCodes[userEmail] = { code, expires: Date.now() + 15 * 60 * 1000, userId: user.id };
-    email.sendPasswordReset(userEmail, user.first_name || 'Trader', code).catch(e => console.error('[Auth] Reset email error:', e.message));
+    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    // Store in DB — upsert by user_id
+    await run(`DELETE FROM password_reset_codes WHERE user_id=?`, [user.id]);
+    await run(`INSERT INTO password_reset_codes (id, user_id, code, expires_at) VALUES (?, ?, ?, ?)`,
+      [generateId(), user.id, code, expires]);
+
+    email.sendPasswordReset(userEmail, user.first_name || 'Trader', code)
+      .catch(e => console.error('[Auth] Reset email error:', e.message));
 
     res.json({ success: true, message: 'If this email is registered, you will receive a reset code.' });
   } catch (e) {
@@ -190,20 +196,22 @@ router.post('/reset-password', async (req, res) => {
     if (!userEmail || !code || !new_password) return res.status(400).json({ error: 'Email, code, and new password are required' });
     if (new_password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
-    const stored = resetCodes[userEmail];
-    if (!stored) return res.status(400).json({ error: 'No reset request found. Request a new code.' });
-    if (Date.now() > stored.expires) {
-      delete resetCodes[userEmail];
+    const user = await queryOne(`SELECT id FROM users WHERE email=$1`, [userEmail]);
+    if (!user) return res.status(400).json({ error: 'Invalid request' });
+
+    const stored = await queryOne(`SELECT * FROM password_reset_codes WHERE user_id=$1 AND code=$2`, [user.id, code]);
+    if (!stored) return res.status(400).json({ error: 'Invalid or expired code. Request a new one.' });
+    if (new Date(stored.expires_at) < new Date()) {
+      await run(`DELETE FROM password_reset_codes WHERE user_id=?`, [user.id]);
       return res.status(400).json({ error: 'Code expired. Request a new one.' });
     }
-    if (stored.code !== code) return res.status(400).json({ error: 'Invalid code' });
 
     const hash = bcrypt.hashSync(new_password, 10);
-    await run(`UPDATE users SET password_hash=?, updated_at=NOW()::TEXT WHERE id=?`, [hash, stored.userId]);
-    delete resetCodes[userEmail];
+    await run(`UPDATE users SET password_hash=?, updated_at=NOW()::TEXT WHERE id=?`, [hash, user.id]);
+    await run(`DELETE FROM password_reset_codes WHERE user_id=?`, [user.id]);
 
     await run(`INSERT INTO audit_log (id, user_id, action, details) VALUES (?, ?, 'PASSWORD_RESET', 'Password reset via email')`,
-      [generateId(), stored.userId]);
+      [generateId(), user.id]);
 
     res.json({ success: true, message: 'Password reset successfully. You can now sign in.' });
   } catch (e) {
