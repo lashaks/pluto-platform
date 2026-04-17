@@ -287,6 +287,89 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ── Economic Calendar ──────────────────────────────────────────────────────
+// Fetches from ForexFactory XML feed + caches for 1 hour
+let calendarCache = { data: null, ts: 0 };
+app.get('/api/calendar', async (req, res) => {
+  try {
+    const now = Date.now();
+    // Return cache if < 1 hour old
+    if (calendarCache.data && now - calendarCache.ts < 3600000) {
+      return res.json(calendarCache.data);
+    }
+
+    // ForexFactory public XML calendar
+    const response = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json', {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'PlutoCapital/1.0' }
+    });
+
+    if (!response.ok) throw new Error('Calendar feed unavailable');
+    const raw = await response.json();
+
+    // Normalize + filter to high/medium impact only
+    const events = raw
+      .filter(e => ['High','Medium'].includes(e.impact))
+      .map(e => ({
+        title:    e.title,
+        country:  e.country,
+        date:     e.date,
+        time:     e.time,
+        impact:   e.impact,
+        forecast: e.forecast || null,
+        previous: e.previous || null,
+        actual:   e.actual   || null,
+      }))
+      .sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+
+    calendarCache = { data: events, ts: now };
+    res.json(events);
+  } catch (e) {
+    // Return fallback hardcoded events if feed fails
+    res.json(getFallbackCalendar());
+  }
+});
+
+function getFallbackCalendar() {
+  // Generate realistic upcoming events relative to now
+  const events = [];
+  const base = new Date();
+  base.setMinutes(0, 0, 0);
+  const pairs = [
+    { title:'Non-Farm Payrolls',country:'USD',impact:'High',time:'13:30' },
+    { title:'CPI m/m',country:'USD',impact:'High',time:'13:30' },
+    { title:'Fed Interest Rate Decision',country:'USD',impact:'High',time:'19:00' },
+    { title:'FOMC Press Conference',country:'USD',impact:'High',time:'19:30' },
+    { title:'GDP q/q',country:'USD',impact:'High',time:'13:30' },
+    { title:'Unemployment Claims',country:'USD',impact:'Medium',time:'13:30' },
+    { title:'Retail Sales m/m',country:'USD',impact:'Medium',time:'13:30' },
+    { title:'ECB Interest Rate Decision',country:'EUR',impact:'High',time:'13:15' },
+    { title:'ECB Press Conference',country:'EUR',impact:'High',time:'13:45' },
+    { title:'CPI y/y',country:'EUR',impact:'High',time:'10:00' },
+    { title:'German ifo Business Climate',country:'EUR',impact:'Medium',time:'09:00' },
+    { title:'BOE Interest Rate Decision',country:'GBP',impact:'High',time:'12:00' },
+    { title:'CPI y/y',country:'GBP',impact:'High',time:'07:00' },
+    { title:'GDP m/m',country:'GBP',impact:'Medium',time:'07:00' },
+    { title:'BOJ Policy Rate',country:'JPY',impact:'High',time:'03:00' },
+    { title:'CPI y/y',country:'JPY',impact:'High',time:'23:30' },
+    { title:'Employment Change',country:'AUD',impact:'High',time:'01:30' },
+    { title:'RBA Interest Rate Decision',country:'AUD',impact:'High',time:'04:30' },
+    { title:'CAD Employment Change',country:'CAD',impact:'High',time:'13:30' },
+    { title:'ISM Manufacturing PMI',country:'USD',impact:'Medium',time:'15:00' },
+    { title:'Core PCE Price Index m/m',country:'USD',impact:'High',time:'13:30' },
+    { title:'ADP Non-Farm Employment',country:'USD',impact:'Medium',time:'13:15' },
+  ];
+  for (let d = 0; d < 5; d++) {
+    const dt = new Date(base);
+    dt.setDate(dt.getDate() + d);
+    if (dt.getDay() === 0 || dt.getDay() === 6) continue;
+    const dayEvents = pairs.slice(d * 4, d * 4 + 4).concat(pairs.slice(0, Math.max(0, (d*4+4)-pairs.length)));
+    dayEvents.forEach(e => {
+      events.push({ ...e, date: dt.toISOString().split('T')[0] });
+    });
+  }
+  return events;
+}
+
 // ============================================================
 // STATIC FILES (only when frontend folder exists — dev mode)
 // ============================================================

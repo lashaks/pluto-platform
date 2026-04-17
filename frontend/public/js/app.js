@@ -686,9 +686,187 @@ $('page-leaderboard').innerHTML=`<div class="page-head"><h1>Leaderboard</h1><p>T
 ${d.length?`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>Trader</th><th>Country</th><th>Size</th><th>Profit</th><th>%</th><th>Trades</th><th>Win Rate</th></tr></thead><tbody>${d.map((t,i)=>`<tr style="${i<3?'background:rgba(139,92,246,.04)':''}"><td style="font-weight:700;color:${i===0?'var(--am)':i===1?'var(--t2)':i===2?'var(--ac2)':'var(--t3)'};font-size:1rem">${t.rank}</td><td class="fw">${t.name}</td><td>${t.country}</td><td class="mono">${F(t.size)}</td><td class="pos" style="font-weight:700">${F(t.profit)}</td><td style="color:var(--gr)">${t.profit_pct}%</td><td class="mono">${t.trades}</td><td>${t.win_rate}%</td></tr>`).join('')}</tbody></table></div></div>`:`<div class="card" style="text-align:center;padding:52px;color:var(--t3)">No traders on the leaderboard yet. Be the first!</div>`}`}catch(e){$('page-leaderboard').innerHTML='<div class="card"><div class="empty">Failed to load leaderboard</div></div>'}};
 
 // ECONOMIC CALENDAR
-window.render_calendar=function(){$('page-calendar').innerHTML=`<div class="page-head"><h1>Economic Calendar</h1><p>High-impact events affect trading — close positions 2 min before/after</p></div>
-<div class="card" style="padding:0;overflow:hidden;min-height:600px"><iframe src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=25,32,6,37,72,22,17,39,14,10,35,43,56,36,110,11,26,12,4,5&calType=week&timeZone=58&lang=1" width="100%" height="600" frameborder="0" style="border:none;background:var(--bg)"></iframe></div>
-<div class="card" style="margin-top:14px;padding:16px 20px"><div style="font-weight:700;font-size:.9rem;margin-bottom:8px;color:var(--am)">News Trading Rule</div><div style="font-size:.84rem;color:var(--t2);line-height:1.7">Close all positions at least <strong style="color:var(--t1)">2 minutes before</strong> and do not open new positions until <strong style="color:var(--t1)">2 minutes after</strong> any high-impact news event. Violations on funded accounts may result in profit voiding or account breach.</div></div>`};
+window.render_calendar=async function(){
+  $('page-calendar').innerHTML=`
+  <div class="page-head">
+    <h1>Economic Calendar</h1>
+    <p>High-impact news events — close all positions 2 min before &amp; after</p>
+  </div>
+  <!-- News rule banner -->
+  <div style="padding:12px 18px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.18);border-radius:var(--r2);margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:1.2rem">⚠️</span>
+    <div>
+      <div style="font-weight:700;font-size:.84rem;color:var(--am)">News Trading Rule</div>
+      <div style="font-size:.78rem;color:var(--t2);margin-top:2px">Close all positions at least <strong style="color:var(--t1)">2 minutes before</strong> and wait <strong style="color:var(--t1)">2 minutes after</strong> any high-impact event. Violations on funded accounts may result in profit voiding.</div>
+    </div>
+  </div>
+  <!-- Filters -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <span style="font-size:.7rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em">Filter:</span>
+    <button class="cal-filter active" data-impact="all" onclick="calFilter(this,'all')">All</button>
+    <button class="cal-filter" data-impact="High" onclick="calFilter(this,'High')">🔴 High Only</button>
+    <div style="margin-left:auto;font-size:.7rem;color:var(--t3)" id="cal-updated"></div>
+  </div>
+  <!-- Currency filter -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+    <span style="font-size:.7rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em">Currency:</span>
+    ${['ALL','USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD'].map(c=>`<button class="cal-cur-filter ${c==='ALL'?'active':''}" data-cur="${c}" onclick="calCurFilter(this,'${c}')">${c}</button>`).join('')}
+  </div>
+  <!-- Calendar body -->
+  <div id="cal-body">${LOADING}</div>`;
+
+  // Inject filter styles
+  if(!document.getElementById('cal-styles')){
+    const s=document.createElement('style');s.id='cal-styles';
+    s.textContent=`
+      .cal-filter,.cal-cur-filter{padding:4px 12px;border-radius:20px;border:1px solid var(--brd2);background:transparent;color:var(--t3);font-family:var(--ff);font-size:.7rem;font-weight:600;cursor:pointer;transition:all .15s}
+      .cal-filter:hover,.cal-cur-filter:hover{color:var(--t1);border-color:var(--brd3)}
+      .cal-filter.active,.cal-cur-filter.active{background:var(--ac-bg);border-color:var(--ac-gl);color:var(--ac2)}
+      .cal-day-header{padding:10px 0 6px;font-size:.7rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.14em;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--brd)}
+      .cal-day-header span{color:var(--t1)}
+      .cal-day-header .today-badge{background:var(--ac-bg);color:var(--ac2);padding:2px 8px;border-radius:10px;font-size:.6rem;border:1px solid var(--ac-gl)}
+      .cal-event{display:grid;grid-template-columns:70px 44px 1fr auto auto auto;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r2);margin:4px 0;border:1px solid var(--brd);background:var(--sf);transition:all .15s}
+      .cal-event:hover{border-color:var(--brd2);background:var(--sf2)}
+      .cal-event.high{border-left:3px solid var(--rd)}
+      .cal-event.medium{border-left:3px solid var(--am)}
+      .cal-time{font-family:var(--fm);font-size:.74rem;font-weight:600;color:var(--t2)}
+      .cal-time.upcoming{color:var(--ac2);font-weight:700}
+      .cal-time.live{color:var(--rd);font-weight:800;animation:livepulse 1s ease-in-out infinite}
+      @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.5}}
+      .cal-flag{font-size:1.1rem;text-align:center}
+      .cal-title{font-size:.8rem;font-weight:600;color:var(--t1)}
+      .cal-country{font-size:.62rem;color:var(--t3);margin-top:1px}
+      .cal-impact-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+      .impact-High .cal-impact-dot{background:var(--rd);box-shadow:0 0 6px rgba(248,113,113,.5)}
+      .impact-Medium .cal-impact-dot{background:var(--am)}
+      .cal-data{text-align:right;min-width:52px}
+      .cal-data-label{font-size:.52rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+      .cal-data-val{font-size:.72rem;font-family:var(--fm);font-weight:600;color:var(--t1)}
+      .cal-data-val.positive{color:var(--gr)}
+      .cal-data-val.negative{color:var(--rd)}
+      .cal-countdown{font-size:.62rem;font-family:var(--fm);color:var(--t3);text-align:right;min-width:60px}
+      .cal-countdown.soon{color:var(--am);font-weight:700}
+      .cal-countdown.live{color:var(--rd);font-weight:800}
+    `;
+    document.head.appendChild(s);
+  }
+
+  try {
+    const data = await api('/api/calendar');
+    window._calData = data;
+    window._calImpact = 'all';
+    window._calCur = 'ALL';
+    renderCalendarBody(data);
+    $('cal-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    // Refresh countdown every 30s
+    if(window._calTimer) clearInterval(window._calTimer);
+    window._calTimer = setInterval(()=>renderCalendarBody(window._calData), 30000);
+  } catch(e) {
+    $('cal-body').innerHTML = '<div class="card"><div class="empty">Failed to load calendar. Try again.</div></div>';
+  }
+};
+
+function calFilter(btn, impact) {
+  document.querySelectorAll('.cal-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  window._calImpact = impact;
+  renderCalendarBody(window._calData);
+}
+function calCurFilter(btn, cur) {
+  document.querySelectorAll('.cal-cur-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  window._calCur = cur;
+  renderCalendarBody(window._calData);
+}
+
+function renderCalendarBody(data) {
+  if (!data) return;
+  const now = new Date();
+  const impact = window._calImpact || 'all';
+  const cur    = window._calCur    || 'ALL';
+  const FLAGS  = {USD:'🇺🇸',EUR:'🇪🇺',GBP:'🇬🇧',JPY:'🇯🇵',AUD:'🇦🇺',CAD:'🇨🇦',CHF:'🇨🇭',NZD:'🇳🇿',CNY:'🇨🇳',CHN:'🇨🇳'};
+
+  let filtered = data.filter(e =>
+    (impact === 'all' || e.impact === impact) &&
+    (cur === 'ALL' || e.country === cur)
+  );
+
+  if (!filtered.length) {
+    $('cal-body').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--t3)">No events match the current filter</div>';
+    return;
+  }
+
+  // Group by date
+  const byDate = {};
+  filtered.forEach(e => {
+    if (!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+
+  const html = Object.entries(byDate).map(([date, events]) => {
+    const d     = new Date(date + 'T12:00:00');
+    const isToday = date === now.toISOString().split('T')[0];
+    const dayName = isToday ? 'Today' : d.toLocaleDateString('en-US',{weekday:'long'});
+    const dateFmt = d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+    const evHtml = events.map(e => {
+      const [h,m]    = (e.time||'00:00').split(':').map(Number);
+      const evTime   = new Date(date + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
+      const diffMs   = evTime - now;
+      const diffMin  = Math.round(diffMs / 60000);
+      const isLive   = diffMs > -120000 && diffMs < 120000;
+      const isSoon   = diffMs > 0 && diffMin <= 30;
+      const isPast   = diffMs < -120000;
+
+      let timeCls = '';
+      let countdown = '';
+      if (isLive)      { timeCls = 'live'; countdown = '🔴 LIVE'; }
+      else if (isSoon) { timeCls = 'upcoming'; countdown = `in ${diffMin}m`; }
+      else if (!isPast && isToday) {
+        if (diffMin < 60) countdown = `in ${diffMin}m`;
+        else countdown = `in ${Math.floor(diffMin/60)}h ${diffMin%60}m`;
+      }
+
+      const actualCls = e.actual
+        ? (parseFloat(e.actual) >= parseFloat(e.forecast || e.previous || '0') ? 'positive' : 'negative')
+        : '';
+
+      return `<div class="cal-event ${e.impact?.toLowerCase()||''} impact-${e.impact||''}">
+        <div class="cal-time ${timeCls}">${e.time||'TBA'}</div>
+        <div class="cal-flag">${FLAGS[e.country]||'🌐'}</div>
+        <div>
+          <div class="cal-title">${e.title}</div>
+          <div class="cal-country">${e.country} · ${e.impact} Impact</div>
+        </div>
+        <div class="cal-data" style="min-width:52px">
+          <div class="cal-data-label">Prev</div>
+          <div class="cal-data-val">${e.previous||'—'}</div>
+        </div>
+        <div class="cal-data" style="min-width:52px">
+          <div class="cal-data-label">Fcst</div>
+          <div class="cal-data-val">${e.forecast||'—'}</div>
+        </div>
+        <div class="cal-data" style="min-width:52px">
+          <div class="cal-data-label">Actual</div>
+          <div class="cal-data-val ${actualCls}">${e.actual||'—'}</div>
+        </div>
+        ${countdown ? `<div class="cal-countdown ${isLive?'live':isSoon?'soon':''}">${countdown}</div>` : '<div style="min-width:60px"></div>'}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:24px">
+      <div class="cal-day-header">
+        <span>${dayName}</span>
+        <span style="color:var(--t3)">${dateFmt}</span>
+        ${isToday?'<span class="today-badge">TODAY</span>':''}
+        <span style="margin-left:auto;font-size:.62rem;color:var(--t3)">${events.length} event${events.length!==1?'s':''}</span>
+      </div>
+      <div style="margin-top:8px">${evHtml}</div>
+    </div>`;
+  }).join('');
+
+  $('cal-body').innerHTML = html;
+}
 
 // AFFILIATE
 window.render_affiliate=async function(){$('page-affiliate').innerHTML=LOADING;try{

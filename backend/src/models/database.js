@@ -285,7 +285,8 @@ async function seedDatabase(client) {
   const q = async (sql, params=[]) => {
     if (!client) return queryAll(sql, params);
     let i=0; const pg=sql.replace(/\?/g,()=>`$${++i}`);
-    return q(pg,params).then(r=>r.rows);
+    const r = await client.query(pg, params);
+    return r.rows;
   };
   const countRes = await q("SELECT COUNT(*) as count FROM users");
   const count = parseInt(countRes[0]?.count || countRes[0]?.COUNT || 0);
@@ -461,10 +462,10 @@ async function initDatabase() {
   const client = await pool.connect();
   try {
     for (const sql of TABLES) {
-      await q(sql);
+      await client.query(sql);
     }
     for (const sql of INDEXES) {
-      try { await q(sql); } catch(_) {}
+      try { await client.query(sql); } catch(_) {}
     }
     console.log('  ✓ Database schema created');
 
@@ -490,7 +491,7 @@ async function initDatabase() {
       `ALTER TABLE trades ADD COLUMN IF NOT EXISTS pips REAL DEFAULT 0`,
     ];
     for (const sql of migrations) {
-      try { await q(sql); } catch(_) {}
+      try { await client.query(sql); } catch(_) {}
     }
     console.log('  ✓ Migrations applied');
     await seedDatabase(client);
