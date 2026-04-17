@@ -303,3 +303,7 @@ a{color:inherit;text-decoration:none}
 .theme-pill::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
 [data-theme="light"] .theme-pill{background:var(--brd3)}
 [data-theme="light"] .theme-pill::after{transform:translateX(18px)}
+
+/* GESTURE CONTROL */
+#gestureToggleBtn.active{color:var(--ac2)!important;background:var(--ac-bg)!important;border-color:var(--ac-gl)!important}
+#gestureToggleBtn.active svg{stroke:var(--ac2)}
