@@ -1,4 +1,4 @@
-/* Pluto Capital Funding — v13.0 — Premium Dashboard */
+/* Pluto Capital Funding — v14.0 — Premium Dashboard */
 const API='https://pluto-platform-production.up.railway.app';
 let token=localStorage.getItem('pcf_token'),user=null,currentEval='one_step',selectedPlan=null;
 const $=id=>document.getElementById(id);
@@ -6,6 +6,20 @@ const F=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimu
 const B=s=>`<span class="badge b-${s}">${s.replace(/_/g,' ')}</span>`;
 const pct=n=>`${n>=0?'+':''}${n.toFixed(2)}%`;
 const LOADING=`<div style="display:flex;align-items:center;justify-content:center;padding:80px;gap:12px;color:var(--t3)"><div style="width:20px;height:20px;border:2.5px solid var(--brd);border-top-color:var(--ac);border-radius:50%;animation:spin .6s linear infinite"></div><span style="font-size:.86rem">Loading...</span></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+
+// THEME
+const MOON_SVG=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`;
+const SUN_SVG=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('pcf_theme',t);
+  const isLight=t==='light';
+  const icon=$('navThemeIcon');if(icon)icon.outerHTML=(isLight?MOON_SVG:SUN_SVG).replace('<svg','<svg id="navThemeIcon"');
+  const lbl=$('sbThemeLabel');if(lbl)lbl.textContent=isLight?'LIGHT':'DARK';
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');}
+// Init theme immediately (before render to avoid flash)
+applyTheme(localStorage.getItem('pcf_theme')||'dark');
 async function api(u,o={}){const h={'Content-Type':'application/json'};if(token)h['Authorization']='Bearer '+token;const r=await fetch(API+u,{...o,headers:h});const d=await r.json();if(!r.ok)throw new Error(d.error||'Request failed');return d}
 function showAuth(m){$('authModal').classList.remove('hidden');showAuthScreen(m==='login'?'formLogin':'formRegister')}
 function showAuthScreen(id){['formLogin','formRegister','formVerify','formForgot','formReset'].forEach(f=>{const el=$(f);if(el)el.classList.add('hidden')});const t=$(id);if(t)t.classList.remove('hidden')}
@@ -23,7 +37,7 @@ async function doReset(e){e.preventDefault();try{await api('/api/auth/reset-pass
 function logout(){token=null;user=null;localStorage.removeItem('pcf_token');$('app').style.display='none';$('landing').style.display='block'}
 function toggleMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');if(s.classList.contains('mobile-open')){closeMobile()}else{s.classList.add('mobile-open');o.classList.add('open')}}
 function closeMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');s.classList.remove('mobile-open');o.classList.remove('open')}
-async function enterDashboard(){try{user=await api('/api/users/profile');$('landing').style.display='none';$('authModal').classList.add('hidden');showWelcomeSplash(user.first_name||'Trader',()=>{$('app').style.display='block';$('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';$('userEmail').textContent=user.email;if(user.role==='admin')$('adminMenuItem').classList.remove('hidden');navigate('dashboard')})}catch(x){logout()}}
+async function enterDashboard(){try{user=await api('/api/users/profile');$('landing').style.display='none';$('authModal').classList.add('hidden');showWelcomeSplash(user.first_name||'Trader',()=>{$('app').style.display='block';$('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';$('userEmail').textContent=user.email;if(user.role==='admin')$('adminMenuItem').classList.remove('hidden');applyTheme(localStorage.getItem('pcf_theme')||'dark');navigate('dashboard')})}catch(x){logout()}}
 
 function showWelcomeSplash(firstName,onDone){
   const splash=$('welcomeSplash');
