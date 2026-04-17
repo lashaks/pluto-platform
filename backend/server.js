@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const http = require('http');
+const WebSocket = require('ws');
 const config = require('./config');
 const { initDatabase } = require('./src/models/database');
 
@@ -13,20 +15,28 @@ const fundedRoutes = require('./src/routes/funded');
 const payoutRoutes = require('./src/routes/payouts');
 const tradeRoutes = require('./src/routes/trades');
 const adminRoutes = require('./src/routes/admin');
+const tradingRoutes = require('./src/routes/trading');
 
 const app = express();
+const server = http.createServer(app);
 
 // ============================================================
 // MIDDLEWARE
 // ============================================================
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(cors({
-  origin: [
-    'https://pluto-platform.vercel.app',
-    'https://plutocapitalfunding.com',
-    'https://www.plutocapitalfunding.com',
-    'http://localhost:3000',
-  ],
+  origin: (origin, cb) => {
+    const allowed = [
+      'https://pluto-platform.vercel.app',
+      'https://plutocapitalfunding.com',
+      'https://www.plutocapitalfunding.com',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ];
+    // Allow any vercel.app preview URL + no origin (mobile/curl)
+    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) return cb(null, true);
+    cb(null, true); // open during dev — tighten before public launch
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -84,6 +94,7 @@ app.use('/api/funded', fundedRoutes);
 app.use('/api/payouts', payoutRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/trading', tradingRoutes);
 
 // Dashboard stats (authenticated)
 const { authenticate } = require('./src/middleware/auth');
@@ -313,28 +324,67 @@ app.use((err, req, res, next) => {
 async function start() {
   await initDatabase();
 
-  // Start cTrader event listener (will no-op if CTRADER_ENABLED=false)
-  try {
-    const ctraderEvents = require('./src/services/ctraderEvents');
-    // Delay start slightly to let cTrader client authenticate
-    setTimeout(() => ctraderEvents.start(), 3000);
-  } catch (e) {
-    console.error('[Boot] cTrader event listener init failed:', e.message);
-  }
+  // ── Start market data service ─────────────────────────────────────────────
+  const marketData = require('./src/services/marketData');
+  const orderEngine = require('./src/services/orderEngine');
+  await marketData.start();
+  await orderEngine.init();
 
-  app.listen(config.port, () => {
+  // ── WebSocket server — live price streaming to terminal ──────────────────
+  const wss = new WebSocket.Server({ server, path: '/ws/prices' });
+  const clients = new Map(); // ws → { userId, symbols }
+
+  wss.on('connection', (ws) => {
+    clients.set(ws, { symbols: new Set(Object.keys(marketData.getInstruments())) });
+
+    // Send current prices immediately on connect
+    ws.send(JSON.stringify({ type: 'snapshot', data: marketData.getAllPrices() }));
+
+    ws.on('message', (msg) => {
+      try {
+        const m = JSON.parse(msg.toString());
+        if (m.type === 'subscribe' && m.symbols) {
+          clients.get(ws).symbols = new Set(m.symbols);
+        }
+      } catch(_) {}
+    });
+
+    ws.on('close', () => clients.delete(ws));
+    ws.on('error', () => clients.delete(ws));
+  });
+
+  // Broadcast ticks to all connected WebSocket clients
+  marketData.on('tick', (tick) => {
+    const msg = JSON.stringify({ type: 'tick', data: tick });
+    clients.forEach((meta, ws) => {
+      if (ws.readyState === WebSocket.OPEN && meta.symbols.has(tick.symbol)) {
+        ws.send(msg);
+      }
+    });
+  });
+
+  // Broadcast candle updates
+  marketData.on('candle', (update) => {
+    const msg = JSON.stringify({ type: 'candle', data: update });
+    clients.forEach((_, ws) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+    });
+  });
+
+  // ── Skip cTrader (replaced by our own engine) ─────────────────────────────
+  // cTraderEvents.start() — no longer needed
+
+  server.listen(config.port, () => {
     console.log('');
     console.log('  ╔═══════════════════════════════════════════════╗');
     console.log('  ║                                               ║');
     console.log('  ║   △ PLUTO CAPITAL FUNDING — Server Live        ║');
     console.log('  ║                                               ║');
     console.log('  ║   Local:   http://localhost:' + config.port + '              ║');
-    console.log('  ║   API:     http://localhost:' + config.port + '/api          ║');
-    console.log('  ║   Health:  http://localhost:' + config.port + '/api/health   ║');
+    console.log('  ║   Terminal: http://localhost:' + config.port + '/terminal    ║');
+    console.log('  ║   WS:      ws://localhost:' + config.port + '/ws/prices     ║');
     console.log('  ║                                               ║');
-    console.log('  ║   Demo Accounts:                              ║');
-    console.log('  ║     Trader: trader@demo.com / demo123         ║');
-    console.log('  ║     Admin:  admin@plutocapitalfunding.com / admin123  ║');
+    console.log('  ║   Market data: ' + (process.env.TWELVE_DATA_KEY ? 'Twelve Data LIVE' : 'Simulation mode') + '         ║');
     console.log('  ║                                               ║');
     console.log('  ╚═══════════════════════════════════════════════╝');
     console.log('');

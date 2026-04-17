@@ -1,13 +1,92 @@
-const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
-});
-
 // ============================================================
+// DUAL-MODE DATABASE
+// LOCAL  (no DATABASE_URL) → sql.js (pure JS SQLite, zero compile)
+// REMOTE (DATABASE_URL set) → PostgreSQL via pg
+// ============================================================
+const USE_SQLITE = !process.env.DATABASE_URL;
+let pool = null;
+let sqliteDb = null;
+
+if (!USE_SQLITE) {
+  const { Pool } = require('pg');
+  pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  console.log('  [DB] PostgreSQL mode');
+}
+
+async function initSqlJs() {
+  const path = require('path');
+  const fs   = require('fs');
+  const initSQL = require('sql.js');
+  const dbPath  = path.join(__dirname, '..', '..', '..', 'pluto-local.db');
+  const SQL = await initSQL();
+  if (fs.existsSync(dbPath)) {
+    sqliteDb = new SQL.Database(fs.readFileSync(dbPath));
+    console.log('  [DB] sql.js → loaded ' + dbPath);
+  } else {
+    sqliteDb = new SQL.Database();
+    console.log('  [DB] sql.js → created ' + dbPath);
+  }
+  const save = () => { try { fs.writeFileSync(dbPath, Buffer.from(sqliteDb.export())); } catch(_){} };
+  const origRun = sqliteDb.run.bind(sqliteDb);
+  sqliteDb.run = (...a) => { const r = origRun(...a); save(); return r; };
+  sqliteDb._save = save;
+}
+
+function toSqlite(sql) {
+  return sql
+    .replace(/NOW\(\)::TEXT/gi, "datetime('now')")
+    .replace(/NOW\(\)\s*-\s*INTERVAL\s*'[^']+'/gi, "datetime('now')")
+    .replace(/NOW\(\)/gi, "datetime('now')")
+    .replace(/\$\d+/g, '?')
+    .replace(/ON CONFLICT \([^)]+\) DO NOTHING/gi, 'OR IGNORE')
+    .replace(/INSERT INTO(?! OR)/gi, 'INSERT OR IGNORE INTO')
+    .replace(/::TEXT|::INTEGER/gi, '')
+    .replace(/SERIAL PRIMARY KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT')
+    .replace(/ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS/gi, 'ALTER TABLE $1 ADD COLUMN');
+}
+
+function pgSql(sql) { let i=0; return sql.replace(/\?/g,()=>`$${++i}`); }
+
+function execSqlite(sql, params=[]) {
+  try {
+    const r = sqliteDb.exec(toSqlite(sql), params);
+    if (!r.length) return [];
+    return r[0].values.map(row => { const o={}; r[0].columns.forEach((c,i)=>o[c]=row[i]); return o; });
+  } catch(e) {
+    if (!e.message.includes('duplicate column') && !e.message.includes('already exists') && !e.message.includes('no such column')) {
+      console.error('[SQLite]', e.message, '|', sql.slice(0,80));
+    }
+    return [];
+  }
+}
+
+function queryAll(sql, params=[]) {
+  if (USE_SQLITE) return Promise.resolve(execSqlite(sql, params));
+  return pool.query(pgSql(sql), params).then(r=>r.rows).catch(e=>{console.error('[PG]',e.message);return[];});
+}
+
+function queryOne(sql, params=[]) {
+  if (USE_SQLITE) { const r=execSqlite(sql,params); return Promise.resolve(r[0]||null); }
+  return pool.query(pgSql(sql), params).then(r=>r.rows[0]||null).catch(e=>{console.error('[PG]',e.message);return null;});
+}
+
+function run(sql, params=[]) {
+  if (USE_SQLITE) {
+    try { sqliteDb.run(toSqlite(sql), params); } catch(e) {
+      if (!e.message.includes('duplicate column') && !e.message.includes('already exists') && !e.message.includes('UNIQUE constraint')) {
+        console.error('[SQLite run]', e.message, '|', sql.slice(0,80));
+      }
+    }
+    return Promise.resolve(null);
+  }
+  return pool.query(pgSql(sql), params).catch(e=>{ console.error('[PG run]',e.message); });
+}
+
+function getDb() { return USE_SQLITE ? sqliteDb : pool; }
+
 // SCHEMA
 // ============================================================
 const TABLES = [
@@ -202,82 +281,128 @@ const INDEXES = [
 // SEED
 // ============================================================
 async function seedDatabase(client) {
-  const check = await client.query("SELECT COUNT(*) FROM users");
-  if (parseInt(check.rows[0].count) > 0) {
+  // Support both SQLite (client=null) and PostgreSQL
+  const q = async (sql, params=[]) => {
+    if (!client) return queryAll(sql, params);
+    let i=0; const pg=sql.replace(/\?/g,()=>`$${++i}`);
+    return q(pg,params).then(r=>r.rows);
+  };
+  const countRes = await q("SELECT COUNT(*) as count FROM users");
+  const count = parseInt(countRes[0]?.count || countRes[0]?.COUNT || 0);
+  if (count > 0) {
     console.log('  ✓ Database already has data, skipping seed');
     return;
   }
 
   const adminId = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO users (id,email,password_hash,first_name,last_name,role,affiliate_code,kyc_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
     [adminId, 'admin@plutocapitalfunding.com', bcrypt.hashSync('admin123', 10), 'Pluto', 'Admin', 'admin', 'PCF-ADMIN', 'approved']
   );
 
   const traderId = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO users (id,email,password_hash,first_name,last_name,role,affiliate_code,kyc_status,country,phone) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [traderId, 'trader@demo.com', bcrypt.hashSync('demo123', 10), 'Florent', 'Demo', 'trader', 'PCF-' + traderId.slice(0, 6).toUpperCase(), 'approved', 'XK', '+383 44 123 456']
   );
 
   const ch1Id = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO challenges (id,user_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,day_start_balance,fee_paid,total_trades,winning_trades,losing_trades,best_day_profit,worst_day_loss,total_profit,avg_win,avg_loss,profit_factor,ctrader_login,status,activated_at) VALUES ($1,$2,100000,100000,106842.50,107100,107200,96200,105400,499,47,31,16,2840,-1890,6842.50,420.50,-310.20,2.14,'8847201','active',NOW()-INTERVAL '21 days')`,
     [ch1Id, traderId]
   );
 
   const ch2Id = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO challenges (id,user_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,fee_paid,total_trades,winning_trades,losing_trades,total_profit,ctrader_login,status,activated_at,passed_at) VALUES ($1,$2,50000,50000,55200,55200,55200,47800,299,62,41,21,5200,'8841003','passed',NOW()-INTERVAL '60 days',NOW()-INTERVAL '30 days')`,
     [ch2Id, traderId]
   );
 
   const ch3Id = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO challenges (id,user_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,fee_paid,total_trades,winning_trades,losing_trades,total_profit,ctrader_login,status,activated_at,failed_at,breach_reason) VALUES ($1,$2,25000,25000,23100,23100,26200,23100,179,28,12,16,-1900,'8839502','failed',NOW()-INTERVAL '90 days',NOW()-INTERVAL '75 days','MAX_TOTAL_DRAWDOWN')`,
     [ch3Id, traderId]
   );
 
   const fundId = uuidv4();
-  await client.query(
+  await q(
     `INSERT INTO funded_accounts (id,user_id,challenge_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,day_start_balance,profit_split_pct,total_payouts,payout_count,total_trades,winning_trades,losing_trades,total_profit,ctrader_login,scaling_level) VALUES ($1,$2,$3,50000,50000,53400,53650,54800,48200,52900,80,4200,1,38,26,12,7600,'8841003-F',0)`,
     [fundId, traderId, ch2Id]
   );
 
-  await client.query(
+  await q(
     `INSERT INTO payouts (id,user_id,funded_account_id,gross_profit,split_pct,trader_amount,firm_amount,status,payout_method,wallet_address,tx_reference,approved_at,paid_at) VALUES ($1,$2,$3,5250,80,4200,1050,'paid','crypto_usdt','TRX7a8b_redacted','tx_abc123def456',NOW()-INTERVAL '12 days',NOW()-INTERVAL '10 days')`,
     [uuidv4(), traderId, fundId]
   );
 
-  await client.query(
+  await q(
     `INSERT INTO payouts (id,user_id,funded_account_id,gross_profit,split_pct,trader_amount,firm_amount,status,payout_method,wallet_address) VALUES ($1,$2,$3,2350,80,1880,470,'requested','crypto_usdc','USDC_wallet_placeholder')`,
     [uuidv4(), traderId, fundId]
   );
 
-  const symbols = ['XAUUSD','EURUSD','GBPJPY','USDJPY','NAS100','EURJPY','CADJPY','GBPUSD','US30'];
-  for (let i = 0; i < 30; i++) {
-    const sym = symbols[Math.floor(Math.random() * symbols.length)];
-    const dir = Math.random() > 0.4 ? 'BUY' : 'SELL';
-    const isWin = Math.random() > 0.35;
-    const profit = isWin ? +(Math.random() * 2500 + 100).toFixed(2) : -(Math.random() * 1500 + 50).toFixed(2);
-    const vol = +(Math.random() * 2 + 0.1).toFixed(2);
-    const basePrice = sym === 'XAUUSD' ? 2340 + Math.random() * 60 : sym === 'NAS100' ? 18200 + Math.random() * 400 : sym === 'US30' ? 39800 + Math.random() * 600 : 1.05 + Math.random() * 0.8;
-    const hoursAgo = Math.floor(Math.random() * 500);
+  // ── Rich mock trade history (closed) ─────────────────────────────────────
+  const instruments = {
+    'EURUSD': {pip:0.0001, base:1.0855, pipVal:10},
+    'GBPUSD': {pip:0.0001, base:1.2715, pipVal:10},
+    'USDJPY': {pip:0.01,   base:149.42, pipVal:9.2},
+    'XAUUSD': {pip:0.01,   base:2338.5, pipVal:1},
+    'NAS100': {pip:0.01,   base:18240,  pipVal:1},
+    'US500':  {pip:0.01,   base:5198,   pipVal:1},
+    'GBPJPY': {pip:0.01,   base:190.15, pipVal:9.2},
+    'EURJPY': {pip:0.01,   base:162.08, pipVal:9.2},
+    'USOIL':  {pip:0.01,   base:78.45,  pipVal:10},
+    'US30':   {pip:0.01,   base:38520,  pipVal:1},
+  };
+  const symList = Object.keys(instruments);
 
-    await client.query(
-      `INSERT INTO trades (id,challenge_id,user_id,symbol,direction,volume,open_price,close_price,profit,commission,swap,status,open_time,close_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'closed',NOW()-INTERVAL '${hoursAgo + 2} hours',NOW()-INTERVAL '${hoursAgo} hours')`,
-      [uuidv4(), ch1Id, traderId, sym, dir, vol, +basePrice.toFixed(2), +(basePrice + (isWin ? 0.5 : -0.3) * (dir === 'BUY' ? 1 : -1)).toFixed(2), profit, -(Math.random() * 8 + 1).toFixed(2), -(Math.random() * 3).toFixed(2)]
+  // 60 closed trades with realistic P&L
+  for (let i = 0; i < 60; i++) {
+    const sym  = symList[Math.floor(Math.random() * symList.length)];
+    const inst = instruments[sym];
+    const dir  = Math.random() > 0.45 ? 'buy' : 'sell';
+    const isWin = Math.random() > 0.38;
+    const vol  = +([0.1,0.2,0.25,0.3,0.5,1,1.5][Math.floor(Math.random()*7)]).toFixed(2);
+    const pips = isWin ? Math.floor(Math.random()*80+8) : -Math.floor(Math.random()*45+5);
+    const profit = +(pips * inst.pipVal * vol).toFixed(2);
+    const open  = +(inst.base + (Math.random()-0.5)*inst.base*0.003).toFixed(inst.pip<0.001?1:5);
+    const close = +(dir==='buy' ? open + pips*inst.pip : open - pips*inst.pip).toFixed(inst.pip<0.001?1:5);
+    const comm  = +(vol * 3.5).toFixed(2);
+    const hoursAgo = Math.floor(Math.random()*480+1);
+    const durMins  = Math.floor(Math.random()*180+5);
+    const sl = dir==='buy' ? +(open - Math.random()*20*inst.pip).toFixed(5) : +(open + Math.random()*20*inst.pip).toFixed(5);
+    const tp = dir==='buy' ? +(open + Math.random()*50*inst.pip).toFixed(5) : +(open - Math.random()*50*inst.pip).toFixed(5);
+    const reason = isWin ? (Math.random()>0.5?'take_profit':'manual') : (Math.random()>0.4?'stop_loss':'manual');
+
+    await q(
+      `INSERT INTO trades (id,challenge_id,user_id,symbol,direction,volume,open_price,close_price,stop_loss,take_profit,profit,commission,swap,status,open_time,close_time,close_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,'closed',datetime('now','-${hoursAgo+durMins} minutes'),datetime('now','-${hoursAgo} minutes'),?)`,
+      [uuidv4(), ch1Id, traderId, sym, dir, vol, open, close, sl, tp, profit, -comm, reason]
     );
   }
 
-  await client.query(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES ($1,$2,'purchase',-499,'$100K Challenge Purchase','card')`, [uuidv4(), traderId]);
-  await client.query(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES ($1,$2,'purchase',-299,'$50K Challenge Purchase','card')`, [uuidv4(), traderId]);
-  await client.query(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES ($1,$2,'purchase',-179,'$25K Challenge Purchase','crypto')`, [uuidv4(), traderId]);
-  await client.query(`INSERT INTO transactions (id,user_id,type,amount,description) VALUES ($1,$2,'payout',4200,'Profit Payout')`, [uuidv4(), traderId]);
+  // ── 3 open positions for the terminal demo ────────────────────────────────
+  const openTrades = [
+    { sym:'EURUSD', dir:'buy',  vol:0.5,  open:1.08420, sl:1.08220, tp:1.08820, comm:1.75 },
+    { sym:'XAUUSD', dir:'sell', vol:0.1,  open:2341.50, sl:2355.00, tp:2318.00, comm:0.35 },
+    { sym:'NAS100', dir:'buy',  vol:0.25, open:18195.0, sl:18050.0, tp:18450.0, comm:0.88 },
+  ];
+  for (const t of openTrades) {
+    const inst = instruments[t.sym];
+    const floatPips = (Math.random()*12-4);
+    const floatProfit = +(floatPips * inst.pipVal * t.vol).toFixed(2);
+    await q(
+      `INSERT INTO trades (id,challenge_id,user_id,symbol,direction,volume,open_price,stop_loss,take_profit,profit,commission,swap,status,open_time) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,'open',datetime('now','-${Math.floor(Math.random()*90+5)} minutes'))`,
+      [uuidv4(), ch1Id, traderId, t.sym, t.dir, t.vol, t.open, t.sl, t.tp, floatProfit, -t.comm]
+    );
+  }
 
-  await client.query(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES ($1,$2,'CHALLENGE_CREATED','challenge',$3,'User purchased $100K challenge')`, [uuidv4(), traderId, ch1Id]);
-  await client.query(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES ($1,$2,'CHALLENGE_PASSED','challenge',$3,'Profit target reached')`, [uuidv4(), traderId, ch2Id]);
-  await client.query(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES ($1,$2,'CHALLENGE_BREACHED','challenge',$3,'Max total drawdown exceeded')`, [uuidv4(), traderId, ch3Id]);
+  await q(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES (?,?,'purchase',-499,'$100K Challenge Purchase','card')`, [uuidv4(), traderId]);
+  await q(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES (?,?,'purchase',-299,'$50K Challenge Purchase','card')`, [uuidv4(), traderId]);
+  await q(`INSERT INTO transactions (id,user_id,type,amount,description,payment_method) VALUES (?,?,'purchase',-179,'$25K Challenge Purchase','crypto')`, [uuidv4(), traderId]);
+  await q(`INSERT INTO transactions (id,user_id,type,amount,description) VALUES (?,?,'payout',4200,'Profit Payout')`, [uuidv4(), traderId]);
+
+  await q(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES (?,?,'CHALLENGE_CREATED','challenge',?,'User purchased $100K challenge')`, [uuidv4(), traderId, ch1Id]);
+  await q(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES (?,?,'CHALLENGE_PASSED','challenge',?,'Profit target reached')`, [uuidv4(), traderId, ch2Id]);
+  await q(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES (?,?,'CHALLENGE_BREACHED','challenge',?,'Max total drawdown exceeded')`, [uuidv4(), traderId, ch3Id]);
 
   console.log('  ✓ Database seeded with demo data');
 }
@@ -286,17 +411,63 @@ async function seedDatabase(client) {
 // INIT
 // ============================================================
 async function initDatabase() {
+  if (USE_SQLITE) {
+    await initSqlJs();
+    // SQLite — run all tables synchronously
+    for (const sql of TABLES) {
+      try { sqliteDb.prepare(toSqlite(sql)).run(); } catch(e) { console.error('[SQLite table]', e.message); }
+    }
+    for (const sql of INDEXES) {
+      try { sqliteDb.prepare(toSqlite(sql)).run(); } catch(_) {}
+    }
+    console.log('  ✓ SQLite schema created');
+
+    // Migrations for SQLite — ALTER TABLE ADD COLUMN (ignore if exists)
+    const migrations = [
+      `ALTER TABLE challenges ADD COLUMN phase INTEGER DEFAULT 1`,
+      `ALTER TABLE challenges ADD COLUMN parent_challenge_id TEXT`,
+      `ALTER TABLE challenges ADD COLUMN consistency_best_day_pct REAL DEFAULT 0`,
+      `ALTER TABLE challenges ADD COLUMN platform TEXT DEFAULT 'ctrader'`,
+      `ALTER TABLE funded_accounts ADD COLUMN platform TEXT DEFAULT 'ctrader'`,
+      `ALTER TABLE users ADD COLUMN terms_accepted_at TEXT`,
+      `ALTER TABLE users ADD COLUMN terms_version TEXT DEFAULT 'v1'`,
+      `ALTER TABLE challenges ADD COLUMN ctrader_password TEXT`,
+      `ALTER TABLE challenges ADD COLUMN fee_refunded INTEGER DEFAULT 0`,
+      `ALTER TABLE challenges ADD COLUMN trading_days INTEGER DEFAULT 0`,
+      `ALTER TABLE users ADD COLUMN referral_code TEXT`,
+      `ALTER TABLE users ADD COLUMN referred_by TEXT`,
+      `ALTER TABLE users ADD COLUMN affiliate_earnings REAL DEFAULT 0`,
+      `ALTER TABLE trades ADD COLUMN close_reason TEXT`,
+      `ALTER TABLE trades ADD COLUMN comment TEXT`,
+      `ALTER TABLE trades ADD COLUMN current_price REAL`,
+      `ALTER TABLE trades ADD COLUMN pips REAL DEFAULT 0`,
+      `CREATE TABLE IF NOT EXISTS password_reset_codes (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, code TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))`,
+    ];
+    for (const sql of migrations) {
+      try { sqliteDb.prepare(sql).run(); } catch(_) { /* column already exists */ }
+    }
+
+    // Seed demo_mode setting
+    try {
+      sqliteDb.prepare(`INSERT OR IGNORE INTO platform_settings (key,value) VALUES ('demo_mode','false')`).run();
+    } catch(_) {}
+
+    console.log('  ✓ SQLite migrations applied');
+    await seedDatabase(null);
+    return;
+  }
+
+  // PostgreSQL path
   const client = await pool.connect();
   try {
     for (const sql of TABLES) {
-      await client.query(sql);
+      await q(sql);
     }
     for (const sql of INDEXES) {
-      try { await client.query(sql); } catch (e) { /* already exists */ }
+      try { await q(sql); } catch(_) {}
     }
     console.log('  ✓ Database schema created');
 
-    // Migrations — add columns that may not exist yet
     const migrations = [
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS phase INTEGER DEFAULT 1`,
       `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS parent_challenge_id TEXT`,
@@ -313,12 +484,15 @@ async function initDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS affiliate_earnings REAL DEFAULT 0`,
       `CREATE TABLE IF NOT EXISTS password_reset_codes (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, code TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT DEFAULT (NOW()::TEXT))`,
+      `ALTER TABLE trades ADD COLUMN IF NOT EXISTS close_reason TEXT`,
+      `ALTER TABLE trades ADD COLUMN IF NOT EXISTS comment TEXT`,
+      `ALTER TABLE trades ADD COLUMN IF NOT EXISTS current_price REAL`,
+      `ALTER TABLE trades ADD COLUMN IF NOT EXISTS pips REAL DEFAULT 0`,
     ];
     for (const sql of migrations) {
-      try { await client.query(sql); } catch (e) { /* column already exists */ }
+      try { await q(sql); } catch(_) {}
     }
     console.log('  ✓ Migrations applied');
-
     await seedDatabase(client);
   } finally {
     client.release();
@@ -326,23 +500,6 @@ async function initDatabase() {
 }
 
 // ============================================================
-// QUERY HELPERS (compatible with existing route code)
+// EXPORTS
 // ============================================================
-function queryAll(sql, params = []) {
-  return pool.query(sql, params).then(r => r.rows).catch(e => { console.error('Query error:', e.message); return []; });
-}
-
-function queryOne(sql, params = []) {
-  return pool.query(sql, params).then(r => r.rows[0] || null).catch(e => { console.error('Query error:', e.message); return null; });
-}
-
-function run(sql, params = []) {
-  // Convert SQLite ? placeholders to PostgreSQL $1,$2,$3
-  let i = 0;
-  const pgSql = sql.replace(/\?/g, () => `$${++i}`);
-  return pool.query(pgSql, params).catch(e => { console.error('Run error:', e.message); });
-}
-
-function getDb() { return pool; }
-
 module.exports = { initDatabase, queryAll, queryOne, run, getDb };
