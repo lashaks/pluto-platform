@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=48">
-<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=49">
+<link rel="alternate icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
+<link rel="apple-touch-icon" href="/img/favicon.svg?v=49">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>PlutoTrader</title>
@@ -502,12 +503,24 @@ function initChart(){
 
   // Redraw drawings on zoom/pan
   chart.timeScale().subscribeVisibleLogicalRangeChange(()=>reDraw());
+  chart.timeScale().subscribeVisibleTimeRangeChange(()=>reDraw());
 
   // Init drawing canvas
+  // Pre-size the drawing canvas to match chart container
+  setTimeout(()=>{
+    const cv=$('dc'),el=$('lwc');
+    if(cv&&el){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
+  },100);
   initDC();
 
   // Resize observer
-  const ro=new ResizeObserver(()=>{ if(chart)chart.resize(el.offsetWidth,el.offsetHeight); setTimeout(reDraw,20); });
+  const ro=new ResizeObserver(()=>{
+    if(chart) chart.resize(el.offsetWidth,el.offsetHeight);
+    // Sync canvas size immediately
+    const cv=$('dc');
+    if(cv){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
+    setTimeout(reDraw,20);
+  });
   ro.observe(el);
 }
 
@@ -624,8 +637,10 @@ function initDC(){
 
 function reDraw(){
   const cv=$('dc'); if(!cv||!chart)return;
+  // Sync canvas size to container WITHOUT wiping it via width= assignment
+  const W=cv.offsetWidth, H=cv.offsetHeight;
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
   const ctx=cv.getContext('2d');
-  const W=cv.width=cv.offsetWidth,H=cv.height=cv.offsetHeight;
   ctx.clearRect(0,0,W,H);
   const all=[...drawings,...(drawPt?[drawPt]:[])];
   all.filter(d=>d.sym===sym).forEach(d=>{

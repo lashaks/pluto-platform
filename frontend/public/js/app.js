@@ -624,16 +624,129 @@ ${hasTrades?`<div style="display:grid;grid-template-columns:auto 1fr;gap:14px;ma
 }catch(e){$('page-coach').innerHTML=`<div class="card"><div class="empty">Failed to load AI Coach. <a onclick="navigate('coach')">Retry</a></div></div>`}};
 
 // RULES
-window.render_rules=function(){$('page-rules').innerHTML=`<div class="page-head"><h1>Trading Rules</h1><p>Complete rules for all accounts</p></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem;background:linear-gradient(135deg,rgba(139,92,246,.04),transparent)">1-Step Evaluation</div><div style="padding:16px 20px">${R('Profit Target','10%')}${R('Max Daily Loss','5%')}${R('Max Drawdown','8% static')}${R('Profit Split','80%')}${R('Leverage','1:30')}${R('Time Limit','Unlimited','var(--gr)')}${R('Min Days','None','var(--gr)')}</div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem;background:linear-gradient(135deg,rgba(96,165,250,.04),transparent)">2-Step Evaluation</div><div style="padding:16px 20px">${R('Phase 1 Target','8%')}${R('Phase 2 Target','5%')}${R('Max Daily Loss','5%')}${R('Max Drawdown','10% static')}${R('Profit Split','80%')}${R('Leverage','1:30')}${R('Time Limit','Unlimited','var(--gr)')}</div></div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">General Rules</div><div style="padding:16px 20px">${R('Consistency','No single day > 20% of total profit')}${R('News Trading','Close 2 min before/after','var(--rd)')}${R('Weekend (Eval)','Holding allowed','var(--gr)')}${R('Weekend (Funded)','Close by 3:45 PM EST Fri','var(--rd)')}${R('Min Trade Duration','2-min average')}${R('Inactivity','30 days = closed','var(--rd)')}${R('EAs','Allowed (no HFT)','var(--gr)')}${R('Copy (Own)','Allowed','var(--gr)')}${R('Copy (External)','Prohibited','var(--rd)')}${R('Hedge (Same Acct)','Allowed','var(--gr)')}${R('Hedge (Cross-Acct)','Prohibited','var(--rd)')}${R('KYC','Before funded account')}${R('Swap Fees','None — swap-free','var(--gr)')}${R('Min Payout','$50')}</div></div>
-<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Max Lot Exposure</div><div style="padding:16px 20px">${R('$5K','2 lots')}${R('$10K','4 lots')}${R('$25K','10 lots')}${R('$50K','20 lots')}${R('$100K','40 lots')}${R('$200K','80 lots')}</div></div>
-<div class="card" style="padding:0;overflow:hidden;border-color:rgba(248,113,113,.12)"><div style="padding:14px 20px;border-bottom:1px solid rgba(248,113,113,.12);font-weight:700;font-size:.95rem;color:var(--rd);background:linear-gradient(135deg,rgba(248,113,113,.04),transparent)">Prohibited</div><div style="padding:16px 20px;color:var(--t2);font-size:.86rem;line-height:2"><div>&#10006; Arbitrage, latency exploitation, tick scalping</div><div>&#10006; HFT</div><div>&#10006; External copy trading</div><div>&#10006; Account sharing</div><div>&#10006; Cross-account hedging</div><div>&#10006; Gambling behavior</div><div>&#10006; News trading in restricted windows</div><div>&#10006; Environment exploitation</div><div>&#10006; VPN circumvention</div></div></div>
-<div style="padding:14px 20px;background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);margin-top:14px;font-size:.84rem;color:var(--t2)">Violations result in immediate termination. Contact <a href="mailto:support@plutocapitalfunding.com" style="color:var(--ac2)">support@plutocapitalfunding.com</a></div>
-`};
+window.render_rules=function(){
+const R=(l,v,col='')=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--brd)"><span style="color:var(--t2);font-size:.82rem">${l}</span><strong style="font-size:.82rem;color:${col||'var(--t1)'}">${v}</strong></div>`;
+const Rb=(l,v,badge,bc='var(--gr-bg)',tc='var(--gr)')=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--brd)"><span style="color:var(--t2);font-size:.82rem">${l}</span><span style="padding:2px 7px;background:${bc};color:${tc};border-radius:6px;font-size:.7rem;font-weight:700">${v}</span></div>`;
+$('page-rules').innerHTML=`<div class="page-head"><h1>Trading Rules</h1><p>All rules are enforced automatically in real time</p></div>
 
+<!-- CHALLENGE COMPARISON TABLE -->
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.95rem">Challenge Rules at a Glance</div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <thead><tr style="background:var(--sf2)">
+      <th style="padding:10px 14px;text-align:left;color:var(--t3);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em">Rule</th>
+      <th style="padding:10px 14px;text-align:center;color:var(--ac2)">Pluto Classic<br><span style="font-size:.64rem;color:var(--t3)">1-Step</span></th>
+      <th style="padding:10px 14px;text-align:center;color:var(--bl)">Pluto Dual<br><span style="font-size:.64rem;color:var(--t3)">2-Step</span></th>
+      <th style="padding:10px 14px;text-align:center;color:var(--am)">PlutoRapid<br><span style="font-size:.64rem;color:var(--t3)">Fast Track</span></th>
+      <th style="padding:10px 14px;text-align:center;color:var(--gr)">Funded<br><span style="font-size:.64rem;color:var(--t3)">Live</span></th>
+    </tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:9px 14px;color:var(--t2)">Profit Target</td><td style="text-align:center;font-weight:700">10%</td><td style="text-align:center;font-weight:700">8% → 5%</td><td style="text-align:center;font-weight:700">12%</td><td style="text-align:center;color:var(--t3)">—</td></tr>
+      <tr style="border-bottom:1px solid var(--brd);background:var(--sf)"><td style="padding:9px 14px;color:var(--t2)">Max Daily Loss</td><td style="text-align:center;font-weight:700;color:var(--rd)">5%</td><td style="text-align:center;font-weight:700;color:var(--rd)">5%</td><td style="text-align:center;font-weight:700;color:var(--rd)">6%</td><td style="text-align:center;font-weight:700;color:var(--rd)">5%</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:9px 14px;color:var(--t2)">Max Total Drawdown</td><td style="text-align:center;font-weight:700;color:var(--rd)">8% static</td><td style="text-align:center;font-weight:700;color:var(--rd)">10% static</td><td style="text-align:center;font-weight:700;color:var(--rd)">8% static</td><td style="text-align:center;font-weight:700;color:var(--rd)">8% static</td></tr>
+      <tr style="border-bottom:1px solid var(--brd);background:var(--sf)"><td style="padding:9px 14px;color:var(--t2)">Consistency Rule</td><td style="text-align:center;font-weight:700">30% max/day</td><td style="text-align:center;font-weight:700">30% max/day</td><td style="text-align:center;color:var(--gr);font-weight:700">None ✓</td><td style="text-align:center;font-weight:700">30% max/day</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:9px 14px;color:var(--t2)">Min Trading Days</td><td style="text-align:center">5 days</td><td style="text-align:center">5 days each</td><td style="text-align:center;color:var(--gr);font-weight:700">3 days</td><td style="text-align:center;color:var(--t3)">None</td></tr>
+      <tr style="border-bottom:1px solid var(--brd);background:var(--sf)"><td style="padding:9px 14px;color:var(--t2)">Time Limit</td><td style="text-align:center;color:var(--gr)">Unlimited</td><td style="text-align:center;color:var(--gr)">Unlimited</td><td style="text-align:center;color:var(--gr)">Unlimited</td><td style="text-align:center;color:var(--gr)">Unlimited</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:9px 14px;color:var(--t2)">Leverage (Forex)</td><td style="text-align:center">1:30</td><td style="text-align:center">1:30</td><td style="text-align:center">1:30</td><td style="text-align:center">1:30</td></tr>
+      <tr style="border-bottom:1px solid var(--brd);background:var(--sf)"><td style="padding:9px 14px;color:var(--t2)">Profit Split</td><td style="text-align:center;color:var(--gr);font-weight:700">80%</td><td style="text-align:center;color:var(--gr);font-weight:700">80%</td><td style="text-align:center;color:var(--gr);font-weight:700">80%</td><td style="text-align:center;color:var(--gr);font-weight:700">80%</td></tr>
+      <tr><td style="padding:9px 14px;color:var(--t2)">Weekend Holding</td><td style="text-align:center;color:var(--gr)">Allowed ✓</td><td style="text-align:center;color:var(--gr)">Allowed ✓</td><td style="text-align:center;color:var(--gr)">Allowed ✓</td><td style="text-align:center;color:var(--rd)">Close Fri 5PM</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<!-- GENERAL RULES -->
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.9rem">General Rules</div>
+  <div style="padding:14px 20px">
+    ${R('News Trading','Restricted 2 min before/after high-impact','var(--rd)')}
+    ${R('Min Trade Duration','No minimum (scalping allowed ≥30 sec)')}
+    ${R('Weekend Eval/Rapid','Weekend holding allowed')}
+    ${R('Weekend Funded','Must close by 5 PM EST Friday','var(--rd)')}
+    ${R('Inactivity','Account closed after 45 days','var(--rd)')}
+    ${R('Swap Fees','Swap-free (no overnight charges)','var(--gr)')}
+    ${R('Commission','$3.50 per lot (Forex) · $0 Indices/Metals')}
+    ${R('Min Payout','$50 · processed within 48h')}
+    ${R('Payout Method','USDT (TRC-20), USDC, or Bank Transfer')}
+    ${R('KYC','Required before first funded payout')}
+  </div>
+</div>
+
+<!-- LEVERAGE PER ASSET -->
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--brd);font-weight:700;font-size:.9rem">Leverage by Asset Class</div>
+  <div style="padding:14px 20px">
+    ${R('Forex (Major Pairs)','1:30 (up to 1:50 on $100K)')}
+    ${R('Metals (Gold, Silver)','1:20')}
+    ${R('Indices (US30, NAS100)','1:20')}
+    ${R('Energy (WTI Oil)','1:10')}
+    ${R('Crypto (BTC, ETH)','1:5')}
+    ${R('Max Lots — $2.5K','1 lot')}
+    ${R('Max Lots — $5K','2 lots')}
+    ${R('Max Lots — $10K','4 lots')}
+    ${R('Max Lots — $25K','10 lots')}
+    ${R('Max Lots — $50K','20 lots')}
+    ${R('Max Lots — $100K','40 lots')}
+  </div>
+</div>
+</div>
+
+<!-- ALLOWED vs PROHIBITED -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card" style="padding:0;overflow:hidden;border-color:rgba(52,211,153,.1)">
+  <div style="padding:14px 20px;border-bottom:1px solid rgba(52,211,153,.1);font-weight:700;font-size:.9rem;color:var(--gr)">✓ Allowed</div>
+  <div style="padding:14px 20px;font-size:.84rem;color:var(--t2);line-height:2.1">
+    <div>✅ Expert Advisors (EAs)</div>
+    <div>✅ Swing & position trading</div>
+    <div>✅ Scalping (min 30-second holds)</div>
+    <div>✅ Overnight holding (eval + rapid)</div>
+    <div>✅ Weekend holding (eval + rapid)</div>
+    <div>✅ Hedging (within same account)</div>
+    <div>✅ Copy trading (own accounts only)</div>
+    <div>✅ Grid trading (if not martingale-based)</div>
+    <div>✅ Multiple simultaneous positions</div>
+  </div>
+</div>
+<div class="card" style="padding:0;overflow:hidden;border-color:rgba(248,113,113,.12)">
+  <div style="padding:14px 20px;border-bottom:1px solid rgba(248,113,113,.12);font-weight:700;font-size:.9rem;color:var(--rd)">✗ Prohibited</div>
+  <div style="padding:14px 20px;font-size:.84rem;color:var(--t2);line-height:2.1">
+    <div>❌ HFT / Latency arbitrage / Tick scalping (&lt;30s)</div>
+    <div>❌ External copy trading / signal services</div>
+    <div>❌ Cross-account hedging (multiple accounts)</div>
+    <div>❌ Account sharing / third-party access</div>
+    <div>❌ Martingale (doubling after losses)</div>
+    <div>❌ Gambling behavior (all-in sizing)</div>
+    <div>❌ VPN / proxy to mask location</div>
+    <div>❌ News trading within 2-min restriction window</div>
+    <div>❌ Weekend holding on funded accounts</div>
+  </div>
+</div>
+</div>
+
+<!-- DRAWDOWN EXPLAINED -->
+<div class="card" style="margin-bottom:14px">
+  <div style="font-weight:700;font-size:.9rem;margin-bottom:10px">📐 How Drawdown Is Calculated (Static)</div>
+  <div style="font-size:.84rem;color:var(--t2);line-height:1.75">
+    <strong style="color:var(--t1)">Total drawdown</strong> is <em>static</em> — your floor is set at account start and never moves up, even if you profit.<br>
+    Example: $10K account with 8% drawdown = your floor is always <strong style="color:var(--rd)">$9,200</strong>, even if balance grows to $12K.<br><br>
+    <strong style="color:var(--t1)">Daily drawdown</strong> resets at midnight UTC. It's calculated from your balance at the start of each day.<br>
+    Example: $10K account, day starts at $10,200 — daily loss limit is <strong style="color:var(--rd)">$510 (5%)</strong> for that day.
+  </div>
+</div>
+
+<!-- CONSISTENCY RULE -->
+<div class="card" style="margin-bottom:14px">
+  <div style="font-weight:700;font-size:.9rem;margin-bottom:10px">📊 Consistency Rule (Classic & Dual only)</div>
+  <div style="font-size:.84rem;color:var(--t2);line-height:1.75">
+    No single trading day can exceed <strong style="color:var(--ac2)">30%</strong> of your total cumulative profit.<br>
+    This ensures you built your account with a repeatable strategy, not one lucky trade.<br>
+    <strong style="color:var(--am)">PlutoRapid has NO consistency rule</strong> — it's designed for high-conviction traders who can hit 12% without restrictions.
+  </div>
+</div>
+
+<div style="padding:12px 16px;background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);font-size:.8rem;color:var(--t2)">
+  All rules are enforced in real time by our automated risk engine. Violations result in immediate account closure. Questions? <a href="mailto:support@plutocapitalfunding.com" style="color:var(--ac2)">support@plutocapitalfunding.com</a>
+</div>`};
 // PROFILE
 window.render_profile=async function(){$('page-profile').innerHTML=LOADING;const u=await api('/api/users/profile');
 $('page-profile').innerHTML=`<div class="page-head"><h1>Profile</h1><p>Account settings</p></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:720px">

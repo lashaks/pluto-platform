@@ -37,7 +37,7 @@
 [data-theme="light"] .modal{background:var(--sf);border-color:var(--brd2)}
 [data-theme="light"] .modal-bg{background:rgba(0,0,0,.4)}
 [data-theme="light"] .toast{background:var(--sf);color:var(--t1);border-color:var(--brd2);box-shadow:0 4px 24px rgba(0,0,0,.12)}
-[data-theme="light"] #heroCanvas{opacity:.35}
+[data-theme="light"] #heroCanvas{opacity:1}
 [data-theme="light"] #welcomeSplash{background:#f4f3f8}
 [data-theme="light"] #splashName{color:var(--t1)}
 
