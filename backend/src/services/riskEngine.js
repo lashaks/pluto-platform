@@ -112,12 +112,15 @@ class RiskEngine {
     }
 
     // ── CONSISTENCY RULE ──────────────────────────────────────────────────
-    // No single trading day > 20% of total realized profit
-    if (ch.total_profit > 0 && ch.best_day_profit > 0) {
+    // No single trading day > 30% of total realized profit
+    // Skipped for 'rapid' challenge type (no consistency rule)
+    const isRapid = ch.challenge_type === 'rapid';
+    const consistencyPct = config.oneStepRules.consistency_rule_pct || 30;
+    if (!isRapid && ch.total_profit > 0 && ch.best_day_profit > 0) {
       const bestDayPct = (ch.best_day_profit / ch.total_profit) * 100;
-      if (bestDayPct > (config.oneStepRules.consistency_rule_pct || 20)) {
+      if (bestDayPct > consistencyPct) {
         await this.breachChallenge(challengeId, 'CONSISTENCY_VIOLATION',
-          `Best day profit ${ch.best_day_profit.toFixed(2)} is ${bestDayPct.toFixed(1)}% of total (max 20%)`);
+          `Best day profit ${ch.best_day_profit.toFixed(2)} is ${bestDayPct.toFixed(1)}% of total (max ${consistencyPct}%)`);
         return { breached: true, reason: 'CONSISTENCY_VIOLATION' };
       }
     }

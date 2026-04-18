@@ -235,9 +235,34 @@ function navigate(p){
   if(titleEl)titleEl.textContent=titles[p]||'';
   if(window['render_'+p])window['render_'+p]();
 }
-const PLANS={one_step:[{size:5000,fee:32,target:10,daily:5,dd:8,split:80,lev:'1:30'},{size:10000,fee:59,target:10,daily:5,dd:8,split:80,lev:'1:30'},{size:25000,fee:144,target:10,daily:5,dd:8,split:80,lev:'1:30'},{size:50000,fee:225,target:10,daily:5,dd:8,split:80,lev:'1:30'},{size:100000,fee:399,target:10,daily:5,dd:8,split:80,lev:'1:30'},{size:200000,fee:799,target:10,daily:5,dd:8,split:80,lev:'1:30'}],two_step:[{size:5000,fee:29,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'},{size:10000,fee:49,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'},{size:25000,fee:129,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'},{size:50000,fee:199,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'},{size:100000,fee:359,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'},{size:200000,fee:719,target:'8 / 5',daily:5,dd:10,split:80,lev:'1:30'}]};
+const PLANS={
+  one_step:[
+    {size:2500,  fee:19,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:5000,  fee:32,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:10000, fee:59,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:25000, fee:144, target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:50000, fee:225, target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:100000,fee:449, target:10,daily:5,dd:8, split:80,lev:'1:50',badge:'MAX'},
+  ],
+  two_step:[
+    {size:2500,  fee:15,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:5000,  fee:29,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:10000, fee:49,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:25000, fee:129, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:50000, fee:199, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:100000,fee:379, target:'8/5',daily:5,dd:10,split:80,lev:'1:50',badge:'MAX'},
+  ],
+  rapid:[
+    {size:2500,  fee:15,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:5000,  fee:25,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:10000, fee:45,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:25000, fee:109, target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:50000, fee:179, target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:100000,fee:349, target:12,daily:6,dd:8, split:80,lev:'1:50',badge:'MAX'},
+  ],
+};
 function renderPricing(plans,c,action){c.innerHTML=plans.map((p,i)=>`<div class="plan ${i===4?'popular':''}" onclick="${action}(${p.size})"><div class="plan-size">${F(p.size)}</div><div class="plan-price">${F(p.fee)}</div><div class="plan-detail">${p.target}% Target</div><div class="plan-detail">${p.daily}% Daily Loss</div><div class="plan-detail">${p.dd}% Max DD</div><div class="plan-detail">${p.split}% Split</div><div class="plan-detail">${p.lev} Leverage</div><div class="plan-detail">20% Consistency</div><button class="btn btn-primary btn-sm btn-full" style="margin-top:16px">${action==='selectPlan'?'Get Funded':'Select Plan'}</button></div>`).join('')}
-function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>t.classList.remove('active'));event.target.classList.add('active');renderPricing(PLANS[type],$('landingPricing'),"selectPlan")}
+function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>{t.classList.remove('active');t.style.borderBottomColor='transparent'});event.target.classList.add('active');renderPricing(PLANS[type],$('landingPricing'),"selectPlan")}
 function G(label,value,max,color,warn){const p=Math.min(100,Math.abs(value)/max*100);const c=warn&&p>70?'var(--rd)':color;return`<div style="flex:1;min-width:160px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font-size:.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">${label}</span><span style="font-size:.84rem;font-family:var(--fm);font-weight:700;color:${warn&&p>70?'var(--rd)':'var(--t1)'}">${value.toFixed(2)}% <span style="color:var(--t3);font-weight:400">/ ${max}%</span></span></div><div class="bar" style="height:6px"><div class="bar-fill" style="width:${p}%;background:${c}"></div></div></div>`}
 function M(label,value,color){return`<div style="padding:16px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--brd);text-align:center"><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">${label}</div><div style="font-size:1.15rem;font-family:var(--fm);font-weight:700;${color?'color:'+color:''}">${value}</div></div>`}
 function R(l,v,c){return`<div class="row"><span class="row-label">${l}</span><span class="row-value"${c?' style="color:'+c+'"':''}>${v}</span></div>`}
@@ -351,8 +376,9 @@ renderBuySelectors();
 };
 
 // === CONFIGURATOR STATE ===
-window._buySize=window._buySize||100000;
+window._buySize=window._buySize||10000;
 window._buyType=window._buyType||'one_step';
+window._buyScheme=window._buyScheme||'one_step';
 window._buyPay=window._buyPay||'crypto';
 let activeDiscount=null;
 let selectedPlatform='plutotrade';
@@ -363,14 +389,24 @@ window.PLATFORMS=[
 
 function renderBuySelectors(){
   // Type
-  const types=[{id:'one_step',label:'One Step',desc:'Single phase evaluation'},{id:'two_step',label:'Two Step',desc:'Two phase evaluation'}];
-  $('buyTypeGrid').innerHTML=types.map(t=>{
+  const types=[
+    {id:'one_step', label:'Pluto Classic',  badge:'',        color:'var(--ac2)',  desc:'10% target · 5% daily · 8% DD · Consistency rule'},
+    {id:'two_step', label:'Pluto Dual',     badge:'2-PHASE', color:'#60a5fa',    desc:'8%+5% targets · 5% daily · 10% DD · Lower fee'},
+    {id:'rapid',    label:'PlutoRapid',     badge:'FAST',    color:'#f59e0b',    desc:'12% target · 6% daily · NO consistency · 3 min days'},
+  ];
+  $('buyTypeGrid').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${types.map(t=>{
     const sel=window._buyType===t.id;
-    return`<div onclick="window._buyType='${t.id}';renderBuySelectors()" style="padding:14px 16px;border-radius:var(--r2);border:1.5px solid ${sel?'var(--ac2)':'var(--brd2)'};background:${sel?'var(--ac-bg)':'var(--bg)'};cursor:pointer;transition:.15s"><div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;border:2px solid ${sel?'var(--ac2)':'var(--brd3)'};display:flex;align-items:center;justify-content:center">${sel?'<div style="width:8px;height:8px;border-radius:50%;background:var(--ac2)"></div>':''}</div><div><div style="font-weight:600;font-size:.88rem">${t.label}</div><div style="font-size:.74rem;color:var(--t3)">${t.desc}</div></div></div></div>`;
-  }).join('');
+    const plan=PLANS[t.id]?.find(p=>p.size===window._buySize)||PLANS[t.id]?.[2];
+    return`<div onclick="window._buyType='${t.id}';renderBuySelectors()" style="padding:12px 14px;border-radius:var(--r2);border:1.5px solid ${sel?t.color:'var(--brd2)'};background:${sel?'rgba(0,0,0,.15)':'var(--bg)'};cursor:pointer;transition:.15s;position:relative">
+${t.badge?`<div style="position:absolute;top:-8px;right:8px;background:${t.color};color:#000;font-size:.5rem;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.08em">${t.badge}</div>`:''}
+<div style="font-weight:700;font-size:.82rem;color:${sel?t.color:'var(--t1)'};margin-bottom:3px">${t.label}</div>
+<div style="font-size:.62rem;color:var(--t3);line-height:1.4">${t.desc}</div>
+${plan?`<div style="margin-top:6px;font-family:var(--fd);font-size:.9rem;font-weight:700;color:${sel?t.color:'var(--t2)'}">$${plan.fee}</div>`:''}
+</div>`;
+  }).join('')}</div>`;
 
   // Sizes
-  const sizes=[5000,10000,25000,50000,100000,200000];
+  const sizes=[2500,5000,10000,25000,50000,100000];
   $('buySizeGrid').innerHTML=sizes.map(s=>{
     const sel=window._buySize===s;
     return`<div onclick="window._buySize=${s};renderBuySelectors()" style="padding:12px 14px;border-radius:var(--r2);border:1.5px solid ${sel?'var(--ac2)':'var(--brd2)'};background:${sel?'var(--ac-bg)':'var(--bg)'};cursor:pointer;transition:.15s;text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div style="width:16px;height:16px;border-radius:50%;border:2px solid ${sel?'var(--ac2)':'var(--brd3)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${sel?'<div style="width:7px;height:7px;border-radius:50%;background:var(--ac2)"></div>':''}</div><span style="font-family:var(--fd);font-weight:600;font-size:.92rem">${F(s)}</span></div></div>`;
@@ -385,7 +421,7 @@ function renderBuySelectors(){
   }).join('');
 
   // Rules
-  const plan=PLANS[window._buyType].find(p=>p.size===window._buySize)||PLANS[window._buyType][4];
+  const plan=PLANS[window._buyType]?.find(p=>p.size===window._buySize)||PLANS[window._buyType]?.[2];
   const ruleItem=(icon,label,value)=>`<div style="padding:10px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)"><div style="font-size:.68rem;color:var(--t3);margin-bottom:3px">${icon} ${label}</div><div style="font-weight:600;font-size:.88rem;font-family:var(--fd)">${value}</div></div>`;
   $('buyRulesGrid').innerHTML=
     ruleItem('&#127919;','Profit Target',plan.target+'%')+
@@ -407,7 +443,7 @@ function renderBuySelectors(){
 }
 
 function updateOrderSummary(){
-  const plan=PLANS[window._buyType].find(p=>p.size===window._buySize)||PLANS[window._buyType][4];
+  const plan=PLANS[window._buyType]?.find(p=>p.size===window._buySize)||PLANS[window._buyType]?.[2];
   let fee=plan.fee;
   if(window._buyType==='two_step')fee=Math.round(fee*0.8);
   const platSurcharge=(PLATFORMS.find(p=>p.id===selectedPlatform)||{}).surcharge||0;
@@ -415,7 +451,7 @@ function updateOrderSummary(){
   let discount=0;
   if(activeDiscount)discount=Math.round(fee*activeDiscount.discount_pct/100);
   const total=fee-discount;
-  const typeLabel=window._buyType==='two_step'?'Two Step':'One Step';
+  const typeLabel=window._buyType==='two_step'?'Pluto Dual':window._buyType==='rapid'?'PlutoRapid':'Pluto Classic';
   const platLabel='PlutoTrader';
   const el=$('orderSummary');if(!el)return;
   el.innerHTML=`
@@ -439,7 +475,7 @@ async function submitChallengePurchase(){
   const btn=$('buySubmitBtn');
   if(btn){btn.disabled=true;btn.textContent='Processing…';}
   try{
-    const body={account_size:window._buySize,challenge_type:window._buyType,payment_method:window._buyPay,platform:selectedPlatform};
+    const body={account_size:window._buySize,challenge_type:window._buyType,payment_method:window._buyPay,platform:selectedPlatform,scheme:window._buyType};
     if(activeDiscount)body.discount_code=activeDiscount.code;
     const d=await api('/api/challenges/purchase',{method:'POST',body:JSON.stringify(body)});
     if(d.payment_url){window.location.href=d.payment_url}

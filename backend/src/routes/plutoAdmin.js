@@ -391,6 +391,52 @@ router.put('/symbols/:symbol', async (req, res) => {
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── BULK SYMBOL OPERATIONS ────────────────────────────────────────────────────
+// PUT /api/pluto-admin/symbols/bulk  { symbols: ['EURUSD','GBPUSD'], spread_markup: 1.5 }
+router.put('/symbols/bulk', async (req, res) => {
+  try {
+    const { symbols, spread_markup, commission_per_lot } = req.body;
+    if (!symbols?.length) return res.status(400).json({ error: 'symbols array required' });
+    const results = [];
+    for (const sym of symbols) {
+      const settings = {};
+      if (spread_markup !== undefined) settings.spread_markup = spread_markup;
+      if (commission_per_lot !== undefined) settings.commission_per_lot = commission_per_lot;
+      await orderEngine.updateSymbolSettings(sym.toUpperCase(), settings);
+      results.push(sym.toUpperCase());
+    }
+    await require('../models/database').run(
+      `INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
+      [require('../utils/helpers').generateId(), 'BULK_SYMBOL_UPDATE', 'symbol', 'bulk',
+       `Updated ${results.length} symbols: spread_markup=${spread_markup ?? 'unchanged'}, commission=${commission_per_lot ?? 'unchanged'}`]
+    );
+    res.json({ success: true, updated: results });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── ACCOUNT OVERRIDE — force spread/commission on a specific account ──────────
+// POST /api/pluto-admin/account-settings  { account_id, account_type, spread_override, max_lots_override }
+router.post('/account-settings', async (req, res) => {
+  try {
+    const { account_id, account_type, spread_override, max_lots_override, daily_loss_override, notes } = req.body;
+    if (!account_id) return res.status(400).json({ error: 'account_id required' });
+    const { run, queryOne } = require('../models/database');
+    const table = account_type === 'funded' ? 'funded_accounts' : 'challenges';
+    // Store overrides as JSON in a notes/settings column
+    const existing = await queryOne(`SELECT admin_notes FROM ${table} WHERE id=$1`, [account_id]).catch(()=>null);
+    let adminData = {};
+    try { adminData = JSON.parse(existing?.admin_notes||'{}'); } catch(_) {}
+    if (spread_override !== undefined) adminData.spread_override = spread_override;
+    if (max_lots_override !== undefined) adminData.max_lots_override = max_lots_override;
+    if (daily_loss_override !== undefined) adminData.daily_loss_override = daily_loss_override;
+    if (notes) adminData.notes = notes;
+    await run(`UPDATE ${table} SET admin_notes=$1 WHERE id=$2`, [JSON.stringify(adminData), account_id]);
+    res.json({ success: true, settings: adminData });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+
+
 // ── SESSIONS ──────────────────────────────────────────────────────────────────
 router.get('/sessions', async (req, res) => {
   try {

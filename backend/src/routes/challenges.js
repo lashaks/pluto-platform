@@ -37,18 +37,22 @@ router.get('/:id', authenticate, async (req, res) => {
 router.post('/purchase', authenticate, async (req, res) => {
   try {
     const { account_size, profit_split, challenge_type, payment_method, discount_code, platform } = req.body;
-    const fee = config.challengePricing[account_size];
+    const pricingTable = type === 'rapid' ? config.rapidPricing : config.challengePricing;
+    const fee = pricingTable[account_size];
     if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(config.challengePricing).map(Number) });
 
     const selectedPlatform = 'plutotrade';
 
-    const type = challenge_type === 'two_step' ? 'two_step' : 'one_step';
-    const rules = type === 'two_step' ? config.twoStepRules : config.oneStepRules;
+    const type = ['two_step','rapid'].includes(challenge_type) ? challenge_type : 'one_step';
+    const rules = type === 'two_step' ? config.twoStepRules
+                : type === 'rapid'    ? config.rapidRules
+                :                       config.oneStepRules;
     const split = profit_split === 90 ? 90 : rules.profit_split_pct;
     let totalFee = split === 90 ? Math.round(fee * 1.3) : fee;
 
     // 2-step is 20% cheaper
     if (type === 'two_step') totalFee = Math.round(totalFee * 0.8);
+    // rapid uses its own pricing table already
 
     // Apply discount code
     let discountApplied = null;
@@ -68,7 +72,8 @@ router.post('/purchase', authenticate, async (req, res) => {
     }
 
     // Profit targets from rules
-    const profitTarget = type === 'two_step' ? rules.phase1_target_pct : rules.profit_target_pct;
+    const profitTarget = type === 'two_step' ? rules.phase1_target_pct
+                       : rules.profit_target_pct;
     const maxDaily = rules.max_daily_loss_pct;
     const maxDrawdown = rules.max_total_loss_pct;
 
@@ -199,7 +204,8 @@ router.post('/:id/reset', authenticate, async (req, res) => {
 
     const type = old.challenge_type;
     const rules = type === 'two_step' ? config.twoStepRules : config.oneStepRules;
-    const profitTarget = type === 'two_step' ? rules.phase1_target_pct : rules.profit_target_pct;
+    const profitTarget = type === 'two_step' ? rules.phase1_target_pct
+                       : rules.profit_target_pct;
     const id = generateId();
 
     if (!isDemoMode) {
