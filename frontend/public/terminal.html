@@ -513,7 +513,67 @@ const BACKEND = location.hostname==='localhost' ? '' : RAILWAY;
 const WS_URL  = location.hostname==='localhost'
   ? `${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws/prices`
   : 'wss://pluto-platform-production.up.railway.app/ws/prices';
-const token = localStorage.getItem('pcf_token');
+// ── Standalone login for terminal ─────────────────────────────────────────
+let token = localStorage.getItem('pcf_token');
+
+if (!token) {
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06050a;font-family:'Manrope',sans-serif">
+      <div style="background:#0f0e18;border:1px solid rgba(139,92,246,.3);border-radius:16px;padding:40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.7)">
+        <div style="text-align:center;margin-bottom:28px">
+          <div style="width:52px;height:52px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:24px;margin:0 auto 10px">P</div>
+          <div style="font-size:1.1rem;font-weight:800;color:#fff">PlutoTrader</div>
+          <div style="font-size:.75rem;color:#8b87a0;margin-top:3px">Professional Trading Terminal</div>
+        </div>
+        <div id="tLoginErr" style="display:none;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:9px 12px;color:#f87171;font-size:.75rem;margin-bottom:14px"></div>
+        <label style="display:block;font-size:.6rem;font-weight:700;color:#5a5672;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Email</label>
+        <input id="tEmail" type="email" placeholder="your@email.com"
+          style="width:100%;background:#0b0a12;border:1.5px solid rgba(255,255,255,.08);border-radius:8px;padding:11px 13px;color:#eeedf4;font-size:.88rem;outline:none;margin-bottom:13px;box-sizing:border-box"
+          onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='rgba(255,255,255,.08)'" />
+        <label style="display:block;font-size:.6rem;font-weight:700;color:#5a5672;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Password</label>
+        <input id="tPass" type="password" placeholder="••••••••"
+          style="width:100%;background:#0b0a12;border:1.5px solid rgba(255,255,255,.08);border-radius:8px;padding:11px 13px;color:#eeedf4;font-size:.88rem;outline:none;margin-bottom:20px;box-sizing:border-box"
+          onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='rgba(255,255,255,.08)'"
+          onkeydown="if(event.key==='Enter')doTLogin()" />
+        <button onclick="doTLogin()" id="tLoginBtn"
+          style="width:100%;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:8px;padding:13px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;letter-spacing:.02em"
+          onmouseover="this.style.background='linear-gradient(135deg,#6d28d9,#5b21b6)'"
+          onmouseout="this.style.background='linear-gradient(135deg,#7c3aed,#6d28d9)'">
+          Launch Terminal
+        </button>
+        <div style="text-align:center;margin-top:14px;font-size:.72rem;color:#5a5672">
+          Don't have an account?
+          <a href="/" style="color:#a78bfa;text-decoration:none;margin-left:4px">Get Funded →</a>
+        </div>
+      </div>
+    </div>`;
+
+  window.doTLogin = async function() {
+    const email = document.getElementById('tEmail').value.trim();
+    const pass  = document.getElementById('tPass').value;
+    const btn   = document.getElementById('tLoginBtn');
+    const err   = document.getElementById('tLoginErr');
+    if (!email || !pass) { err.style.display='block'; err.textContent='Please enter your email and password.'; return; }
+    btn.textContent = 'Connecting…'; btn.disabled = true;
+    try {
+      const RAILWAY = 'https://pluto-platform-production.up.railway.app';
+      const BE = location.hostname==='localhost' ? '' : RAILWAY;
+      const r = await fetch(BE+'/api/auth/login', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password: pass })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error||'Login failed');
+      localStorage.setItem('pcf_token', d.token);
+      localStorage.setItem('pcf_user', JSON.stringify(d.user));
+      location.reload();
+    } catch(e) {
+      err.style.display='block'; err.textContent=e.message;
+      btn.textContent='Launch Terminal'; btn.disabled=false;
+    }
+  };
+  throw new Error('LOGIN_REQUIRED');
+}
 const qp    = new URLSearchParams(location.search);
 
 // ── State ─────────────────────────────────────────────────────────────────────

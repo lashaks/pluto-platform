@@ -222,7 +222,15 @@ ${isActive||isPassed||isFailed?`<div style="padding:24px">
 </div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:20px">${M('Balance',F(c.current_balance))}${M('Equity',F(c.current_equity))}${M('Profit',F(profit),profit>=0?'var(--gr)':'var(--rd)')}${M('Win Rate',wr+'%')}${M('Trades',c.total_trades)}${M('W / L',`<span style="color:var(--gr)">${c.winning_trades}</span><span style="color:var(--t3)"> / </span><span style="color:var(--rd)">${c.losing_trades}</span>`)}</div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--brd);border-radius:var(--r2);overflow:hidden"><div style="padding:12px 16px;background:var(--bg)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">Platform</div><div style="font-size:.88rem;font-weight:600">${c.platform==='mt5'?'MetaTrader 5':c.platform==='matchtrader'?'Match-Trader':'PlutoTrader'}</div></div><div style="padding:12px 16px;background:var(--bg)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">Login</div><div style="font-size:.88rem;font-family:var(--fm);font-weight:700;color:var(--ac2)">${c.ctrader_login||'—'}</div></div><div style="padding:12px 16px;background:var(--bg)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">Server</div><div style="font-size:.88rem;font-family:var(--fm)">${c.ctrader_server||'Demo'}</div></div><div style="padding:12px 16px;background:var(--bg)"><div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">Leverage</div><div style="font-size:.88rem;font-weight:600">${c.leverage||'1:30'}</div></div></div></div>`:''} 
-${isFailed?`<div style="padding:0 24px 20px"><div style="padding:12px 16px;background:var(--rd-bg);border:1px solid rgba(248,113,113,.12);border-radius:var(--r2);font-size:.86rem"><strong style="color:var(--rd)">Breach:</strong> <span style="color:var(--t2)">${c.breach_reason||'Rule violation'}</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary btn-sm" onclick="navigate('buy')">New Challenge</button><button class="btn btn-outline btn-sm" onclick="resetChallenge('${c.id}')">Reset Account (10% off)</button></div></div>`:''}${isPassed?`<div style="padding:0 24px 20px"><div style="padding:12px 16px;background:var(--gr-bg);border:1px solid rgba(52,211,153,.12);border-radius:var(--r2);font-size:.86rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="color:var(--gr);font-weight:600">&#10004; Evaluation Passed</span><button class="btn btn-outline btn-sm" onclick="showCertificate('pass',{name:'${(user?.first_name||'')+' '+(user?.last_name||'')}',size:'${F(c.account_size)}',type:'${c.challenge_type==='two_step'?'2-Step':'1-Step'}',date:'${c.passed_at?new Date(c.passed_at).toLocaleDateString():new Date(c.created_at).toLocaleDateString()}',id:'${c.id.slice(0,8).toUpperCase()}'})">View Certificate</button></div></div>`:''}</div>`}).join('')}`;};
+${isFailed?`<div style="padding:0 24px 20px"><div style="padding:12px 16px;background:var(--rd-bg);border:1px solid rgba(248,113,113,.12);border-radius:var(--r2);font-size:.86rem"><strong style="color:var(--rd)">Breach:</strong> <span style="color:var(--t2)">${c.breach_reason||'Rule violation'}</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary btn-sm" onclick="navigate('buy')">New Challenge</button><button class="btn btn-outline btn-sm" onclick="resetChallenge('${c.id}')">Reset Account (10% off)</button></div></div>`:''}${isPassed?`<div style="padding:0 24px 20px"><div style="padding:12px 16px;background:var(--gr-bg);border:1px solid rgba(52,211,153,.12);border-radius:var(--r2);font-size:.86rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="color:var(--gr);font-weight:600">&#10004; Evaluation Passed</span><button class="btn btn-outline btn-sm" onclick="showCertificate('pass',{name:'${(user?.first_name||'')+' '+(user?.last_name||'')}',size:'${F(c.account_size)}',type:'${c.challenge_type==='two_step'?'2-Step':'1-Step'}',date:'${c.passed_at?new Date(c.passed_at).toLocaleDateString():new Date(c.created_at).toLocaleDateString()}',id:'${c.id.slice(0,8).toUpperCase()}'})">View Certificate</button></div></div>`:''}\n${isActive||isPassed?`\n<div style="padding:0 24px 20px">\n  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\n    <div style="background:var(--bg);border:1px solid var(--brd);border-radius:var(--r2);padding:14px">\n      <div style="font-size:.62rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Balance / Equity Curve</div>\n      <div id="bchart-${c.id}" style="width:100%;height:90px"></div>\n    </div>\n    <div style="background:var(--bg);border:1px solid var(--brd);border-radius:var(--r2);padding:14px">\n      <div style="font-size:.62rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Daily P&amp;L Calendar</div>\n      <div id="pcal-${c.id}" style="width:100%;min-height:90px;font-size:.58rem"></div>\n    </div>\n  </div>\n</div>`:''}\n</div>`}).join('')}`;
+  // Post-render: draw charts for each active challenge
+  d.forEach(c => {
+    if (c.status === 'active' || c.status === 'passed') {
+      drawBalanceChart(c.id, c.starting_balance, c.starting_balance * (1 + c.profit_target_pct / 100), c.starting_balance * (1 - c.max_total_loss_pct / 100));
+      drawDailyCalendar(c.id);
+    }
+  });
+};
 
 // FUNDED
 window.render_funded=async function(){$('page-funded').innerHTML=LOADING;const d=await api('/api/funded');if(!d.length){$('page-funded').innerHTML=`<div class="page-head"><h1>Funded Accounts</h1><p>Your funded trading accounts</p></div><div class="card" style="text-align:center;padding:52px"><div style="font-size:1.6rem;margin-bottom:12px">&#128176;</div><div style="font-weight:700;margin-bottom:6px">No funded accounts</div><div style="color:var(--t2);font-size:.86rem;margin-bottom:18px">Pass an evaluation to get funded.</div><button class="btn btn-primary btn-sm" onclick="navigate('buy')">Start Challenge</button></div>`;return}
@@ -420,6 +428,7 @@ try{
   const consistencyScore=hasTrades?Math.min(100,Math.round(wr*0.5+(pf>1?30:pf*30)+(trades.length>10?20:trades.length*2))):0;
   const riskScore=hasTrades?Math.min(100,Math.round((avgLoss<avgWin?40:20)+(wr>50?30:wr*0.6)+(pf>1.5?30:pf*20))):0;
   const edgeScore=hasTrades?Math.min(100,Math.round(pf*25+(wr>55?30:wr*0.55)+(trades.length>20?20:trades.length))):0;
+  const slScore=hasTrades?Math.min(100,Math.round(trades.filter(t=>t.stop_loss).length/Math.max(1,trades.length)*80+(pf>1?20:10))):0;
   const aiScore=hasTrades?Math.round((consistencyScore+riskScore+edgeScore)/3):0;
 
   // Find best/worst symbols
@@ -483,7 +492,18 @@ ${hasTrades?`<div class="card" style="padding:0;overflow:hidden;margin-bottom:20
     <div style="color:var(--t2);font-size:.86rem;line-height:1.6">${hasTrades?'Insights update automatically as you close more trades. The more data, the better the analysis.':'Start a challenge and place your first trades — insights generated within 24 hours.'}</div>
   </div>
   ${hasTrades?'':`<button class="btn btn-primary btn-sm" onclick="navigate('buy')" style="flex-shrink:0">Start Challenge</button>`}
-</div>`;
+</div>
+${hasTrades?`<div style="display:grid;grid-template-columns:auto 1fr;gap:14px;margin-top:4px;align-items:start">
+  <div class="card" style="padding:16px 20px;width:220px">
+    <div style="font-size:.62rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">🎯 Trader Score Radar</div>
+    <div id="radarChart"></div>
+  </div>
+  <div class="card" style="padding:16px 20px">
+    <div style="font-size:.62rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">📊 Score Breakdown</div>
+    <div id="scoreBreakdown"></div>
+  </div>
+</div>`:''}`;
+  if(hasTrades) setTimeout(()=>drawRadarChart(aiScore,wr,pf,consistencyScore,riskScore,slScore),50);
 }catch(e){$('page-coach').innerHTML=`<div class="card"><div class="empty">Failed to load AI Coach. <a onclick="navigate('coach')">Retry</a></div></div>`}};
 
 // RULES
@@ -880,8 +900,212 @@ ${d.referrals.length?`<div class="card" style="padding:0;overflow:hidden;margin-
 // SHARE
 function shareChallenge(size,profit,wr,type){const text=`I'm trading a ${F(size)} ${type} evaluation on Pluto Capital Funding! Current profit: ${F(profit)} | Win rate: ${wr}% | Join me: https://plutocapitalfunding.com`;if(navigator.share){navigator.share({title:'Pluto Capital Funding',text}).catch(()=>{})}else{navigator.clipboard.writeText(text);toast('Stats copied to clipboard!','success')}}
 
-// INIT
-function handleReturnFromPayment(){const p=new URLSearchParams(window.location.search);if(p.get('purchased')==='true'){toast('Payment received! Activating shortly.','success');window.history.replaceState({},'',window.location.pathname)}}
+// ─── BALANCE / EQUITY CHART ───────────────────────────────────────────────
+async function drawBalanceChart(challengeId, startBal, target, floor) {
+  const el = document.getElementById('bchart-'+challengeId);
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">Loading…</div>';
+  try {
+    const data = await api('/api/challenges/'+challengeId+'/balance-history');
+    const series = data.series || [];
+    if (series.length < 2) {
+      el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">No trade history yet</div>';
+      return;
+    }
+    const W = el.offsetWidth || 280, H = 90;
+    const vals = series.map(p => p.v);
+    const minV = Math.min(...vals, floor) * 0.999;
+    const maxV = Math.max(...vals, target) * 1.001;
+    const scaleX = i => (i / (series.length - 1)) * (W - 8) + 4;
+    const scaleY = v => H - 4 - ((v - minV) / (maxV - minV)) * (H - 8);
+    const pts = series.map((p,i) => `${scaleX(i).toFixed(1)},${scaleY(p.v).toFixed(1)}`).join(' ');
+    const areaClose = `${scaleX(series.length-1).toFixed(1)},${H} ${scaleX(0).toFixed(1)},${H}`;
+    const color = series[series.length-1].v >= startBal ? '#34D399' : '#F87171';
+    const tY = scaleY(target).toFixed(1);
+    const fY = scaleY(floor).toFixed(1);
+    const sY = scaleY(startBal).toFixed(1);
+    el.innerHTML = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block">
+      <defs>
+        <linearGradient id="bg${challengeId.slice(0,4)}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <!-- Floor line (red) -->
+      <line x1="0" y1="${fY}" x2="${W}" y2="${fY}" stroke="#F87171" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <!-- Target line (green) -->
+      <line x1="0" y1="${tY}" x2="${W}" y2="${tY}" stroke="#34D399" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <!-- Start line (gray) -->
+      <line x1="0" y1="${sY}" x2="${W}" y2="${sY}" stroke="#5A5672" stroke-width="1" opacity="0.6"/>
+      <!-- Area fill -->
+      <polygon points="${pts} ${areaClose}" fill="url(#bg${challengeId.slice(0,4)})"/>
+      <!-- Line -->
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Current dot -->
+      <circle cx="${scaleX(series.length-1).toFixed(1)}" cy="${scaleY(series[series.length-1].v).toFixed(1)}" r="3" fill="${color}"/>
+      <!-- Labels -->
+      <text x="3" y="${parseFloat(tY)-3}" fill="#34D399" font-size="8" opacity="0.8">Target ${F(target)}</text>
+      <text x="3" y="${Math.min(H-3,parseFloat(fY)+9)}" fill="#F87171" font-size="8" opacity="0.8">Floor ${F(floor)}</text>
+    </svg>`;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">Chart unavailable</div>';
+  }
+}
+
+// ─── DAILY P&L CALENDAR ───────────────────────────────────────────────────
+async function drawDailyCalendar(challengeId) {
+  const el = document.getElementById('pcal-'+challengeId);
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">Loading…</div>';
+  try {
+    const data = await api('/api/challenges/'+challengeId+'/daily-pnl');
+    const days = data.days || {};
+    if (!Object.keys(days).length) {
+      el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">No trading days yet</div>';
+      return;
+    }
+    const dates = Object.keys(days).sort();
+    const start = new Date(dates[0]);
+    const end   = new Date(dates[dates.length-1]);
+    // Build calendar for the range
+    const maxAbs = Math.max(...Object.values(days).map(Math.abs), 1);
+    // Compress to last 5 weeks max for space
+    const weeks = [];
+    let week = [];
+    const cur = new Date(start);
+    cur.setDate(cur.getDate() - cur.getDay()); // back to Sunday
+    const endSun = new Date(end);
+    endSun.setDate(endSun.getDate() + (6 - endSun.getDay()));
+    while (cur <= endSun) {
+      week.push(new Date(cur));
+      if (week.length === 7) { weeks.push(week); week = []; }
+      cur.setDate(cur.getDate()+1);
+    }
+    if (week.length) { while(week.length<7) week.push(null); weeks.push(week); }
+    const visWeeks = weeks.slice(-8); // show last 8 weeks
+    const cw = 11, ch = 11, gap = 2;
+    const W = visWeeks.length * (cw+gap) + 28, H = 7*(ch+gap)+16;
+    const dayLetters = ['S','M','T','W','T','F','S'];
+    let cells = '';
+    visWeeks.forEach((wk,wi) => {
+      wk.forEach((d,di) => {
+        if (!d) return;
+        const key = d.toISOString().split('T')[0];
+        const pnl = days[key];
+        const x = 20 + wi*(cw+gap), y = 12 + di*(ch+gap);
+        let fill = '#1A1828';
+        if (pnl !== undefined) {
+          const intensity = Math.min(1, Math.abs(pnl) / maxAbs);
+          if (pnl >= 0) fill = `rgba(52,211,153,${0.15+intensity*0.75})`;
+          else fill = `rgba(248,113,113,${0.15+intensity*0.75})`;
+        }
+        const title = pnl !== undefined ? `${key}: ${pnl>=0?'+':''}${pnl.toFixed(2)}` : key;
+        cells += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" rx="2" fill="${fill}" title="${title}">
+          <title>${title}</title></rect>`;
+      });
+    });
+    // Day labels
+    const labels = dayLetters.map((l,i) =>
+      `<text x="14" y="${14+i*(ch+gap)+ch/2+3}" fill="#5A5672" font-size="7" text-anchor="middle">${l}</text>`
+    ).join('');
+    // Month ticks at top
+    let monthTicks = '';
+    visWeeks.forEach((wk,wi) => {
+      const d = wk.find(d=>d);
+      if (!d) return;
+      const x = 20 + wi*(cw+gap);
+      if (d.getDate() <= 7 || wi===0) {
+        monthTicks += `<text x="${x+cw/2}" y="9" fill="#5A5672" font-size="7" text-anchor="middle">${d.toLocaleString('default',{month:'short'})}</text>`;
+      }
+    });
+    el.innerHTML = `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block">
+      ${labels}${monthTicks}${cells}
+    </svg>
+    <div style="display:flex;gap:10px;margin-top:4px;font-size:.6rem;color:var(--t3)">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:rgba(52,211,153,.8);border-radius:2px;display:inline-block"></span>Profit</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:rgba(248,113,113,.8);border-radius:2px;display:inline-block"></span>Loss</span>
+      <span style="margin-left:auto;font-weight:700;color:var(--t2)">${data.total_trading_days} trading day${data.total_trading_days!==1?'s':''}</span>
+    </div>`;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--t3);font-size:.7rem;padding:4px">Calendar unavailable</div>';
+  }
+}
+
+// ─── TRADER SCORE RADAR CHART ─────────────────────────────────────────────
+function drawRadarChart(overallScore, wr, pf, consistency, risk, slUsage) {
+  const radar = document.getElementById('radarChart');
+  const breakdown = document.getElementById('scoreBreakdown');
+  if (!radar) return;
+
+  const axes = [
+    { label: 'Win Rate',     value: Math.min(100, wr),           color: '#34D399' },
+    { label: 'Consistency',  value: Math.min(100, consistency),  color: '#60A5FA' },
+    { label: 'Risk Mgmt',    value: Math.min(100, risk),         color: '#A78BFA' },
+    { label: 'Profit Factor',value: Math.min(100, Math.round(pf * 33)), color: '#FBBF24' },
+    { label: 'SL Discipline',value: Math.min(100, slUsage),      color: '#F87171' },
+    { label: 'Overall',      value: Math.min(100, overallScore), color: '#34D399' },
+  ];
+
+  const cx = 90, cy = 90, R = 72, n = axes.length;
+  const toRad = (i) => (i / n) * 2 * Math.PI - Math.PI / 2;
+  const pt = (i, r) => {
+    const a = toRad(i);
+    return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+  };
+
+  // Web lines (rings)
+  let rings = '';
+  [0.25, 0.5, 0.75, 1].forEach(frac => {
+    const pts = axes.map((_, i) => { const p = pt(i, R * frac); return `${p.x},${p.y}`; }).join(' ');
+    rings += `<polygon points="${pts}" fill="none" stroke="#252238" stroke-width="1"/>`;
+  });
+
+  // Axis lines
+  let axisLines = '';
+  axes.forEach((_, i) => {
+    const p = pt(i, R);
+    axisLines += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="#252238" stroke-width="1"/>`;
+  });
+
+  // Data polygon
+  const dataR = axes.map(a => R * a.value / 100);
+  const dataPts = axes.map((_, i) => { const p = pt(i, dataR[i]); return `${p.x},${p.y}`; }).join(' ');
+
+  // Labels and dots
+  let labels = '', dots = '';
+  axes.forEach((ax, i) => {
+    const lp = pt(i, R + 14);
+    const dp = pt(i, dataR[i]);
+    labels += `<text x="${lp.x}" y="${lp.y}" text-anchor="middle" dominant-baseline="middle" fill="#8B87A0" font-size="7.5" font-family="Arial">${ax.label}</text>`;
+    dots += `<circle cx="${dp.x}" cy="${dp.y}" r="3.5" fill="${ax.color}"/>`;
+  });
+
+  // Overall score in center
+  const scoreColor = overallScore >= 70 ? '#34D399' : overallScore >= 40 ? '#FBBF24' : '#F87171';
+
+  radar.innerHTML = `<svg width="180" height="180" viewBox="0 0 180 180">
+    ${rings}${axisLines}
+    <polygon points="${dataPts}" fill="rgba(139,92,246,0.15)" stroke="#7C3AED" stroke-width="1.5"/>
+    ${labels}${dots}
+    <circle cx="${cx}" cy="${cy}" r="22" fill="#0F0E18" stroke="#252238" stroke-width="1"/>
+    <text x="${cx}" y="${cy - 5}" text-anchor="middle" fill="${scoreColor}" font-size="18" font-weight="900" font-family="Arial Narrow,Arial">${overallScore}</text>
+    <text x="${cx}" y="${cy + 9}" text-anchor="middle" fill="#8B87A0" font-size="7" font-family="Arial">/100</text>
+  </svg>`;
+
+  if (breakdown) {
+    const scoreColor2 = s => s >= 70 ? '#34D399' : s >= 40 ? '#FBBF24' : '#F87171';
+    breakdown.innerHTML = axes.map(ax => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:.8rem;color:#eeedf4">${ax.label}</span>
+          <span style="font-size:.8rem;font-weight:700;color:${scoreColor2(ax.value)}">${ax.value}</span>
+        </div>
+        <div style="height:5px;background:#1A1828;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${ax.value}%;background:${ax.color};border-radius:3px;transition:width .6s ease"></div>
+        </div>
+      </div>`).join('');
+  }
+}{const p=new URLSearchParams(window.location.search);if(p.get('purchased')==='true'){toast('Payment received! Activating shortly.','success');window.history.replaceState({},'',window.location.pathname)}}
 function loadPricing(){renderPricing(PLANS.one_step,$('landingPricing'),"selectPlan")}
 window.addEventListener('scroll',()=>{const n=$('topNav');if(n)n.classList.toggle('scrolled',scrollY>40)});
 document.addEventListener('DOMContentLoaded',()=>{loadPricing();handleReturnFromPayment();if(token)enterDashboard()});

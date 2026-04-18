@@ -233,4 +233,62 @@ router.post('/:id/reset', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/challenges/:id/balance-history — equity curve data
+router.get('/:id/balance-history', authenticate, async (req, res) => {
+  try {
+    const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+    if (!ch) return res.status(404).json({ error: 'Not found' });
+
+    // Get closed trades ordered by close time
+    const trades = await queryAll(
+      `SELECT close_time, profit, swap FROM trades WHERE challenge_id=$1 AND status='closed' ORDER BY close_time ASC LIMIT 500`,
+      [req.params.id]
+    );
+
+    // Build running balance series
+    let running = ch.starting_balance;
+    const series = [{ t: ch.activated_at || ch.created_at, v: running, label: 'Start' }];
+    trades.forEach(t => {
+      running += (t.profit || 0) + (t.swap || 0);
+      series.push({ t: t.close_time, v: +running.toFixed(2) });
+    });
+    // Add current balance as last point
+    if (trades.length > 0) {
+      series.push({ t: new Date().toISOString(), v: ch.current_balance, label: 'Now' });
+    }
+
+    res.json({
+      series,
+      starting_balance: ch.starting_balance,
+      current_balance: ch.current_balance,
+      highest_balance: ch.highest_balance,
+      lowest_equity: ch.lowest_equity,
+      target: ch.starting_balance * (1 + ch.profit_target_pct / 100),
+      floor: ch.starting_balance * (1 - ch.max_total_loss_pct / 100),
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/challenges/:id/daily-pnl — daily P&L calendar data
+router.get('/:id/daily-pnl', authenticate, async (req, res) => {
+  try {
+    const ch = await queryOne(`SELECT * FROM challenges WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+    if (!ch) return res.status(404).json({ error: 'Not found' });
+
+    const trades = await queryAll(
+      `SELECT close_time, profit, swap FROM trades WHERE challenge_id=$1 AND status='closed' ORDER BY close_time ASC`,
+      [req.params.id]
+    );
+
+    const days = {};
+    trades.forEach(t => {
+      if (!t.close_time) return;
+      const day = t.close_time.split('T')[0];
+      days[day] = (days[day] || 0) + (t.profit || 0) + (t.swap || 0);
+    });
+
+    res.json({ days, total_trading_days: Object.keys(days).length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
