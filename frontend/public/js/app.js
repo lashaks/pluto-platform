@@ -41,7 +41,7 @@ document.addEventListener('keydown',e=>{
 function selectPlan(size){window._buySize=size;window._buyType=currentEval;if(token){navigate('buy')}else{selectedPlan={size,type:currentEval};showAuth('register')}}
 function toast(m,t='info'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateY(-10px)';e.style.transition='all .3s';setTimeout(()=>e.remove(),300)},3000)}
 let pendingVerifyEmail='';
-async function doLogin(e){e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('loginEmail').value,password:$('loginPass').value})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;hideAuth();enterDashboard()}catch(x){toast(x.message,'error')}}
+async function doLogin(e){e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('loginEmail').value,password:$('loginPass').value})});token=d.token;localStorage.setItem('pcf_token',token);localStorage.setItem('pcf_user',JSON.stringify(d.user));user=d.user;hideAuth();enterDashboard()}catch(x){toast(x.message,'error')}}
 async function doRegister(e){e.preventDefault();const ta=$('regTerms');if(!ta||!ta.checked){toast('You must accept the Terms of Service','error');return}try{const email=$('regEmail').value;const d=await api('/api/auth/register',{method:'POST',body:JSON.stringify({email,password:$('regPass').value,first_name:$('regFirst').value,last_name:$('regLast').value,terms_accepted:true})});token=d.token;localStorage.setItem('pcf_token',token);user=d.user;pendingVerifyEmail=email;$('verifyEmailDisplay').textContent=email;showAuthScreen('formVerify');toast('Check your email for a verification code','info')}catch(x){toast(x.message,'error')}}
 async function doVerify(e){e.preventDefault();try{await api('/api/auth/verify-email',{method:'POST',body:JSON.stringify({email:pendingVerifyEmail,code:$('verifyCode').value})});toast('Email verified!','success');hideAuth();enterDashboard();if(selectedPlan)setTimeout(()=>{navigate('buy');toast('Select your plan','info')},500)}catch(x){toast(x.message,'error')}}
 async function resendCode(){try{await api('/api/auth/resend-code',{method:'POST',body:JSON.stringify({email:pendingVerifyEmail})});toast('New code sent!','success')}catch(x){toast(x.message,'error')}}
@@ -52,7 +52,41 @@ async function resendResetCode(){const em=$('resetEmail')?.value||pendingResetEm
 function logout(){token=null;user=null;localStorage.removeItem('pcf_token');$('app').style.display='none';$('landing').style.display='block'}
 function toggleMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');if(s.classList.contains('mobile-open')){closeMobile()}else{s.classList.add('mobile-open');o.classList.add('open')}}
 function closeMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');s.classList.remove('mobile-open');o.classList.remove('open')}
-async function enterDashboard(){try{user=await api('/api/users/profile');$('landing').style.display='none';$('authModal').classList.add('hidden');showWelcomeSplash(user.first_name||'Trader',()=>{$('app').style.display='block';$('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';$('userEmail').textContent=user.email;if(user.role==='admin')$('adminMenuItem').classList.remove('hidden');applyTheme(localStorage.getItem('pcf_theme')||'dark');navigate('dashboard')})}catch(x){logout()}}
+async function enterDashboard(){
+  try{
+    user=await api('/api/users/profile');
+    $('landing').style.display='none';
+    $('authModal').classList.add('hidden');
+    showWelcomeSplash(user.first_name||'Trader',()=>{
+      $('app').style.display='block';
+      $('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';
+      $('userEmail').textContent=user.email;
+      if(user.role==='admin')$('adminMenuItem').classList.remove('hidden');
+      applyTheme(localStorage.getItem('pcf_theme')||'dark');
+      navigate('dashboard');
+    });
+  }catch(x){
+    // Only logout on actual auth failure (401), not network errors
+    if(x.message?.includes('401')||x.message?.includes('Unauthorized')||x.message?.includes('invalid token')){
+      logout();
+    } else {
+      // Network error or server restart — keep token, show landing with retry
+      console.warn('[Auth] Profile load failed, keeping session:', x.message);
+      $('landing').style.display='none';
+      $('authModal').classList.add('hidden');
+      $('app').style.display='block';
+      // Try to use cached user data
+      try{ user=JSON.parse(localStorage.getItem('pcf_user')||'null'); }catch(_){}
+      if(user){
+        $('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';
+        $('userEmail').textContent=user.email||'';
+        if(user.role==='admin')$('adminMenuItem')?.classList.remove('hidden');
+      }
+      applyTheme(localStorage.getItem('pcf_theme')||'dark');
+      navigate('dashboard');
+    }
+  }
+}
 
 function showWelcomeSplash(firstName,onDone){
   const splash=$('welcomeSplash');
