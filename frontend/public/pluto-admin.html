@@ -202,7 +202,20 @@ async function doRender(p){
 async function rOverview(el) {
   const [ov, alerts] = await Promise.all([api('/api/pluto-admin/overview'), api('/api/pluto-admin/risk-alerts').catch(()=>[])]);
   updateRBadge(alerts.length);
+  // Render launch checklist / env banner
+  setTimeout(()=>{
+    const cl = document.getElementById('launchChecklist');
+    if(!cl) return;
+    let html = '';
+    if(ov.demo_mode) html += `<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px"><span style="font-size:1.2rem;flex-shrink:0">⚠️</span><div><div style="font-size:.82rem;font-weight:800;color:#fbbf24;margin-bottom:4px">DEMO MODE IS ON — Real payments disabled</div><div style="font-size:.74rem;color:var(--t2);line-height:1.6">Anyone can activate a free challenge right now. Turn this OFF in Quick Actions before going live.</div></div></div>`;
+    if(ov.env){
+      const envRows = Object.entries(ov.env).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:5px;border:1px solid var(--brd);font-size:.72rem"><span style="color:var(--t2)">${k.replace(/_/g,' ')}</span><span style="font-weight:700;color:${v==='set'?'var(--gr)':v.includes('DEFAULT')?'var(--rd)':'var(--am)'}">${v}</span></div>`).join('');
+      html += `<div style="background:var(--sf2);border:1px solid var(--brd);border-radius:10px;padding:14px 18px;margin-bottom:14px"><div style="font-size:.68rem;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🔑 Environment Variables</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:5px">${envRows}</div></div>`;
+    }
+    cl.innerHTML = html;
+  }, 50);
   el.innerHTML=`
+<div id="launchChecklist"></div>
 <div class="page-head"><h1>Overview</h1><p>Live platform snapshot • ${ov.market_open?'<span style="color:var(--gr)">Markets Open</span>':'<span style="color:var(--rd)">Markets Closed</span>'}</p></div>
 <div class="stat-grid">
   <div class="stat-card sc-b"><div class="stat-lbl">Traders</div><div class="stat-val">${ov.total_users||0}</div></div>

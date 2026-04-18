@@ -42,6 +42,7 @@ router.get('/overview', async (req, res) => {
     ]);
     const demoSetting = await queryOne(`SELECT value FROM platform_settings WHERE key='demo_mode'`);
     const riskDefaults = await queryOne(`SELECT value FROM platform_settings WHERE key='risk_defaults'`);
+    const DEFAULT_JWT = 'pluto-capital-dev-secret-change-in-production-min-32-chars';
     res.json({
       total_users: users?.n||0, active_challenges: active_ch?.n||0, failed_challenges: failed_ch?.n||0,
       passed_challenges: passed_ch?.n||0, funded_accounts: funded?.n||0, pending_payouts: payouts_pending?.n||0,
@@ -51,6 +52,13 @@ router.get('/overview', async (req, res) => {
       demo_mode: demoSetting?.value === 'true',
       risk_engine_running: require('../services/riskEngine').running || false,
       risk_defaults: riskDefaults?.value ? JSON.parse(riskDefaults.value) : null,
+      env: {
+        jwt_secret:             process.env.JWT_SECRET && process.env.JWT_SECRET !== DEFAULT_JWT ? 'set' : 'DEFAULT_UNSAFE',
+        email_api_key:          process.env.EMAIL_API_KEY          ? 'set' : 'missing',
+        twelve_data_key:        process.env.TWELVE_DATA_KEY        ? 'set' : 'missing',
+        nowpayments_api_key:    process.env.NOWPAYMENTS_API_KEY    ? 'set' : 'missing',
+        nowpayments_ipn_secret: process.env.NOWPAYMENTS_IPN_SECRET ? 'set' : 'missing — SECURITY RISK',
+      },
     });
   } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
 });

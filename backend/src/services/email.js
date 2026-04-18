@@ -41,7 +41,10 @@ function row(label, value) {
 }
 
 async function send(to, subject, html) {
-  if (!API_KEY) { console.log('[Email] No API key, skipping:', subject, 'to', to); return; }
+  if (!API_KEY) {
+    console.warn(`[Email] ⚠ Skipped "${subject}" to ${to} — EMAIL_API_KEY not set`);
+    return null;
+  }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -49,10 +52,29 @@ async function send(to, subject, html) {
       body: JSON.stringify({ from: FROM, to: [to], subject, html }),
     });
     const data = await res.json();
-    if (!res.ok) console.error('[Email] Failed:', data);
-    else console.log('[Email] Sent:', subject, 'to', to, 'id:', data.id);
+    if (!res.ok) {
+      console.error(`[Email] ✗ Failed "${subject}" to ${to}:`, data.message || data);
+      // Retry once after 3s on rate limit or server error
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise(r => setTimeout(r, 3000));
+        const r2 = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+        });
+        const d2 = await r2.json();
+        if (r2.ok) console.log(`[Email] ✓ Retry OK "${subject}" to ${to} id:${d2.id}`);
+        else console.error(`[Email] ✗ Retry failed "${subject}" to ${to}`);
+        return d2;
+      }
+    } else {
+      console.log(`[Email] ✓ Sent "${subject}" to ${to} id:${data.id}`);
+    }
     return data;
-  } catch (e) { console.error('[Email] Error:', e.message); }
+  } catch (e) {
+    console.error(`[Email] ✗ Network error sending "${subject}" to ${to}:`, e.message);
+    return null;
+  }
 }
 
 // ============================================================

@@ -279,11 +279,8 @@
     <button class="mobile-menu-btn" onclick="toggleMobile()" aria-label="Menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="logo" style="gap:6px" onclick="navigate('dashboard')">
-      <img src="/img/favicon.svg" alt="Pluto" style="width:22px;height:22px">
-      <div class="logo-text" style="font-size:.88rem">PLUTO<span>CAPITAL</span></div>
-    </div>
-    <div style="width:22px"></div>
+    <span id="mobilePageTitle" style="font-size:.82rem;font-weight:700;color:var(--t1);letter-spacing:-.01em">Dashboard</span>
+    <a href="/terminal.html" target="_blank" style="display:flex;align-items:center;padding:5px 9px;background:var(--ac-bg);border:1px solid var(--ac-gl);border-radius:var(--r);color:var(--ac2);font-size:.65rem;font-weight:700;text-decoration:none;white-space:nowrap">▶ Trade</a>
   </div>
   <!-- OVERLAY -->
   <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobile()"></div>

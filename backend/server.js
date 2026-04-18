@@ -88,15 +88,15 @@ if (config.nodeEnv === 'development') {
 // ============================================================
 // API ROUTES
 // ============================================================
-app.use('/api/auth', rateLimit('auth', 20), authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/challenges', challengeRoutes);
-app.use('/api/funded', fundedRoutes);
-app.use('/api/payouts', payoutRoutes);
-app.use('/api/trades', tradeRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/trading', tradingRoutes);
-app.use('/api/pluto-admin', plutoAdminRoutes);
+app.use('/api/auth',        rateLimit('auth', 20),         authRoutes);
+app.use('/api/users',       rateLimit('users', 60),        userRoutes);
+app.use('/api/challenges',  rateLimit('challenges', 30),   challengeRoutes);
+app.use('/api/funded',      rateLimit('funded', 30),       fundedRoutes);
+app.use('/api/payouts',     rateLimit('payouts', 20),      payoutRoutes);
+app.use('/api/trades',      rateLimit('trades', 60),       tradeRoutes);
+app.use('/api/admin',       rateLimit('admin', 120),       adminRoutes);
+app.use('/api/trading',     rateLimit('trading', 120),     tradingRoutes);
+app.use('/api/pluto-admin', rateLimit('pluto-admin', 120), plutoAdminRoutes);
 
 // Dashboard stats (authenticated)
 const { authenticate } = require('./src/middleware/auth');
@@ -276,12 +276,29 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(), 
+  const DEFAULT_JWT = 'pluto-capital-dev-secret-change-in-production-min-32-chars';
+  const riskEngine  = (() => { try { return require('./src/services/riskEngine'); } catch(_){ return null; } })();
+  const marketData  = (() => { try { return require('./src/services/marketData'); } catch(_){ return null; } })();
+  const d = new Date(), day = d.getUTCDay(), h = d.getUTCHours();
+  const marketOpen = !(day===6||(day===0&&h<22)||(day===5&&h>=22));
+
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
     version: '1.0.0',
-    nowpayments_configured: !!process.env.NOWPAYMENTS_API_KEY,
-    database_configured: !!process.env.DATABASE_URL
+    uptime_seconds: Math.floor(process.uptime()),
+    market_open: marketOpen,
+    risk_engine_running: riskEngine?.running || false,
+    // Env var status (never expose actual values)
+    env: {
+      jwt_secret:             process.env.JWT_SECRET && process.env.JWT_SECRET !== DEFAULT_JWT ? 'set' : 'DEFAULT_UNSAFE',
+      email_api_key:          process.env.EMAIL_API_KEY          ? 'set' : 'missing',
+      twelve_data_key:        process.env.TWELVE_DATA_KEY        ? 'set' : 'missing — simulation mode',
+      nowpayments_api_key:    process.env.NOWPAYMENTS_API_KEY    ? 'set' : 'missing',
+      nowpayments_ipn_secret: process.env.NOWPAYMENTS_IPN_SECRET ? 'set' : 'missing — webhooks unverified',
+      database_url:           process.env.DATABASE_URL           ? 'set' : 'missing — SQLite',
+    },
+    instruments: marketData ? Object.keys(marketData.getInstruments?.() || {}).length : 0,
   });
 });
 
@@ -403,6 +420,35 @@ app.use((err, req, res, next) => {
 // START
 // ============================================================
 async function start() {
+  // ── Security & config validation ─────────────────────────────────────────
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+  const DEFAULT_JWT  = 'pluto-capital-dev-secret-change-in-production-min-32-chars';
+  const missing = [];
+
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === DEFAULT_JWT) {
+    if (isProduction) {
+      console.error('\n  ╔══════════════════════════════════════════════════════╗');
+      console.error('  ║  🔴 FATAL: JWT_SECRET is not set                     ║');
+      console.error('  ║  Set it on Railway → Variables before deploying      ║');
+      console.error('  ║  railway variables set JWT_SECRET=$(openssl rand -hex 32) ║');
+      console.error('  ╚══════════════════════════════════════════════════════╝\n');
+      process.exit(1);
+    } else {
+      console.warn('  ⚠ JWT_SECRET using default — change before production');
+    }
+  }
+
+  if (!process.env.EMAIL_API_KEY)       missing.push('EMAIL_API_KEY (Resend — emails will be skipped)');
+  if (!process.env.TWELVE_DATA_KEY)     missing.push('TWELVE_DATA_KEY (Twelve Data — using price simulation)');
+  if (!process.env.NOWPAYMENTS_API_KEY) missing.push('NOWPAYMENTS_API_KEY (NOWPayments — crypto payments disabled)');
+  if (!process.env.NOWPAYMENTS_IPN_SECRET && isProduction) missing.push('NOWPAYMENTS_IPN_SECRET (webhook signature not verified — SECURITY RISK)');
+
+  if (missing.length) {
+    console.warn('\n  ⚠ Missing environment variables:');
+    missing.forEach(m => console.warn('    • ' + m));
+    console.warn('');
+  }
+
   await initDatabase();
 
   // ── Start market data service ─────────────────────────────────────────────
@@ -457,18 +503,20 @@ async function start() {
 
 
   server.listen(config.port, () => {
+    const V = (env, label) => process.env[env] ? `\x1b[32m✓\x1b[0m ${label}` : `\x1b[33m⚠\x1b[0m ${label} NOT SET`;
+    const jwtOk = process.env.JWT_SECRET && process.env.JWT_SECRET !== DEFAULT_JWT;
     console.log('');
-    console.log('  ╔═══════════════════════════════════════════════╗');
-    console.log('  ║                                               ║');
-    console.log('  ║   △ PLUTO CAPITAL FUNDING — Server Live        ║');
-    console.log('  ║                                               ║');
-    console.log('  ║   Local:   http://localhost:' + config.port + '              ║');
-    console.log('  ║   Terminal: http://localhost:' + config.port + '/terminal    ║');
-    console.log('  ║   WS:      ws://localhost:' + config.port + '/ws/prices     ║');
-    console.log('  ║                                               ║');
-    console.log('  ║   Market data: ' + (process.env.TWELVE_DATA_KEY ? 'Twelve Data LIVE' : 'Simulation mode') + '         ║');
-    console.log('  ║                                               ║');
-    console.log('  ╚═══════════════════════════════════════════════╝');
+    console.log('  ╔══════════════════════════════════════════════════════╗');
+    console.log('  ║   △  PLUTO CAPITAL FUNDING  —  Server Live           ║');
+    console.log('  ╠══════════════════════════════════════════════════════╣');
+    console.log('  ║  ' + V('EMAIL_API_KEY',        'EMAIL_API_KEY       (Resend)      ') + '  ║');
+    console.log('  ║  ' + V('TWELVE_DATA_KEY',      'TWELVE_DATA_KEY     (Twelve Data) ') + '  ║');
+    console.log('  ║  ' + V('NOWPAYMENTS_API_KEY',  'NOWPAYMENTS_API_KEY              ') + '  ║');
+    console.log('  ║  ' + V('NOWPAYMENTS_IPN_SECRET','NOWPAYMENTS_IPN_SECRET           ') + '  ║');
+    console.log('  ║  ' + (jwtOk ? '\x1b[32m✓\x1b[0m JWT_SECRET          (custom)            ' : '\x1b[31m✗\x1b[0m JWT_SECRET          USING DEFAULT - SET IT ') + '  ║');
+    console.log('  ╠══════════════════════════════════════════════════════╣');
+    console.log('  ║  Port ' + config.port + '  •  Risk engine 5s  •  WS /ws/prices       ║');
+    console.log('  ╚══════════════════════════════════════════════════════╝');
     console.log('');
   });
 }
