@@ -36,7 +36,7 @@ router.get('/account', authenticate, async (req, res) => {
       if (!account) account = await queryOne(`SELECT * FROM funded_accounts WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1`, [req.user.id]);
     }
     if (!account) return res.status(404).json({ error: 'No active trading account found' });
-    const openTrades = await queryAll(`SELECT profit FROM trades WHERE ${account.challenge_type!==undefined?'challenge_id':'funded_account_id'}=$1 AND status='open'`, [account.id]);
+    const openTrades = await queryAll(`SELECT profit FROM trades WHERE ${account.account_kind==='funded'||account.challenge_type===undefined?'funded_account_id':'challenge_id'}=$1 AND status='open'`, [account.id]);
     const floatingPnL = openTrades.reduce((s,t)=>s+(t.profit||0),0);
     const bal = account.current_balance||account.starting_balance||0;
     res.json({ ...account, equity: +(bal+floatingPnL).toFixed(2), floating_pnl: +floatingPnL.toFixed(2) });
