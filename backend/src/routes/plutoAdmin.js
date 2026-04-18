@@ -551,4 +551,32 @@ router.get('/users', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+
+// ── SLIPPAGE CONTROL ──────────────────────────────────────────────────────────
+router.get('/slippage', async (req, res) => {
+  try {
+    const row = await queryOne("SELECT value FROM platform_settings WHERE key='slippage_pips'");
+    res.json({ slippage_pips: row ? parseFloat(row.value) : 0.3 });
+  } catch (e) { res.json({ slippage_pips: 0.3 }); }
+});
+
+router.put('/slippage', async (req, res) => {
+  try {
+    const { slippage_pips } = req.body;
+    if (slippage_pips === undefined || slippage_pips < 0 || slippage_pips > 10) {
+      return res.status(400).json({ error: 'slippage_pips must be 0-10' });
+    }
+    const existing = await queryOne("SELECT key FROM platform_settings WHERE key='slippage_pips'");
+    if (existing) {
+      await run("UPDATE platform_settings SET value=$1, updated_at=NOW()::TEXT WHERE key='slippage_pips'", [String(slippage_pips)]);
+    } else {
+      await run("INSERT INTO platform_settings (key, value) VALUES ('slippage_pips', $1)", [String(slippage_pips)]);
+    }
+    const orderEngine = require('../services/orderEngine');
+    if (orderEngine.setSlippage) orderEngine.setSlippage(slippage_pips);
+    res.json({ success: true, slippage_pips });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

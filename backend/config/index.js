@@ -1,7 +1,7 @@
 module.exports = {
   port: process.env.PORT || 3000,
   jwtSecret: process.env.JWT_SECRET || 'pluto-capital-dev-secret-change-in-production-min-32-chars',
-  jwtExpiry: '7d',
+  jwtExpiry: '24h',
   nodeEnv: process.env.NODE_ENV || 'development',
 
   // Pricing — 10% below Funding Pips

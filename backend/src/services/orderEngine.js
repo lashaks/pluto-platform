@@ -21,6 +21,7 @@ class OrderEngine {
     this.pendingOrders  = {};
     this.symbolSettings = {};
     this.initialized    = false;
+    this.slippagePips   = 0.3;
   }
 
   async init() {
@@ -457,6 +458,15 @@ class OrderEngine {
   async adminForceClose(challengeId, fundedAccountId) {
     await this._closeAllForAccount(challengeId, fundedAccountId);
     return { success: true };
+  }
+
+  setSlippage(pips) {
+    this.slippagePips = parseFloat(pips) || 0;
+    console.log('[OrderEngine] Slippage set to ' + this.slippagePips + ' pips');
+  }
+
+  getSlippage() {
+    return this.slippagePips;
   }
 }
 
