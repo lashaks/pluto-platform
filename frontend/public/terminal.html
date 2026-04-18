@@ -560,36 +560,52 @@ function addPosLines(){
 // Drawings stored by price/time so they persist across zoom and pan
 function initDC(){
   const cv=$('dc'); if(!cv)return;
+
+  // Get coordinates relative to chart container (same origin as LightweightCharts)
+  function coords(e){
+    const r=$('lwc').getBoundingClientRect();
+    return {x:e.clientX-r.left, y:e.clientY-r.top};
+  }
+  function toChart(x,y){
+    // coordinateToTime/Price can return null outside visible range — fall back to raw pixel
+    const ts  = chart.timeScale().coordinateToTime(x);
+    const price = chart.priceScale('right').coordinateToPrice(y);
+    return {ts, price, x, y};
+  }
+
   cv.addEventListener('mousedown',e=>{
     if(!drawTool)return;
-    const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
-    const price=chart.priceScale('right').coordinateToPrice(y);
+    const {x,y}=coords(e);
+    const {ts,price}=toChart(x,y);
     if(drawTool==='hline'){
+      if(price==null)return;
       drawings.push({type:'hline',sym,price,color:'#00d4c8',w:1});
       setTool(null);reDraw();
     } else if(drawTool==='vline'){
-      const ts=chart.timeScale().coordinateToTime(x);
-      drawings.push({type:'vline',sym,ts,color:'#448aff',w:1});
+      drawings.push({type:'vline',sym,ts,x,color:'#448aff',w:1});
       setTool(null);reDraw();
     } else {
-      const ts=chart.timeScale().coordinateToTime(x);
-      drawPt={type:drawTool,sym,x1:x,y1:y,ts1:ts,p1:price,x2:x,y2:y,ts2:ts,p2:price};
+      drawPt={type:drawTool,sym,x1:x,y1:y,ts1:ts,p1:price??0,x2:x,y2:y,ts2:ts,p2:price??0};
     }
   });
+
   cv.addEventListener('mousemove',e=>{
     if(!drawPt)return;
-    const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
-    drawPt.x2=x;drawPt.y2=y;
-    drawPt.ts2=chart.timeScale().coordinateToTime(x)||drawPt.ts2;
-    drawPt.p2=chart.priceScale('right').coordinateToPrice(y)||drawPt.p2;
+    const {x,y}=coords(e);
+    const {ts,price}=toChart(x,y);
+    drawPt.x2=x; drawPt.y2=y;
+    if(ts!=null)   drawPt.ts2=ts;
+    if(price!=null) drawPt.p2=price;
     reDraw();
   });
+
   cv.addEventListener('mouseup',e=>{
     if(!drawPt)return;
-    const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
-    drawPt.x2=x;drawPt.y2=y;
-    drawPt.p2=chart.priceScale('right').coordinateToPrice(y)||drawPt.p2;
-    drawPt.ts2=chart.timeScale().coordinateToTime(x)||drawPt.ts2;
+    const {x,y}=coords(e);
+    const {ts,price}=toChart(x,y);
+    drawPt.x2=x; drawPt.y2=y;
+    if(ts!=null)   drawPt.ts2=ts;
+    if(price!=null) drawPt.p2=price;
     if(drawTool==='line'||drawTool==='ray'){
       drawings.push({...drawPt,color:'#a855f7',w:1.5});
     } else if(drawTool==='rect'){
@@ -597,9 +613,12 @@ function initDC(){
     } else if(drawTool==='fib'){
       drawings.push({...drawPt,color:'#ffb300',w:1});
     }
-    drawPt=null;setTool(null);reDraw();
+    drawPt=null; setTool(null); reDraw();
   });
-  cv.addEventListener('mouseleave',()=>{if(drawPt){drawPt=null;setTool(null);reDraw();}});
+
+  cv.addEventListener('mouseleave',()=>{
+    if(drawPt){ drawPt=null; reDraw(); }
+  });
 }
 
 function reDraw(){
@@ -618,8 +637,10 @@ function reDraw(){
       ctx.setLineDash([]);ctx.fillStyle=d.color;ctx.font='600 9px IBM Plex Mono';ctx.globalAlpha=.9;
       ctx.fillText(Fp(d.price,digs(sym)),W-68,y-2);
     } else if(d.type==='vline'){
-      if(!d.ts)return ctx.restore();
-      const x=chart.timeScale().timeToCoordinate(d.ts);
+      // vline stored with ts OR raw x fallback
+      let x=null;
+      if(d.ts) x=chart.timeScale().timeToCoordinate(d.ts);
+      if(x==null) x=d.x; // use raw pixel if ts out of view
       if(x==null)return ctx.restore();
       ctx.strokeStyle=d.color;ctx.lineWidth=d.w||1;ctx.setLineDash([4,3]);ctx.globalAlpha=.7;
       ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();ctx.setLineDash([]);
