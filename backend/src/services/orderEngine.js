@@ -98,6 +98,10 @@ class OrderEngine {
     const { userId, challengeId, fundedAccountId, symbol, direction, orderType, volume, entryPrice, stopLoss, takeProfit, trailingStopPips, expiry, comment } = params;
     const inst = marketData.getInstrument(symbol);
     if (!inst) throw new Error('Unknown instrument: ' + symbol);
+    // Block failed/breached/passed accounts
+    const account = await this._getAccount(challengeId, fundedAccountId);
+    if (!account) throw new Error('Account not found');
+    if (account.status !== 'active') throw new Error(`Trading disabled — account is ${account.status}. No new orders allowed.`);
     const price = marketData.getPrice(symbol);
     if (!price) throw new Error('No price for ' + symbol);
     if (orderType === 'limit') {
@@ -154,6 +158,9 @@ class OrderEngine {
   async modifyPosition(positionId, userId, { stopLoss, takeProfit, trailingStopPips }) {
     const pos = await queryOne(`SELECT * FROM trades WHERE id=$1 AND user_id=$2 AND status='open'`, [positionId, userId]);
     if (!pos) throw new Error('Position not found');
+    // Block modifications on failed/breached accounts
+    const acct = await this._getAccount(pos.challenge_id, pos.funded_account_id);
+    if (!acct || acct.status !== 'active') throw new Error(`Account is ${acct?.status||'inactive'} — modifications not allowed`);
     const price = marketData.getPrice(pos.symbol);
     const cur = pos.direction==='buy' ? price?.bid : price?.ask;
     if (stopLoss != null && cur) {
@@ -177,8 +184,17 @@ class OrderEngine {
     const inst = marketData.getInstrument(symbol);
     if (!inst) return;
 
-    // Check pending orders
+    // Check pending orders — skip if account is no longer active
     for (const order of Object.values(this.pendingOrders).filter(o => o.symbol === symbol)) {
+      // Verify account is still active before filling
+      const acct = await this._getAccount(order.challengeId, order.fundedAccountId);
+      if (!acct || acct.status !== 'active') {
+        // Account failed/breached — cancel the pending order
+        await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account no longer active' WHERE id=?`,
+          [new Date().toISOString(), order.id]);
+        delete this.pendingOrders[order.id];
+        continue;
+      }
       if (order.expiry && new Date(order.expiry) < new Date()) {
         await run(`UPDATE pending_orders SET status='expired', cancelled_at=? WHERE id=?`, [new Date().toISOString(), order.id]);
         delete this.pendingOrders[order.id]; continue;
@@ -301,8 +317,26 @@ class OrderEngine {
   }
 
   async _closeAllForAccount(challengeId, fundedAccountId) {
-    for (const pos of Object.values(this.positions).filter(p => challengeId ? p.challengeId===challengeId : p.fundedAccountId===fundedAccountId))
+    // 1. Close all open positions
+    for (const pos of Object.values(this.positions).filter(p =>
+      challengeId ? p.challengeId === challengeId : p.fundedAccountId === fundedAccountId
+    )) {
       await this._closePosition(pos, 'force_close');
+    }
+    // 2. Cancel all pending orders in DB
+    if (challengeId) {
+      await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account disabled'
+        WHERE challenge_id=? AND status='pending'`, [new Date().toISOString(), challengeId]);
+    } else if (fundedAccountId) {
+      await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account disabled'
+        WHERE funded_account_id=? AND status='pending'`, [new Date().toISOString(), fundedAccountId]);
+    }
+    // 3. Purge pending orders from in-memory store
+    for (const id of Object.keys(this.pendingOrders)) {
+      const o = this.pendingOrders[id];
+      if (challengeId ? o.challengeId === challengeId : o.fundedAccountId === fundedAccountId)
+        delete this.pendingOrders[id];
+    }
   }
 
   async _getAccount(challengeId, fundedAccountId) {

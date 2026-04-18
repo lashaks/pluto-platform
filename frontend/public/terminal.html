@@ -348,9 +348,13 @@ function updateAcctDisplay() {
   const floatPnL = pos.reduce((s,p)=>s+(p.profit||0),0);
   const eq = (account.current_balance||0) + floatPnL;
   const el=$('acctDisplay');
+  const isFailed = account.status==='failed'||account.status==='breached';
+  const isPassed = account.status==='passed';
   if (el) el.innerHTML = `
-<div style="font-size:.64rem;font-weight:700;color:var(--t1);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+<div style="font-size:.64rem;font-weight:700;color:${isFailed?'var(--rd)':isPassed?'var(--gr)':'var(--t1)'};max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
   ${F(account.account_size)} ${account.challenge_type==='funded'?'Funded':account.challenge_type==='two_step'?'2-Step':'1-Step'}
+  ${isFailed?'<span style="font-size:.58rem;background:var(--rdbg);border:1px solid var(--rdgl);border-radius:4px;padding:1px 4px;margin-left:3px">BREACHED</span>':''}
+  ${isPassed?'<span style="font-size:.58rem;background:var(--grbg);border:1px solid var(--grgl);border-radius:4px;padding:1px 4px;margin-left:3px">PASSED</span>':''}
 </div>
 <div style="display:flex;gap:8px;margin-top:1px">
   <span style="font-size:.62rem;color:var(--t3)">Bal: <span style="color:var(--t1);font-family:var(--fm)">${F(account.current_balance)}</span></span>
@@ -622,13 +626,31 @@ function updatePlaceBtn() {
   const p = prices[curSym]||{};
   const px = curDir==='buy'?(p.ask||0):(p.bid||0);
   const dg = getDigits(curSym);
+  const sym = instruments[curSym];
+  const isOpen = isMarketOpen() && (sym?.trading_enabled !== 0);
+
+  // Account status checks
+  if (!account) {
+    btn.textContent='No Account Selected'; btn.className='place-btn buy-now'; btn.disabled=true; return;
+  }
+  if (account.status === 'failed' || account.status === 'breached') {
+    btn.textContent='❌ Account Breached — Trading Disabled'; btn.className='place-btn sell-now'; btn.disabled=true; return;
+  }
+  if (account.status === 'passed') {
+    btn.textContent='✓ Evaluation Passed — Awaiting Funded Account'; btn.className='place-btn buy-now'; btn.disabled=true; return;
+  }
+  if (account.status === 'pending_payment') {
+    btn.textContent='⏳ Awaiting Payment Confirmation'; btn.className='place-btn buy-now'; btn.disabled=true; return;
+  }
+  if (!isOpen) {
+    btn.textContent='Markets Closed'; btn.className='place-btn buy-now'; btn.disabled=true; return;
+  }
+
   btn.textContent = curDir==='buy'
     ? `BUY ${curSym} @ ${Fp(px,dg)}`
     : `SELL ${curSym} @ ${Fp(px,dg)}`;
   btn.className = `place-btn ${curDir==='buy'?'buy-now':'sell-now'}`;
-  const sym = instruments[curSym];
-  const isOpen = isMarketOpen() && (sym?.trading_enabled !== 0);
-  btn.disabled = !isOpen || !account;
+  btn.disabled = false;
 }
 
 function setVol(v) { const inp=$('volInput');if(inp)inp.value=v; calcRR(); }

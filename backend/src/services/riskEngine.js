@@ -161,6 +161,12 @@ class RiskEngine {
     if (equity <= totalFloor) {
       await run(`UPDATE funded_accounts SET status='breached',breach_reason='MAX_TOTAL_DRAWDOWN',breached_at=? WHERE id=?`,
         [new Date().toISOString(), fundedId]);
+      try {
+        const oe = require('./orderEngine');
+        await oe.adminForceClose(null, fundedId);
+        await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account breached' WHERE funded_account_id=? AND status='pending'`,
+          [new Date().toISOString(), fundedId]);
+      } catch(e) { console.error('[RiskEngine] funded closeAll error:', e.message); }
       await this._sendBreachEmail(fundedId, 'funded', 'MAX_TOTAL_DRAWDOWN', equity, totalFloor);
       return { breached: true, reason: 'MAX_TOTAL_DRAWDOWN' };
     }
@@ -170,6 +176,12 @@ class RiskEngine {
     if (dailyPnL <= dailyLimit) {
       await run(`UPDATE funded_accounts SET status='breached',breach_reason='MAX_DAILY_LOSS',breached_at=? WHERE id=?`,
         [new Date().toISOString(), fundedId]);
+      try {
+        const oe = require('./orderEngine');
+        await oe.adminForceClose(null, fundedId);
+        await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account breached' WHERE funded_account_id=? AND status='pending'`,
+          [new Date().toISOString(), fundedId]);
+      } catch(e) { console.error('[RiskEngine] funded closeAll error:', e.message); }
       await this._sendBreachEmail(fundedId, 'funded', 'MAX_DAILY_LOSS', dailyPnL, dailyLimit);
       return { breached: true, reason: 'MAX_DAILY_LOSS' };
     }
@@ -189,10 +201,13 @@ class RiskEngine {
     await run(`UPDATE challenges SET status='failed',failed_at=?,breach_reason=? WHERE id=?`,
       [new Date().toISOString(), reason, challengeId]);
 
-    // Close all open positions via order engine
+    // Close all open positions and cancel pending orders
     try {
       const orderEngine = require('./orderEngine');
       await orderEngine.adminForceClose(challengeId, null);
+      // Cancel any pending orders so nothing fires after breach
+      await run(`UPDATE pending_orders SET status='cancelled', cancelled_at=?, cancel_reason='Account breached' WHERE challenge_id=? AND status='pending'`,
+        [new Date().toISOString(), challengeId]);
     } catch(e) { console.error('[RiskEngine] closeAll error:', e.message); }
 
     await run(`INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
