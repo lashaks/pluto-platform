@@ -187,18 +187,39 @@ async function sendChallengePassed(to, name, details) {
 }
 
 async function sendChallengeFailed(to, name, details) {
-  return send(to, 'Challenge Update — Pluto Capital', wrap(
-    'Challenge Breached',
+  return send(to, `⚠️ Account Closed — ${details.account_type||'Challenge'} Breached`, wrap(
+    '⚠️ Trading Account Closed',
     `<p>Hey ${name},</p>
-    <p>Unfortunately, your <strong style="color:#eeedf4">${details.account_size}</strong> challenge has been breached.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">
-      ${row('Breach Reason', details.reason)}
-      ${row('Final Balance', details.balance)}
-      ${row('Total Trades', details.trades)}
-    </table>
-    <p>Every trader faces setbacks. Review your trading journal, identify the mistake, and come back stronger.</p>
-    ${btn('Try Again', 'https://pluto-platform.vercel.app')}
-    <p style="font-size:13px">Use code <strong style="color:#a78bfa">COMEBACK15</strong> for 15% off your next challenge.</p>`
+    <p style="font-size:14px;color:#8b87a0">Your trading account has been <strong style="color:#ff4757">immediately closed</strong> and all open positions have been force-closed. Here are the details:</p>
+
+    <div style="margin:20px 0;padding:16px 20px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:10px">
+      <div style="font-size:11px;font-weight:800;color:#ff4757;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Breach Details</div>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        ${row('Account Type', details.account_type||'Evaluation')}
+        ${row('Account Size', details.account_size)}
+        <tr><td colspan="2" style="height:1px;background:rgba(255,255,255,0.06)"></td></tr>
+        <tr style="background:rgba(255,71,87,0.08)">
+          <td style="padding:10px 16px;font-size:13px;color:#8b87a0;font-weight:600">Breach Reason</td>
+          <td style="padding:10px 16px;font-size:13px;font-weight:700;color:#ff4757;text-align:right">${details.reason}</td>
+        </tr>
+        ${details.detail ? `<tr><td style="padding:8px 16px;font-size:12px;color:#8b87a0">Detail</td><td style="padding:8px 16px;font-size:12px;color:#ff4757;text-align:right">${details.detail}</td></tr>` : ''}
+        ${row('Final Balance', details.balance)}
+        ${details.equity && details.equity !== details.balance ? row('Final Equity', details.equity) : ''}
+        ${details.floor ? row('DD Floor (was)', details.floor) : ''}
+        ${row('Total Trades', details.trades)}
+        ${row('Closed At', details.breached_at||'Now')}
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:#8b87a0;line-height:1.7">All open positions have been <strong style="color:#eeedf4">force-closed at market price</strong> and all pending orders cancelled. No further trading is possible on this account.</p>
+
+    <div style="margin:20px 0;padding:14px 18px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px">
+      <p style="margin:0;font-size:13px;color:#a78bfa;font-weight:700">Ready to go again?</p>
+      <p style="margin:6px 0 0;font-size:13px;color:#8b87a0">Every breach is a learning opportunity. Review your trade history, identify what went wrong, and come back stronger.</p>
+    </div>
+
+    ${btn('Start New Challenge', 'https://plutocapitalfunding.com')}
+    <p style="font-size:12px;color:#5a5672;text-align:center">Use code <strong style="color:#a78bfa">COMEBACK15</strong> for 15% off your next challenge.</p>`
   ));
 }
 

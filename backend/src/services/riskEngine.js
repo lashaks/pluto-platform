@@ -428,23 +428,38 @@ class RiskEngine {
         account = await queryOne(`SELECT * FROM funded_accounts WHERE id=$1`, [accountId]);
       }
       if (!account) return;
-      user = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [account.user_id]);
+      user = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [account.user_id]);
       if (!user) return;
 
-      const reasonText = {
-        MAX_TOTAL_DRAWDOWN: 'Maximum Total Drawdown Exceeded',
-        MAX_DAILY_LOSS:     'Daily Loss Limit Exceeded',
+      const reasonLabels = {
+        MAX_TOTAL_DRAWDOWN:    'Maximum Total Drawdown Exceeded',
+        MAX_DAILY_LOSS:        'Daily Loss Limit Exceeded',
         CONSISTENCY_VIOLATION: 'Consistency Rule Violated',
-        INACTIVITY:         'Account Inactivity (30 days)',
-      }[reason] || reason;
+        INACTIVITY:            'Account Inactivity (45 days)',
+        RULE_VIOLATION:        'Trading Rule Violation',
+        ADMIN_ACTION:          'Administrative Action',
+      };
+      const reasonText = reasonLabels[reason] || reason;
+      const isFunded = type === 'funded';
+      const size = `$${Number(account.account_size).toLocaleString()}`;
+      const bal  = `$${Number(account.current_balance||account.starting_balance||0).toFixed(2)}`;
+      const floorStr = floor ? `$${Number(floor).toFixed(2)}` : '—';
+      const eqStr    = equity ? `$${Number(equity).toFixed(2)}` : '—';
+      const now = new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'})+ ' UTC';
 
-      await email.sendGeneral(user.email, user.first_name||'Trader', {
-        subject: `⚠️ Account Breached — ${reasonText}`,
-        heading: 'Your Trading Account Has Been Closed',
-        body: `Your ${type === 'challenge' ? 'evaluation challenge' : 'funded account'} ($${Number(account.account_size).toLocaleString()}) has been closed due to a rule breach.\n\n<strong>Reason:</strong> ${reasonText}\n${details ? `<strong>Detail:</strong> ${details}` : ''}\n\nYou can purchase a new challenge from your dashboard. We offer a 10% discount on resets.`,
-        cta_text: 'View Dashboard',
-        cta_url: 'https://plutocapitalfunding.com',
+      await email.sendChallengeFailed(user.email, user.first_name||'Trader', {
+        account_size:   size,
+        reason:         reasonText,
+        balance:        bal,
+        equity:         eqStr,
+        floor:          floorStr,
+        trades:         String(account.total_trades || 0),
+        breached_at:    now,
+        account_type:   isFunded ? 'Funded Account' : (account.challenge_type === 'two_step' ? '2-Step Evaluation' : account.challenge_type === 'rapid' ? 'PlutoRapid' : '1-Step Evaluation'),
+        detail:         details || '',
       });
+
+      console.log(`[RiskEngine] Breach email sent to ${user.email} — reason: ${reason}`);
     } catch(e) { console.error('[RiskEngine] breach email error:', e.message); }
   }
 

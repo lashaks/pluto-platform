@@ -130,10 +130,10 @@ input,select,button,textarea{font-family:inherit;font-size:inherit}
 .mw-qb{background:var(--grn);color:#000}
 
 /* ─── CHART ──────────────────────────────────────────────────────────── */
-#ca{position:relative;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+#ca{position:relative;overflow:hidden;background:#131722;display:flex;flex-direction:column}
 #lwc{position:absolute;inset:0}
 #dc{position:absolute;inset:0;pointer-events:none;z-index:5}
-.ca-ohlc{position:absolute;top:4px;left:6px;z-index:6;font-family:var(--fm);font-size:.58rem;color:var(--ink3);pointer-events:none;line-height:1.8;background:rgba(8,12,18,.75);border:1px solid var(--wire);border-radius:var(--r);padding:3px 7px}
+.ca-ohlc{position:absolute;top:4px;left:6px;z-index:6;font-family:var(--fm);font-size:.62rem;color:#787b86;pointer-events:none;line-height:1.8;background:rgba(19,23,34,.85);border:1px solid #2a2e39;border-radius:var(--r);padding:4px 9px}
 .ca-crosshair-price{position:absolute;right:0;background:var(--p3);border:1px solid var(--wire2);padding:1px 5px;font-family:var(--fm);font-size:.6rem;color:var(--ink1);pointer-events:none;z-index:7;transform:translateY(-50%)}
 .ca-sym-badge{position:absolute;top:4px;right:8px;z-index:6;background:rgba(8,12,18,.75);border:1px solid var(--wire);border-radius:var(--r);padding:3px 8px;font-family:var(--fm);font-size:.65rem;font-weight:700;color:var(--teal);pointer-events:none}
 
@@ -481,16 +481,27 @@ const TF={'1m':'1min','3m':'3min','5m':'5min','15m':'15min','30m':'30min','1h':'
 function initChart(){
   const el=$('lwc'); if(!el||chart)return;
   chart=LightweightCharts.createChart(el,{
-    layout:{background:{type:LightweightCharts.ColorType.Solid,color:'#080c12'},textColor:'#4a5568'},
-    grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}},
-    crosshair:{mode:LightweightCharts.CrosshairMode.Normal,vertLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'},horzLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'}},
-    rightPriceScale:{borderColor:'rgba(255,255,255,.045)',textColor:'#4a5568'},
-    timeScale:{borderColor:'rgba(255,255,255,.045)',timeVisible:true,secondsVisible:false},
+    layout:{background:{type:LightweightCharts.ColorType.Solid,color:'#131722'},textColor:'#787b86'},
+    grid:{vertLines:{color:showGrid?'#1e222d':'transparent'},horzLines:{color:showGrid?'#1e222d':'transparent'}},
+    crosshair:{
+      mode:LightweightCharts.CrosshairMode.Normal,
+      vertLine:{color:'rgba(42,46,57,.9)',width:1,style:0,labelBackgroundColor:'#2a2e39'},
+      horzLine:{color:'rgba(42,46,57,.9)',width:1,style:0,labelBackgroundColor:'#2a2e39'}
+    },
+    rightPriceScale:{borderColor:'#2a2e39',textColor:'#787b86',scaleMargins:{top:0.1,bottom:0.15}},
+    timeScale:{borderColor:'#2a2e39',timeVisible:true,secondsVisible:false,barSpacing:6,rightOffset:5},
     width:el.offsetWidth,height:el.offsetHeight,
+    handleScroll:{mouseWheel:true,pressedMouseMove:true},
+    handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true},
   });
-  cSeries=chart.addCandlestickSeries({upColor:'#00e676',downColor:'#ff4757',borderUpColor:'#00e676',borderDownColor:'#ff4757',wickUpColor:'#00c160',wickDownColor:'#cc3a47'});
-  vSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:.82,bottom:0}});
-  chart.priceScale('vol').applyOptions({scaleMargins:{top:.82,bottom:0}});
+  cSeries=chart.addCandlestickSeries({
+    upColor:'#26a69a',downColor:'#ef5350',
+    borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+    wickUpColor:'#26a69a',wickDownColor:'#ef5350',
+    priceLineVisible:true,priceLineColor:'#787b86',priceLineWidth:1,priceLineStyle:2,
+  });
+  vSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:.85,bottom:0}});
+  chart.priceScale('vol').applyOptions({scaleMargins:{top:.85,bottom:0}});
 
   // OHLC on crosshair
   chart.subscribeCrosshairMove(p=>{
@@ -507,18 +518,12 @@ function initChart(){
 
   // Init drawing canvas
   // Pre-size the drawing canvas to match chart container
-  setTimeout(()=>{
-    const cv=$('dc'),el=$('lwc');
-    if(cv&&el){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
-  },100);
-  initDC();
+  setTimeout(()=>{syncCanvas();initDC();},100);
 
   // Resize observer
   const ro=new ResizeObserver(()=>{
     if(chart) chart.resize(el.offsetWidth,el.offsetHeight);
-    // Sync canvas size immediately
-    const cv=$('dc');
-    if(cv){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
+    syncCanvas();
     setTimeout(reDraw,20);
   });
   ro.observe(el);
@@ -526,7 +531,7 @@ function initChart(){
 
 function toggleGrid(){
   showGrid=!showGrid;
-  if(chart)chart.applyOptions({grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}}});
+  if(chart)chart.applyOptions({grid:{vertLines:{color:showGrid?'#1e222d':'transparent'},horzLines:{color:showGrid?'#1e222d':'transparent'}}});
   $('gridBtn')?.classList.toggle('on',showGrid);
 }
 
@@ -577,6 +582,7 @@ function initDC(){
 
   // Get coordinates relative to chart container (same origin as LightweightCharts)
   function coords(e){
+    syncCanvas();  // ensure canvas is right size before reading coords
     const r=$('lwc').getBoundingClientRect();
     return {x:e.clientX-r.left, y:e.clientY-r.top};
   }
@@ -635,11 +641,18 @@ function initDC(){
   });
 }
 
+function syncCanvas(){
+  const cv=$('dc'),el=$('lwc');
+  if(!cv||!el)return;
+  const W=el.offsetWidth,H=el.offsetHeight;
+  if(cv.width!==W||cv.height!==H){
+    cv.width=W; cv.height=H;
+  }
+}
 function reDraw(){
   const cv=$('dc'); if(!cv||!chart)return;
-  // Sync canvas size to container WITHOUT wiping it via width= assignment
-  const W=cv.offsetWidth, H=cv.offsetHeight;
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const W=cv.width, H=cv.height;
+  if(!W||!H)return;
   const ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
   const all=[...drawings,...(drawPt?[drawPt]:[])];
