@@ -20,7 +20,18 @@ function applyTheme(t){
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');}
 // Init theme immediately (before render to avoid flash)
 applyTheme(localStorage.getItem('pcf_theme')||'dark');
-async function api(u,o={}){const h={'Content-Type':'application/json'};if(token)h['Authorization']='Bearer '+token;const r=await fetch(API+u,{...o,headers:h});const d=await r.json();if(!r.ok)throw new Error(d.error||'Request failed');return d}
+async function api(u,o={}){
+  const h={'Content-Type':'application/json'};
+  if(token)h['Authorization']='Bearer '+token;
+  const r=await fetch(API+u,{...o,headers:h});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){
+    const err=new Error(d.error||'Request failed');
+    err.status=r.status;
+    throw err;
+  }
+  return d;
+}
 function showAuth(m){$('authModal').classList.remove('hidden');showAuthScreen(m==='login'?'formLogin':'formRegister')}
 function showAuthScreen(id){['formLogin','formRegister','formVerify','formForgot','formReset'].forEach(f=>{const el=$(f);if(el)el.classList.add('hidden')});const t=$(id);if(t)t.classList.remove('hidden')}
 function hideAuth(){$('authModal').classList.add('hidden')}
@@ -57,34 +68,46 @@ async function enterDashboard(){
     user=await api('/api/users/profile');
     $('landing').style.display='none';
     $('authModal').classList.add('hidden');
-    showWelcomeSplash(user.first_name||'Trader',()=>{
+    const isFirstLogin = sessionStorage.getItem('pluto_welcomed') !== '1';
+    function showDash() {
       $('app').style.display='block';
       $('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';
       $('userEmail').textContent=user.email;
-      if(user.role==='admin')$('adminMenuItem').classList.remove('hidden');
+      if(user.role==='admin')$('adminMenuItem')?.classList.remove('hidden');
       applyTheme(localStorage.getItem('pcf_theme')||'dark');
       navigate('dashboard');
-    });
-  }catch(x){
-    // Only logout on actual auth failure (401), not network errors
-    if(x.message?.includes('401')||x.message?.includes('Unauthorized')||x.message?.includes('invalid token')){
-      logout();
-    } else {
-      // Network error or server restart — keep token, show landing with retry
-      console.warn('[Auth] Profile load failed, keeping session:', x.message);
-      $('landing').style.display='none';
-      $('authModal').classList.add('hidden');
-      $('app').style.display='block';
-      // Try to use cached user data
-      try{ user=JSON.parse(localStorage.getItem('pcf_user')||'null'); }catch(_){}
-      if(user){
-        $('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';
-        $('userEmail').textContent=user.email||'';
-        if(user.role==='admin')$('adminMenuItem')?.classList.remove('hidden');
-      }
-      applyTheme(localStorage.getItem('pcf_theme')||'dark');
-      navigate('dashboard');
+      sessionStorage.setItem('pluto_welcomed','1');
     }
+    if (isFirstLogin) {
+      showWelcomeSplash(user.first_name||'Trader', showDash);
+    } else {
+      $('landing').style.display='none';
+      showDash();
+    }
+  }catch(x){
+    // ONLY logout on a real 401 auth failure
+    if(x.status===401){
+      logout();
+      return;
+    }
+    // Any other error (network blip, server cold-start, timeout) — keep session
+    console.warn('[Auth] Profile fetch failed, using cached data:', x.message);
+    $('landing').style.display='none';
+    $('authModal').classList.add('hidden');
+    $('app').style.display='block';
+    // Fall back to cached user stored at login
+    try{ user=JSON.parse(localStorage.getItem('pcf_user')||'null'); }catch(_){}
+    if(user){
+      $('userName').textContent=(user.first_name+' '+user.last_name).trim()||'Trader';
+      $('userEmail').textContent=user.email||'';
+      if(user.role==='admin')$('adminMenuItem')?.classList.remove('hidden');
+    } else {
+      // No cached user at all — try once more after 2s, then give up
+      setTimeout(()=>enterDashboard(),2000);
+      return;
+    }
+    applyTheme(localStorage.getItem('pcf_theme')||'dark');
+    navigate('dashboard');
   }
 }
 
@@ -1258,4 +1281,23 @@ window.addEventListener('scroll', () => {
 });
 // Close mobile menu on resize to desktop
 window.addEventListener('resize', () => { if (window.innerWidth > 768) closeNavMenu(); });
-document.addEventListener('DOMContentLoaded', () => { loadPricing(); handleReturnFromPayment(); if(token) enterDashboard(); });
+// Handle return from NOWPayments crypto payment
+function handleReturnFromPayment() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('payment_id') || params.get('order_id');
+    if (!paymentId) return;
+    // Clean URL without reload
+    window.history.replaceState({}, '', window.location.pathname);
+    // Show a pending toast after dashboard loads
+    setTimeout(() => {
+      toast('Payment received — your challenge will activate once confirmed (usually 1-3 minutes)', 'info', 8000);
+    }, 3000);
+  } catch(e) { console.warn('handleReturnFromPayment:', e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadPricing();
+  handleReturnFromPayment();
+  if (token) enterDashboard();
+});

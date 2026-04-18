@@ -23,24 +23,24 @@ class MarketDataService extends EventEmitter {
     // ── Instrument definitions ─────────────────────────────────────────────
     this.instruments = {
       // Forex
-      'EURUSD': { name:'EUR/USD', type:'forex',  spread:0.00012, pipValue:10,   pip:0.0001, digits:5, basePx:1.0850 },
-      'GBPUSD': { name:'GBP/USD', type:'forex',  spread:0.00014, pipValue:10,   pip:0.0001, digits:5, basePx:1.2720 },
-      'USDJPY': { name:'USD/JPY', type:'forex',  spread:0.012,   pipValue:9.2,  pip:0.01,   digits:3, basePx:149.50 },
-      'AUDUSD': { name:'AUD/USD', type:'forex',  spread:0.00014, pipValue:10,   pip:0.0001, digits:5, basePx:0.6580 },
-      'USDCAD': { name:'USD/CAD', type:'forex',  spread:0.00016, pipValue:7.6,  pip:0.0001, digits:5, basePx:1.3610 },
-      'USDCHF': { name:'USD/CHF', type:'forex',  spread:0.00014, pipValue:11.2, pip:0.0001, digits:5, basePx:0.8980 },
-      'NZDUSD': { name:'NZD/USD', type:'forex',  spread:0.00016, pipValue:10,   pip:0.0001, digits:5, basePx:0.6120 },
-      'GBPJPY': { name:'GBP/JPY', type:'forex',  spread:0.018,   pipValue:9.2,  pip:0.01,   digits:3, basePx:190.20 },
-      'EURJPY': { name:'EUR/JPY', type:'forex',  spread:0.016,   pipValue:9.2,  pip:0.01,   digits:3, basePx:162.10 },
+      'EURUSD': { name:'EUR/USD',    type:'forex',     spread:0.00012, pipValue:10,   pip:0.0001, digits:5, basePx:1.0850,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'GBPUSD': { name:'GBP/USD',    type:'forex',     spread:0.00014, pipValue:10,   pip:0.0001, digits:5, basePx:1.2720,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'USDJPY': { name:'USD/JPY',    type:'forex',     spread:0.012,   pipValue:9.2,  pip:0.01,   digits:3, basePx:149.50,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'AUDUSD': { name:'AUD/USD',    type:'forex',     spread:0.00014, pipValue:10,   pip:0.0001, digits:5, basePx:0.6580,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'USDCAD': { name:'USD/CAD',    type:'forex',     spread:0.00016, pipValue:7.6,  pip:0.0001, digits:5, basePx:1.3610,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'USDCHF': { name:'USD/CHF',    type:'forex',     spread:0.00014, pipValue:11.2, pip:0.0001, digits:5, basePx:0.8980,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'NZDUSD': { name:'NZD/USD',    type:'forex',     spread:0.00016, pipValue:10,   pip:0.0001, digits:5, basePx:0.6120,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'GBPJPY': { name:'GBP/JPY',    type:'forex',     spread:0.018,   pipValue:9.2,  pip:0.01,   digits:3, basePx:190.20,  contract_size:100000, min_lot:0.01, max_lot:50 },
+      'EURJPY': { name:'EUR/JPY',    type:'forex',     spread:0.016,   pipValue:9.2,  pip:0.01,   digits:3, basePx:162.10,  contract_size:100000, min_lot:0.01, max_lot:50 },
       // Commodities
-      'XAUUSD': { name:'Gold',    type:'commodity', spread:0.35, pipValue:1,    pip:0.01,   digits:2, basePx:2330.0 },
-      'XAGUSD': { name:'Silver',  type:'commodity', spread:0.04, pipValue:50,   pip:0.001,  digits:3, basePx:27.50  },
-      'USOIL':  { name:'WTI Oil', type:'commodity', spread:0.04, pipValue:10,   pip:0.01,   digits:2, basePx:78.50  },
+      'XAUUSD': { name:'Gold',      type:'metals',    spread:0.35, pipValue:10,   pip:0.1,    digits:2, basePx:2330.0, contract_size:100, min_lot:0.01, max_lot:20 },
+      'XAGUSD': { name:'Silver',    type:'metals',    spread:0.04, pipValue:5,    pip:0.01,   digits:3, basePx:27.50,  contract_size:5000, min_lot:0.01, max_lot:20 },
+      'USOIL':  { name:'WTI Oil',   type:'energies',  spread:0.04, pipValue:10,   pip:0.01,   digits:2, basePx:78.50,  contract_size:1000, min_lot:0.01, max_lot:10 },
       // Indices
-      'US30':   { name:'Dow Jones', type:'index', spread:2.5,    pipValue:1,    pip:1,      digits:1, basePx:38500  },
-      'US500':  { name:'S&P 500',   type:'index', spread:0.6,    pipValue:1,    pip:0.01,   digits:2, basePx:5200   },
-      'NAS100': { name:'Nasdaq 100',type:'index', spread:1.0,    pipValue:1,    pip:0.01,   digits:2, basePx:18200  },
-      'GER40':  { name:'DAX 40',    type:'index', spread:1.5,    pipValue:1,    pip:0.01,   digits:2, basePx:17800  },
+      'US30':   { name:'Dow Jones',  type:'indices',  spread:2.5,   pipValue:1,    pip:1,      digits:1, basePx:38500,  contract_size:1,  min_lot:0.01, max_lot:10 },
+      'US500':  { name:'S&P 500',    type:'indices',  spread:0.6,   pipValue:10,   pip:0.1,    digits:2, basePx:5200,   contract_size:50, min_lot:0.01, max_lot:10 },
+      'NAS100': { name:'Nasdaq 100', type:'indices',  spread:1.0,   pipValue:20,   pip:0.1,    digits:2, basePx:18200,  contract_size:20, min_lot:0.01, max_lot:10 },
+      'GER40':  { name:'DAX 40',     type:'indices',  spread:1.5,   pipValue:10,   pip:0.1,    digits:2, basePx:17800,  contract_size:25, min_lot:0.01, max_lot:10 },
     };
 
     // Initialize all prices

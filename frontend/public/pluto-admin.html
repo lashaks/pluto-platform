@@ -474,31 +474,105 @@ async function dailyReset(){
 // SYMBOLS
 async function rSymbols(el) {
   const syms = await api('/api/pluto-admin/symbols');
-  el.innerHTML=`<div class="page-head"><h1>Spreads & Symbols</h1><p>Configure per-instrument markup — changes apply immediately to all new orders</p></div>
-<div class="alert a-a">Spread markup adds to base spread. Commission deducted per lot at trade open.</div>
+  el.innerHTML=`<div class="page-head"><h1>Spreads & Symbols</h1><p>Per-instrument spread markup and commission — changes apply immediately to all new orders</p></div>
+
+<!-- BULK OPERATIONS -->
+<div class="card" style="margin-bottom:12px">
+  <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:10px">⚡ Bulk Operations</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;align-items:end">
+    <div class="field">
+      <label>Apply Spread Markup to All (pips)</label>
+      <input type="number" id="bulkSpr" class="inp" value="0" step="0.0001" min="0" placeholder="0 = no markup">
+    </div>
+    <div class="field">
+      <label>Apply Commission to All ($/lot)</label>
+      <input type="number" id="bulkCom" class="inp" value="" step="0.5" min="0" placeholder="Leave blank = no change">
+    </div>
+    <div class="field">
+      <label>Apply to Category</label>
+      <select id="bulkCat" class="inp">
+        <option value="all">All Instruments</option>
+        <option value="forex">Forex only</option>
+        <option value="metals">Metals only</option>
+        <option value="indices">Indices only</option>
+        <option value="crypto">Crypto only</option>
+        <option value="energies">Energy only</option>
+      </select>
+    </div>
+    <button class="btn btn-p" style="height:34px" onclick="doBulkSym()">Apply to Selected</button>
+    <button class="btn btn-o" style="height:34px" onclick="resetAllSpreads()">Reset All to 0</button>
+  </div>
+</div>
+
 <div class="card"><div class="tw"><table>
-<thead><tr><th>Symbol</th><th>Name</th><th>Type</th><th>Base</th><th>Markup</th><th>Total</th><th>Comm/Lot</th><th>Trading</th><th></th></tr></thead>
+<thead><tr>
+  <th><input type="checkbox" id="selAll" onchange="toggleSelAll(this.checked)" style="accent-color:var(--ac)"></th>
+  <th>Symbol</th><th>Name</th><th>Type</th><th>Base Spread</th><th>+ Markup</th><th>Total</th><th>Comm/Lot</th><th>Trading</th><th></th>
+</tr></thead>
 <tbody>${syms.map(s=>`<tr>
-<td style="font-weight:700">${s.symbol}</td><td class="te">${s.name||'—'}</td>
-<td><span class="bdg b-funded" style="font-size:.55rem">${s.type||'fx'}</span></td>
-<td style="color:var(--t3)">${Number(s.base_spread||0).toFixed(5)}</td>
-<td style="color:${s.spread_markup>0?'var(--am)':'var(--t3)'}">${Number(s.spread_markup||0).toFixed(5)}</td>
-<td style="font-weight:700">${(Number(s.base_spread||0)+Number(s.spread_markup||0)).toFixed(5)}</td>
-<td>$${Number(s.commission_per_lot||3.5).toFixed(2)}</td>
+<td><input type="checkbox" class="symchk" value="${s.symbol}" style="accent-color:var(--ac)"></td>
+<td style="font-weight:700;font-family:var(--fm)">${s.symbol}</td>
+<td class="te">${s.name||'—'}</td>
+<td><span class="bdg b-funded" style="font-size:.54rem">${s.type||'fx'}</span></td>
+<td style="color:var(--t3);font-family:var(--fm)">${Number(s.base_spread||0).toFixed(5)}</td>
+<td style="color:${s.spread_markup>0?'var(--am)':'var(--t3)'};font-family:var(--fm)">${Number(s.spread_markup||0).toFixed(5)}</td>
+<td style="font-weight:700;font-family:var(--fm)">${(Number(s.base_spread||0)+Number(s.spread_markup||0)).toFixed(5)}</td>
+<td style="font-family:var(--fm)">$${Number(s.commission_per_lot||3.5).toFixed(2)}</td>
 <td><span class="bdg ${s.trading_enabled?'b-active':'b-failed'}">${s.trading_enabled?'ON':'OFF'}</span></td>
 <td><button class="btn btn-xs btn-b" onclick="editSym('${s.symbol}',${s.spread_markup||0},${s.commission_per_lot||3.5},${s.trading_enabled??1})">Edit</button></td>
 </tr>`).join('')}</tbody></table></div></div>`;
 }
+
+function toggleSelAll(v){document.querySelectorAll('.symchk').forEach(c=>c.checked=v);}
+
+function getSelectedSymbols(){
+  const cat=$('bulkCat')?.value||'all';
+  const checked=[...document.querySelectorAll('.symchk:checked')].map(c=>c.value);
+  // If "all" is selected but user has checked some boxes, respect checkbox selection
+  // If no checkboxes selected, use category filter
+  if(checked.length>0)return checked;
+  // Use category
+  return [...document.querySelectorAll('.symchk')].map(c=>c.value);
+}
+
+async function doBulkSym(){
+  const syms=getSelectedSymbols();
+  if(!syms.length)return toast('No symbols selected','err');
+  const spr=$('bulkSpr')?.value;
+  const com=$('bulkCom')?.value;
+  if(spr===''&&com==='')return toast('Enter a value to apply','err');
+  const body={symbols:syms};
+  if(spr!=='')body.spread_markup=parseFloat(spr)||0;
+  if(com!=='')body.commission_per_lot=parseFloat(com)||3.5;
+  try{
+    const r=await api('/api/pluto-admin/symbols/bulk',{method:'PUT',body:JSON.stringify(body)});
+    toast(`Updated ${r.updated?.length||0} symbols`,'ok');
+    rSymbols($('mc'));
+  }catch(e){toast(e.message,'err');}
+}
+
+async function resetAllSpreads(){
+  if(!confirm('Reset ALL spread markups to 0?'))return;
+  const all=[...document.querySelectorAll('.symchk')].map(c=>c.value);
+  try{
+    await api('/api/pluto-admin/symbols/bulk',{method:'PUT',body:JSON.stringify({symbols:all,spread_markup:0})});
+    toast('All spreads reset to 0','ok');rSymbols($('mc'));
+  }catch(e){toast(e.message,'err');}
+}
+
 function editSym(sym,mk,cm,en){
   showModal(`<h3>⚙ ${sym}</h3>
-<div class="field"><label>Spread Markup</label><input type="number" id="sm" class="inp" value="${mk}" step="0.00001" min="0"></div>
-<div class="field"><label>Commission / Lot ($)</label><input type="number" id="sc" class="inp" value="${cm}" step="0.1" min="0"></div>
+<div class="alert a-b" style="font-size:.7rem;margin-bottom:10px">Changes apply to all new orders globally for this instrument</div>
+<div class="field"><label>Spread Markup (added to base spread)</label><input type="number" id="sm" class="inp" value="${mk}" step="0.00001" min="0"></div>
+<div class="field"><label>Commission Per Lot ($)</label><input type="number" id="sc" class="inp" value="${cm}" step="0.1" min="0"></div>
 <div class="field"><label>Trading</label><select id="se" class="inp"><option value="1" ${en?'selected':''}>Enabled</option><option value="0" ${!en?'selected':''}>Disabled</option></select></div>
 <div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="saveSym('${sym}')">Save</button></div>`);
 }
 async function saveSym(sym){
-  try{await api('/api/pluto-admin/symbols/'+sym,{method:'PUT',body:JSON.stringify({spread_markup:+$('sm').value||0,commission_per_lot:+$('sc').value||3.5,trading_enabled:+$('se').value})});
-  toast(`${sym} saved`,'ok');closeModal();rSymbols($('mc'))}catch(e){toast(e.message,'err')}
+  try{
+    await api('/api/pluto-admin/symbols/'+sym,{method:'PUT',body:JSON.stringify({spread_markup:+$('sm').value||0,commission_per_lot:+$('sc').value||3.5,trading_enabled:+$('se').value})});
+    toast(`${sym} saved`,'ok');closeModal();rSymbols($('mc'));
+  }catch(e){toast(e.message,'err');}
 }
 
 // SESSIONS
@@ -585,26 +659,112 @@ function breachModal(id){showModal(`<h3>⚠ Breach Account</h3><div class="field
 async function doBreach(id){try{await api('/api/pluto-admin/accounts/'+id+'/breach',{method:'POST',body:JSON.stringify({reason:$('brR').value})});toast('Breached','ok');closeModal();closeDP();doRender(curPage)}catch(e){toast(e.message,'err')}}
 function balModal(id,op){showModal(`<h3>${op==='credit'?'＋ Credit':'－ Debit'}</h3><div class="field"><label>Amount (USD)</label><input type="number" id="bAmt" class="inp" min="0.01" step="0.01"></div><div class="field"><label>Reason</label><input type="text" id="bRsn" class="inp" placeholder="e.g. Bonus, correction…"></div><div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="doBal('${id}','${op}')">Confirm</button></div>`)}
 async function doBal(id,op){const amt=+$('bAmt').value;if(!amt||amt<=0)return toast('Enter valid amount','err');try{const r=await api('/api/pluto-admin/accounts/'+id+'/balance',{method:'POST',body:JSON.stringify({operation:op,amount:amt,reason:$('bRsn').value})});toast(`${op} $${amt} — balance: ${F(r.new_balance)}`,'ok');closeModal();openAccDetail(id)}catch(e){toast(e.message,'err')}}
-function settingsModal(id, cur={}){
-  showModal(`<h3>⚙ Risk Parameters — ${id.slice(0,8)}</h3>
-<div class="alert a-b" style="font-size:.71rem;margin-bottom:11px">Updates apply within 5 seconds via the risk engine</div>
-<div class="field"><label>Max Daily Loss %</label><input type="number" id="s_dl" class="inp" value="${cur.max_daily_loss_pct??5}" step="0.5" min="1" max="20"></div>
-<div class="field"><label>Max Total Drawdown %</label><input type="number" id="s_dd" class="inp" value="${cur.max_total_loss_pct??8}" step="0.5" min="1" max="30"></div>
-${!cur.is_funded?`<div class="field"><label>Profit Target %</label><input type="number" id="s_pt" class="inp" value="${cur.profit_target_pct??10}" step="0.5" min="1" max="50"></div>`:''}
-<div class="field"><label>Profit Split %</label><input type="number" id="s_sp" class="inp" value="${cur.profit_split_pct??80}" step="5" min="50" max="100"></div>
-${!cur.is_funded?`<div class="field"><label>Leverage</label><select id="s_lv" class="inp">${['1:10','1:20','1:30','1:50','1:100'].map(l=>`<option ${(cur.leverage||'1:30')===l?'selected':''}>${l}</option>`).join('')}</select></div>`:''}
-<div class="field"><label>Status (optional)</label><select id="s_st" class="inp"><option value="">— Keep current —</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
-<div class="field"><label>Note</label><input type="text" id="s_nt" class="inp" placeholder="Reason for change…"></div>
-<div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="doSettings('${id}',${cur.is_funded||false})">Save — Apply Now</button></div>`);
+function settingsModal(id, cur={}) {
+  showModal(`<h3 style="margin-bottom:4px">⚙ Full Account Control</h3>
+<div style="font-size:.62rem;color:var(--t3);margin-bottom:12px;font-family:var(--fm)">${id}</div>
+<div class="alert a-b" style="font-size:.7rem;margin-bottom:12px">All changes apply within 5 seconds via risk engine</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+
+  <div style="grid-column:span 2;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);padding-top:4px">RISK LIMITS</div>
+
+  <div class="field">
+    <label>Max Daily Loss %</label>
+    <input type="number" id="s_dl" class="inp" value="${cur.max_daily_loss_pct??5}" step="0.5" min="0.5" max="20">
+    <div style="font-size:.6rem;color:var(--t3);margin-top:2px">Floor: ${F((cur.starting_balance||0)*(1-(cur.max_daily_loss_pct??5)/100))}</div>
+  </div>
+  <div class="field">
+    <label>Max Total Drawdown %</label>
+    <input type="number" id="s_dd" class="inp" value="${cur.max_total_loss_pct??8}" step="0.5" min="1" max="50">
+    <div style="font-size:.6rem;color:var(--t3);margin-top:2px">Floor: ${F((cur.starting_balance||0)*(1-(cur.max_total_loss_pct??8)/100))}</div>
+  </div>
+
+  ${!cur.is_funded ? `<div class="field">
+    <label>Profit Target %</label>
+    <input type="number" id="s_pt" class="inp" value="${cur.profit_target_pct??10}" step="0.5" min="1" max="100">
+  </div>` : '<div></div>'}
+  <div class="field">
+    <label>Profit Split %</label>
+    <input type="number" id="s_sp" class="inp" value="${cur.profit_split_pct??80}" step="5" min="0" max="100">
+  </div>
+
+  <div style="grid-column:span 2;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);padding-top:6px;border-top:1px solid var(--brd);margin-top:4px">TRADING PARAMS</div>
+
+  <div class="field">
+    <label>Leverage</label>
+    <select id="s_lv" class="inp">
+      ${['1:10','1:20','1:30','1:50','1:100','1:200'].map(l=>`<option ${(cur.leverage||'1:30')===l?'selected':''}>${l}</option>`).join('')}
+    </select>
+  </div>
+  <div class="field">
+    <label>Max Lot Exposure</label>
+    <input type="number" id="s_ml" class="inp" value="${cur.admin_max_lots??''}" step="0.01" min="0.01" placeholder="Default from size">
+    <div style="font-size:.6rem;color:var(--t3);margin-top:2px">Leave blank = use account size default</div>
+  </div>
+
+  <div style="grid-column:span 2;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);padding-top:6px;border-top:1px solid var(--brd);margin-top:4px">SPREAD &amp; COMMISSION OVERRIDE</div>
+
+  <div class="field">
+    <label>Spread Markup (pips)</label>
+    <input type="number" id="s_sm" class="inp" value="${cur.admin_spread_markup??0}" step="0.1" min="0" max="50">
+    <div style="font-size:.6rem;color:var(--t3);margin-top:2px">Added on top of symbol default. 0 = no override.</div>
+  </div>
+  <div class="field">
+    <label>Commission Per Lot ($)</label>
+    <input type="number" id="s_cm" class="inp" value="${cur.admin_commission??''}" step="0.5" min="0" placeholder="Default (${cur.default_commission??3.5})">
+  </div>
+
+  <div style="grid-column:span 2;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);padding-top:6px;border-top:1px solid var(--brd);margin-top:4px">STATUS &amp; NOTES</div>
+
+  <div class="field">
+    <label>Account Status</label>
+    <select id="s_st" class="inp">
+      <option value="">— Keep current —</option>
+      <option value="active">Active (trading enabled)</option>
+      <option value="suspended">Suspended (trading blocked)</option>
+      <option value="failed">Failed (breach)</option>
+      <option value="passed">Passed</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Min Trading Days Override</label>
+    <input type="number" id="s_md" class="inp" value="${cur.min_trading_days??''}" step="1" min="0" placeholder="Default">
+  </div>
+
+  <div class="field" style="grid-column:span 2">
+    <label>Admin Note (appears in audit log)</label>
+    <input type="text" id="s_nt" class="inp" placeholder="Reason for this change…">
+  </div>
+</div>
+
+<div class="mbtns">
+  <button class="btn btn-o" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-p" onclick="doSettings('${id}',${cur.is_funded||false})">⚡ Apply All Changes</button>
+</div>`);
 }
-async function doSettings(id,isFunded){
-  const g=eid=>{const el=$(eid);return el?el.value:undefined};
-  const body={max_daily_loss_pct:+g('s_dl'),max_total_loss_pct:+g('s_dd'),profit_split_pct:+g('s_sp')};
-  if(!isFunded){body.profit_target_pct=+g('s_pt');body.leverage=g('s_lv');}
-  if(g('s_st'))body.status=g('s_st');
-  if(g('s_nt'))body.note=g('s_nt');
-  if(isNaN(body.max_daily_loss_pct)||isNaN(body.max_total_loss_pct))return toast('Invalid values','err');
-  try{const r=await api('/api/pluto-admin/accounts/'+id+'/settings',{method:'PUT',body:JSON.stringify(body)});toast(`Saved: ${r.updated?.join(', ')||'settings'} — active <5s`,'ok');closeModal();openAccDetail(id)}catch(e){toast(e.message,'err')}
+
+async function doSettings(id, isFunded) {
+  const g = eid => { const el = $(eid); return el ? el.value : undefined; };
+  const body = {
+    max_daily_loss_pct:  +g('s_dl'),
+    max_total_loss_pct:  +g('s_dd'),
+    profit_split_pct:    +g('s_sp'),
+  };
+  if (!isFunded) body.profit_target_pct = +g('s_pt');
+  body.leverage = g('s_lv') || '1:30';
+  if (g('s_ml')) body.admin_max_lots = +g('s_ml');
+  if (g('s_sm') !== '') body.admin_spread_markup = +g('s_sm');
+  if (g('s_cm')) body.admin_commission = +g('s_cm');
+  if (g('s_md')) body.min_trading_days = +g('s_md');
+  if (g('s_st')) body.status = g('s_st');
+  if (g('s_nt')) body.note = g('s_nt');
+  if (isNaN(body.max_daily_loss_pct) || isNaN(body.max_total_loss_pct)) return toast('Invalid values', 'err');
+  try {
+    const r = await api('/api/pluto-admin/accounts/'+id+'/settings', {method:'PUT', body:JSON.stringify(body)});
+    toast(`Applied: ${r.updated?.join(', ')||'settings'} ✓`, 'ok');
+    closeModal();
+    openAccDetail(id);
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 function updateRBadge(n){const b=$('rBadge');if(b){b.textContent=n;b.style.display=n>0?'':'none'}}

@@ -256,28 +256,41 @@ router.post('/accounts/:id/balance', async (req, res) => {
 // ── UPDATE ACCOUNT RISK PARAMS (full control, challenges AND funded) ───────────
 router.put('/accounts/:id/settings', async (req, res) => {
   const { max_daily_loss_pct, max_total_loss_pct, profit_target_pct, profit_split_pct,
-          leverage, status, note } = req.body;
+          leverage, status, note, admin_max_lots, admin_spread_markup, admin_commission,
+          min_trading_days } = req.body;
   try {
     const account = await resolveAccount(req.params.id);
     if (!account) return res.status(404).json({ error: 'Not found' });
     const isFunded = account.kind === 'funded';
     const table = isFunded ? 'funded_accounts' : 'challenges';
     const fields = [], vals = [];
-    if (max_daily_loss_pct !== undefined) { fields.push('max_daily_loss_pct=?'); vals.push(parseFloat(max_daily_loss_pct)); }
-    if (max_total_loss_pct !== undefined) { fields.push('max_total_loss_pct=?'); vals.push(parseFloat(max_total_loss_pct)); }
+    if (max_daily_loss_pct  !== undefined) { fields.push('max_daily_loss_pct=?');  vals.push(parseFloat(max_daily_loss_pct)); }
+    if (max_total_loss_pct  !== undefined) { fields.push('max_total_loss_pct=?');  vals.push(parseFloat(max_total_loss_pct)); }
     if (!isFunded && profit_target_pct !== undefined) { fields.push('profit_target_pct=?'); vals.push(parseFloat(profit_target_pct)); }
-    if (profit_split_pct !== undefined) { fields.push('profit_split_pct=?'); vals.push(parseFloat(profit_split_pct)); }
-    if (!isFunded && leverage !== undefined) { fields.push('leverage=?'); vals.push(leverage); }
-    if (status !== undefined) { fields.push('status=?'); vals.push(status); }
+    if (profit_split_pct    !== undefined) { fields.push('profit_split_pct=?');    vals.push(parseFloat(profit_split_pct)); }
+    if (leverage            !== undefined) { fields.push('leverage=?');            vals.push(leverage); }
+    if (status              !== undefined) { fields.push('status=?');              vals.push(status); }
+    if (!isFunded && min_trading_days !== undefined) { fields.push('min_trading_days=?'); vals.push(parseInt(min_trading_days)); }
+    // Admin overrides stored as JSON in admin_notes column
+    if (admin_max_lots !== undefined || admin_spread_markup !== undefined || admin_commission !== undefined) {
+      const existing = await queryOne(`SELECT admin_notes FROM ${table} WHERE id=$1`, [req.params.id]).catch(()=>null);
+      let adminData = {};
+      try { adminData = JSON.parse(existing?.admin_notes||'{}'); } catch(_) {}
+      if (admin_max_lots      !== undefined) adminData.max_lots_override   = parseFloat(admin_max_lots) || null;
+      if (admin_spread_markup !== undefined) adminData.spread_markup        = parseFloat(admin_spread_markup) || 0;
+      if (admin_commission    !== undefined) adminData.commission_per_lot   = parseFloat(admin_commission) || null;
+      if (note) adminData.last_note = note;
+      fields.push('admin_notes=?'); vals.push(JSON.stringify(adminData));
+    }
     if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
     vals.push(req.params.id);
     await run(`UPDATE ${table} SET ${fields.join(',')} WHERE id=?`, vals);
-    // Clear risk engine cache so new params take effect immediately
+    // Clear risk engine cache so new params take effect within 5s
     const riskEngine = require('../services/riskEngine');
-    delete riskEngine.lastCheck[req.params.id];
+    if (riskEngine.lastCheck) delete riskEngine.lastCheck[req.params.id];
     await run(`INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
-      [uuidv4(),'ADMIN_UPDATE_SETTINGS',account.kind,req.params.id,
-       `Updated: ${fields.join(', ')}${note?' — '+note:''}`]);
+      [uuidv4(), 'ADMIN_UPDATE_SETTINGS', account.kind, req.params.id,
+       `Updated: ${fields.map(f=>f.split('=')[0]).join(', ')}${note?' — '+note:''}`]);
     res.json({ success: true, updated: fields.map(f=>f.split('=')[0]) });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -382,6 +395,29 @@ router.get('/symbols', async (req, res) => {
     }));
     res.json(symbols);
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── BULK SYMBOL OPERATIONS ────────────────────────────────────────────────────
+// PUT /api/pluto-admin/symbols/bulk  { symbols: ['EURUSD','GBPUSD'], spread_markup: 1.5 }
+router.put('/symbols/bulk', async (req, res) => {
+  try {
+    const { symbols, spread_markup, commission_per_lot } = req.body;
+    if (!symbols?.length) return res.status(400).json({ error: 'symbols array required' });
+    const results = [];
+    for (const sym of symbols) {
+      const settings = {};
+      if (spread_markup !== undefined) settings.spread_markup = spread_markup;
+      if (commission_per_lot !== undefined) settings.commission_per_lot = commission_per_lot;
+      await orderEngine.updateSymbolSettings(sym.toUpperCase(), settings);
+      results.push(sym.toUpperCase());
+    }
+    await require('../models/database').run(
+      `INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
+      [require('../utils/helpers').generateId(), 'BULK_SYMBOL_UPDATE', 'symbol', 'bulk',
+       `Updated ${results.length} symbols: spread_markup=${spread_markup ?? 'unchanged'}, commission=${commission_per_lot ?? 'unchanged'}`]
+    );
+    res.json({ success: true, updated: results });
+  } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
 router.put('/symbols/:symbol', async (req, res) => {

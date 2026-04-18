@@ -543,6 +543,9 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS pending_orders (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, challenge_id TEXT, funded_account_id TEXT, symbol TEXT NOT NULL, direction TEXT NOT NULL, order_type TEXT NOT NULL, volume REAL NOT NULL, entry_price REAL NOT NULL, stop_loss REAL, take_profit REAL, trailing_stop_pips REAL DEFAULT 0, expiry TEXT, status TEXT DEFAULT 'pending', commission REAL DEFAULT 0, created_at TEXT DEFAULT (NOW()::TEXT), filled_at TEXT, cancelled_at TEXT, cancel_reason TEXT)`,
       `CREATE TABLE IF NOT EXISTS symbol_settings (symbol TEXT PRIMARY KEY, spread_markup REAL DEFAULT 0, min_volume REAL DEFAULT 0.01, max_volume REAL DEFAULT 100, step_volume REAL DEFAULT 0.01, commission_per_lot REAL DEFAULT 3.5, swap_long REAL DEFAULT 0, swap_short REAL DEFAULT 0, trading_enabled INTEGER DEFAULT 1, updated_at TEXT DEFAULT (NOW()::TEXT))`,
       `CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, ip_address TEXT, user_agent TEXT, country TEXT, platform TEXT DEFAULT 'web', login_at TEXT DEFAULT (NOW()::TEXT), last_seen TEXT DEFAULT (NOW()::TEXT), is_active INTEGER DEFAULT 1)`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS admin_notes TEXT`,
+      `ALTER TABLE funded_accounts ADD COLUMN IF NOT EXISTS admin_notes TEXT`,
+      `ALTER TABLE challenges ADD COLUMN IF NOT EXISTS min_trading_days INTEGER DEFAULT 5`,
     ];
     for (const sql of migrations) {
       try { await client.query(sql); } catch(_) {}
