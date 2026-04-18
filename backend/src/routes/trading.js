@@ -45,9 +45,15 @@ router.get('/account', authenticate, async (req, res) => {
 
 router.get('/accounts', authenticate, async (req, res) => {
   try {
-    const challenges = await queryAll(`SELECT *,'challenge' as account_kind FROM challenges WHERE user_id=$1 ORDER BY created_at DESC`, [req.user.id]);
-    const funded     = await queryAll(`SELECT *,'funded' as account_kind FROM funded_accounts WHERE user_id=$1 ORDER BY created_at DESC`, [req.user.id]);
-    res.json([...challenges, ...funded]);
+    const challenges = await queryAll(
+      `SELECT *,'challenge' as account_kind FROM challenges WHERE user_id=$1 AND status='active' ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    const funded = await queryAll(
+      `SELECT *,'funded' as account_kind FROM funded_accounts WHERE user_id=$1 AND status='active' ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json([...funded, ...challenges]); // funded first (more important)
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

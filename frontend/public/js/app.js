@@ -212,7 +212,7 @@ const tgtAmt=c.starting_balance*c.profit_target_pct/100;const tgtRemain=Math.max
 const ddMax=c.starting_balance*c.max_total_loss_pct/100;const ddUsedAmt=c.highest_balance-c.current_equity;const ddRemain=Math.max(0,ddMax-ddUsedAmt);const ddProg=Math.min(100,ddUsedAmt/ddMax*100);
 const dlMax=c.starting_balance*c.max_daily_loss_pct/100;const dlUsedAmt=Math.max(0,c.day_start_balance-c.current_equity);const dlRemain=Math.max(0,dlMax-dlUsedAmt);const dlProg=Math.min(100,dlUsedAmt/dlMax*100);
 const threshold=c.starting_balance-ddMax;
-return`<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden"><div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);flex-wrap:wrap;gap:10px"><div><div style="font-size:1.1rem;font-weight:700">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">ID: ${c.id.slice(0,8)} &bull; ${new Date(c.created_at).toLocaleDateString()}</div></div><div style="display:flex;align-items:center;gap:8px">${isActive?`<button class="btn btn-outline btn-sm" onclick="showCredentials('${c.ctrader_login||''}','${c.ctrader_password||''}','${c.ctrader_server||'Demo'}')">Terminal Login</button>`:''} ${B(c.status)}</div></div>
+return`<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden"><div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);flex-wrap:wrap;gap:10px"><div><div style="font-size:1.1rem;font-weight:700">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">ID: ${c.id.slice(0,8)} &bull; ${new Date(c.created_at).toLocaleDateString()}</div></div><div style="display:flex;align-items:center;gap:8px">${isActive?`<button class="btn btn-outline btn-sm" onclick="showCredentials('${c.ctrader_login||user?.email||''}')">Terminal Login</button>`:''} ${B(c.status)}</div></div>
 ${isPending?`<div style="padding:24px;text-align:center;color:var(--am)"><div style="font-size:1.2rem;margin-bottom:8px">&#9202;</div><strong>Awaiting Payment</strong></div>`:''}
 ${isActive||isPassed||isFailed?`<div style="padding:24px">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px">
@@ -585,7 +585,35 @@ if(adminTab==='log'){try{const logs=await api('/api/admin/audit-log');$('auditBo
 async function admPay(id,a){try{await api('/api/admin/payouts/'+id+'/'+a,{method:'POST'});toast(a+'d','success');render_admin()}catch(x){toast(x.message,'error')}}
 async function admPayTx(id){const tx=$('tx_'+id)?.value||'';try{await api('/api/admin/payouts/'+id+'/pay',{method:'POST',body:JSON.stringify({tx_reference:tx})});toast('Paid','success');render_admin()}catch(x){toast(x.message,'error')}}
 async function toggleDemo(enabled){try{await api('/api/admin/settings/demo-mode',{method:'POST',body:JSON.stringify({enabled})});toast(enabled?'Demo Mode ENABLED — payments bypassed':'Demo Mode DISABLED — payments required',enabled?'info':'success');render_admin()}catch(x){toast(x.message,'error')}}
-function showCredentials(login,password,server){const m=document.createElement('div');m.className='modal-bg';m.id='credModal';m.innerHTML=`<div class="modal" style="max-width:420px"><button class="modal-close" onclick="document.getElementById('credModal').remove()">&times;</button><h2>Trading Credentials</h2><p style="color:var(--t2);font-size:.84rem;margin-bottom:16px">Use these to log into PlutoTrader. Your email is your username.</p><a href="/terminal.html" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:16px">&#9654; Open PlutoTrader</a><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)"><div><div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Login</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;color:var(--ac2);margin-top:2px">${login}</div></div><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${login}');toast('Login copied','success')">Copy</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)"><div><div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Password</div><div style="font-size:1.1rem;font-family:var(--fm);font-weight:700;color:var(--t1);margin-top:2px">${password}</div></div><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${password}');toast('Password copied','success')">Copy</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)"><div><div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Platform</div><div style="font-size:1.1rem;font-family:var(--fm);color:var(--t1);margin-top:2px">${server}</div></div><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${server}');toast('Server copied','success')">Copy</button></div></div></div>`;document.body.appendChild(m)}
+function showCredentials(login){
+  const m=document.createElement('div');
+  m.className='modal-bg';
+  m.id='credModal';
+  m.innerHTML=`<div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="document.getElementById('credModal').remove()">&times;</button>
+    <h2>PlutoTrader Access</h2>
+    <p style="color:var(--t2);font-size:.86rem;margin-bottom:20px">Log into the terminal with your Pluto Capital account credentials — the same email and password you use here on the dashboard.</p>
+    <a href="/terminal.html" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:18px;display:block;text-align:center;padding:12px;font-size:.9rem">&#9654; Open PlutoTrader Terminal</a>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)">
+        <div>
+          <div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Login (Email)</div>
+          <div style="font-size:1rem;font-family:var(--fm);font-weight:700;color:var(--ac2);margin-top:2px">${login}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${login}');toast('Email copied','success')">Copy</button>
+      </div>
+      <div style="padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)">
+        <div style="font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">Password</div>
+        <div style="font-size:.84rem;color:var(--t2)">Use your <strong style="color:var(--t1)">Pluto Capital account password</strong> — the same one you used to log in here.</div>
+        <div style="font-size:.75rem;color:var(--t3);margin-top:6px">Forgot it? Use the <a href="/" style="color:var(--ac2)">Forgot Password</a> link on the dashboard.</div>
+      </div>
+      <div style="padding:10px 14px;background:var(--acbg);border:1px solid var(--acgl);border-radius:var(--r);font-size:.78rem;color:var(--ac2)">
+        ✓ Your account appears automatically in the terminal — no extra setup needed.
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
 async function resetChallenge(id){if(!confirm('Reset this challenge for 10% off the original price? A new account will be created.'))return;try{const d=await api('/api/challenges/'+id+'/reset',{method:'POST'});toast('Account reset! New challenge created at '+F(d.fee_paid),'success');navigate('challenges')}catch(x){toast(x.message,'error')}}
 async function admAction(path,msg){try{await api('/api/admin/'+path,{method:'POST'});toast(msg,'success');render_admin()}catch(x){toast(x.message,'error')}}
 async function admDelCode(id){if(!confirm('Disable this code?'))return;try{await api('/api/admin/discount-codes/'+id,{method:'DELETE'});toast('Disabled','success');render_admin()}catch(x){toast(x.message,'error')}}

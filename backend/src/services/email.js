@@ -125,13 +125,15 @@ async function sendChallengePurchased(to, name, details) {
       ${row('Fee Paid', '$' + details.fee)}
     </table>
     ${details.login ? `<div style="margin:24px 0;padding:20px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15);border-radius:10px">
-      <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px">Your PlutoTrader Credentials</div>
+      <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px">Access PlutoTrader Terminal</div>
       <table width="100%" cellpadding="0" cellspacing="0">
-        ${row('Login', details.login)}
-        ${details.password ? row('Password', details.password) : ''}
-        ${row('Server', details.server || 'PlutoCapital-Demo')}
+        ${row('Login (Email)', details.login)}
+        ${row('Password', 'Your Pluto Capital account password')}
+        ${row('Platform', 'PlutoTrader')}
       </table>
-      <p style="font-size:12px;color:#8b87a0;margin:12px 0 0">Open PlutoTrader at <a href="${details.terminal_url || '/terminal.html'}" style="color:#a78bfa">PlutoTrader Terminal</a> and log in with your email and the password above to start trading.</p>
+      <p style="font-size:12px;color:#8b87a0;margin:12px 0 0">
+        Open <a href="${details.terminal_url || '/terminal.html'}" style="color:#a78bfa">PlutoTrader Terminal</a> and log in with your email and the <strong style="color:#eeedf4">same password you use for the dashboard</strong>. Your account will appear automatically.
+      </p>
     </div>` : ''}
     <p><strong style="color:#fbbf24">Important Rules:</strong></p>
     <p style="font-size:13px">• 20% consistency rule applies — no single day can exceed 20% of total profit<br>
