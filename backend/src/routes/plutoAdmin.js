@@ -241,6 +241,48 @@ router.get('/risk-alerts', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── GET /api/pluto-admin/payout-check/:funded_id — pre-payout compliance ──────
+router.get('/payout-check/:funded_id', async (req, res) => {
+  try {
+    const riskEngine = require('../services/riskEngine');
+    const result = await riskEngine.prePayoutCheck(req.params.funded_id);
+    res.json(result);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PUT /api/pluto-admin/accounts/:id/risk-params — live risk param update ────
+router.put('/accounts/:id/risk-params', async (req, res) => {
+  try {
+    const riskEngine = require('../services/riskEngine');
+    await riskEngine.updateAccountRiskParams(req.params.id, req.body);
+    res.json({ success: true, message: 'Risk parameters updated — takes effect on next tick check' });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── GET /api/pluto-admin/risk-engine/status ───────────────────────────────────
+router.get('/risk-engine/status', (req, res) => {
+  const riskEngine = require('../services/riskEngine');
+  const now = new Date();
+  const day = now.getUTCDay(), h = now.getUTCHours();
+  const marketOpen = !(day===6||(day===0&&h<22)||(day===5&&h>=22));
+  res.json({
+    running: riskEngine.running,
+    market_open: marketOpen,
+    last_check_count: Object.keys(riskEngine.lastCheck).length,
+    recent_breaches: riskEngine.recentBreaches.size,
+    check_interval_ms: 5000,
+  });
+});
+
+// ── POST /api/pluto-admin/risk-engine/reset-daily ─────────────────────────────
+router.post('/risk-engine/reset-daily', async (req, res) => {
+  try {
+    const riskEngine = require('../services/riskEngine');
+    await riskEngine.resetDailyBalances();
+    res.json({ success: true, message: 'Daily balances reset' });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 function _isMarketOpen() {
   const now = new Date();
   const day = now.getUTCDay(), h = now.getUTCHours();

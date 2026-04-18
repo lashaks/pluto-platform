@@ -32,6 +32,19 @@ router.post('/request', authenticate, async (req, res) => {
     const pending = await queryOne(`SELECT COUNT(*) as c FROM payouts WHERE funded_account_id=$1 AND status IN ('requested','under_review','approved','processing')`, [funded_account_id]);
     if (pending?.c > 0) return res.status(400).json({ error: 'You already have a pending payout for this account' });
 
+    // ── Pre-payout compliance check ─────────────────────────────────────
+    const riskEngine = require('../services/riskEngine');
+    const compliance = await riskEngine.prePayoutCheck(funded_account_id);
+    if (!compliance.approved) {
+      const failedChecks = compliance.checks.filter(c=>!c.pass&&!c.warning).map(c=>c.name);
+      return res.status(400).json({
+        error: 'Payout blocked — compliance check failed',
+        failed_checks: failedChecks,
+        compliance_summary: compliance.summary,
+        details: compliance.checks,
+      });
+    }
+
     // Calculate profit
     const profit = acct.current_balance - acct.starting_balance;
     if (profit < (config.defaultRules?.min_payout || 50)) {

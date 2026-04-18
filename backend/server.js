@@ -410,10 +410,13 @@ async function start() {
   await initDatabase();
 
   // ── Start market data service ─────────────────────────────────────────────
-  const marketData = require('./src/services/marketData');
+  const marketData  = require('./src/services/marketData');
   const orderEngine = require('./src/services/orderEngine');
+  const riskEngine  = require('./src/services/riskEngine');
+
   await marketData.start();
   await orderEngine.init();
+  riskEngine.start(); // Automated background risk checks every 5s
 
   // ── WebSocket server — live price streaming to terminal ──────────────────
   const wss = new WebSocket.Server({ server, path: '/ws/prices' });

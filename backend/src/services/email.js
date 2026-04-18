@@ -226,4 +226,12 @@ module.exports = {
   sendChallengeFailed,
   sendPayoutProcessed,
   sendLoginAlert,
+  // General purpose email for risk engine
+  sendGeneral: async (to, name, { subject, heading, body, cta_text, cta_url }) => {
+    return send(to, subject, wrap(name,
+      `<h2 style="margin:0 0 16px;font-size:1.2rem;font-weight:700">${heading}</h2>
+       <p style="font-size:14px;color:#8b87a0;line-height:1.7">${body.replace(/\n/g,'<br>')}</p>
+       ${cta_text ? btn(cta_text, cta_url||'https://pluto-platform.vercel.app') : ''}`
+    ));
+  },
 };
