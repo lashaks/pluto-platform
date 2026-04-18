@@ -28,21 +28,24 @@
       <img src="/img/favicon.svg" alt="Pluto" class="logo-img">
       <div class="logo-text">PLUTO<span>CAPITAL</span></div>
     </div>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#rules">Rules</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-      <button onclick="showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
-      <button onclick="showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#features" onclick="closeNavMenu()">Features</a>
+      <a href="#rules" onclick="closeNavMenu()">Rules</a>
+      <a href="#pricing" onclick="closeNavMenu()">Pricing</a>
+      <a href="#faq" onclick="closeNavMenu()">FAQ</a>
+      <button onclick="closeNavMenu();showAuth('login')" class="btn btn-outline btn-sm">Sign In</button>
+      <button onclick="closeNavMenu();showAuth('register')" class="btn btn-primary btn-sm">Get Funded</button>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()" id="navThemeBtn" title="Toggle theme">
-      <svg id="navThemeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-    </button>
-    <button class="nav-mobile-btn" onclick="this.closest('nav').querySelector('.nav-links').classList.toggle('nav-open')" aria-label="Menu">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="theme-toggle" onclick="toggleTheme()" id="navThemeBtn" title="Toggle theme">
+        <svg id="navThemeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <button class="nav-mobile-btn" id="navHamburger" onclick="toggleNavMenu()" aria-label="Menu">
+        <svg id="navMenuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
   </div></nav>
+  <div id="navOverlay" style="display:none;position:fixed;inset:0;z-index:98" onclick="closeNavMenu()"></div>
 
   <section class="hero"><div class="container">
     <div class="hero-inner">

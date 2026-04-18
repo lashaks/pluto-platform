@@ -1135,5 +1135,33 @@ function drawRadarChart(overallScore, wr, pf, consistency, risk, slUsage) {
   }
 }{const p=new URLSearchParams(window.location.search);if(p.get('purchased')==='true'){toast('Payment received! Activating shortly.','success');window.history.replaceState({},'',window.location.pathname)}}
 function loadPricing(){renderPricing(PLANS.one_step,$('landingPricing'),"selectPlan")}
-window.addEventListener('scroll',()=>{const n=$('topNav');if(n)n.classList.toggle('scrolled',scrollY>40)});
-document.addEventListener('DOMContentLoaded',()=>{loadPricing();handleReturnFromPayment();if(token)enterDashboard()});
+
+// ── Mobile nav menu ──────────────────────────────────────────────────────────
+function toggleNavMenu() {
+  const links = $('navLinks');
+  const overlay = $('navOverlay');
+  const icon = $('navMenuIcon');
+  const open = links.classList.toggle('nav-open');
+  overlay.style.display = open ? 'block' : 'none';
+  // Swap hamburger ↔ X icon
+  icon.innerHTML = open
+    ? '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+    : '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+}
+function closeNavMenu() {
+  const links = $('navLinks');
+  const overlay = $('navOverlay');
+  const icon = $('navMenuIcon');
+  if (!links) return;
+  links.classList.remove('nav-open');
+  if (overlay) overlay.style.display = 'none';
+  if (icon) icon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+}
+
+window.addEventListener('scroll', () => {
+  const n = $('topNav');
+  if (n) n.classList.toggle('scrolled', scrollY > 20);
+});
+// Close mobile menu on resize to desktop
+window.addEventListener('resize', () => { if (window.innerWidth > 768) closeNavMenu(); });
+document.addEventListener('DOMContentLoaded', () => { loadPricing(); handleReturnFromPayment(); if(token) enterDashboard(); });
