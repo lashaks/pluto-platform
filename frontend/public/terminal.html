@@ -304,6 +304,9 @@ input,select{font-family:var(--ff);outline:none;color:var(--t1);border:none}
     </div>
 
     <div class="tb-space"></div>
+    <div id="mktStatus" style="font-size:.68rem;font-weight:700;padding:0 12px;white-space:nowrap;display:flex;align-items:center">
+      <span style="color:#26d07c">● Market Open</span>
+    </div>
     <div id="acctStrip">
       <div class="ac-itm"><div class="ac-lbl">Balance</div><div class="ac-val" id="hBal">—</div></div>
       <div class="ac-itm"><div class="ac-lbl">Equity</div><div class="ac-val" id="hEq">—</div></div>
@@ -499,10 +502,15 @@ async function boot() {
   const fid = params.get('funded');
   try {
     let url = '/api/trading/account';
-    if (cid) url+='?challenge_id='+cid;
-    else if (fid) url+='?funded_id='+fid;
+    if (cid) url += '?challenge_id='+cid;
+    else if (fid) url += '?funded_id='+fid;
+    // Auto-detect: no params → API returns first active challenge automatically
     account = await api(url);
-  } catch(_) {}
+    console.log('[Terminal] Account loaded:', account.id?.slice(0,8), account.challenge_type||'funded', '$'+account.account_size);
+  } catch(e) {
+    // No active account — show message but don't block terminal
+    console.warn('[Terminal] No active account:', e.message);
+  }
 
   setLD('Building terminal…');
   buildWL();
@@ -518,6 +526,8 @@ async function boot() {
   updateAcct();
   updateMktInfo();
   calcMargin();
+  updateMarketStatus();
+  drawPositionLines();
 
   $('ldScreen').style.display = 'none';
   $('app').style.display      = 'flex';
@@ -589,13 +599,13 @@ function setTF(btn) {
   document.querySelectorAll('.tf-b').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on'); tf=btn.dataset.tf;
   $('coTf').textContent = btn.textContent;
-  initChart(); loadCandles();
+  initChart(); loadCandles().then(drawPositionLines);
 }
 
 function setCT(btn) {
   document.querySelectorAll('.ct-b').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on'); ct=btn.dataset.ct;
-  initChart(); loadCandles();
+  initChart(); loadCandles().then(drawPositionLines);
 }
 
 // ── Watchlist ────────────────────────────────────────────────────────────────
@@ -679,7 +689,7 @@ function pickSym(s) {
   updatePxDisplay(s);
   updateMktInfo();
   calcMargin();
-  initChart(); loadCandles();
+  initChart(); loadCandles().then(drawPositionLines);
 }
 
 // ── WebSocket ────────────────────────────────────────────────────────────────
@@ -757,6 +767,18 @@ async function placeOrder() {
   if (!vol||vol<=0) { toast('Enter valid volume','err'); return; }
   if (!account)     { toast('No active account — buy a challenge first','err'); return; }
 
+  // ── Weekend trading block ────────────────────────────────────────────────
+  const now = new Date();
+  const dayUTC = now.getUTCDay(); // 0=Sun, 6=Sat
+  const hourUTC = now.getUTCHours();
+  // Markets closed: Sat all day, Sun before 22:00 UTC, Fri after 21:55 UTC (for funded accounts)
+  if (dayUTC === 6) {
+    toast('⛔ Markets closed — no trading on Saturday','err',5000); return;
+  }
+  if (dayUTC === 0 && hourUTC < 22) {
+    toast('⛔ Markets open Sunday 22:00 UTC — ' + (22-hourUTC) + 'h to go','err',5000); return;
+  }
+
   const btn=$('subBtn');
   btn.textContent='Placing…'; btn.disabled=true;
 
@@ -771,6 +793,7 @@ async function placeOrder() {
     toast(`✓ ${dir.toUpperCase()} ${vol} ${sym} @ ${fmt(r.openPrice,digits(sym))}`,'ok');
     $('slIn').value=''; $('tpIn').value='';
     await refreshPos();
+    drawPositionLines(); // Draw lines on chart
   } catch(e) { toast('Failed: '+e.message,'err'); }
 
   setDir(dir); btn.disabled=false;
@@ -792,6 +815,7 @@ async function refreshPos() {
 
   if(!positions.length) {
     $('posTbody').innerHTML='<tr class="empty-row"><td colspan="11">No open positions — place a trade to start</td></tr>';
+    drawPositionLines();
     return;
   }
   $('posTbody').innerHTML = positions.map(p=>{
@@ -812,6 +836,7 @@ async function refreshPos() {
       <td><button class="close-row" onclick="closePos('${p.id}')">✕ Close</button></td>
     </tr>`;
   }).join('');
+  drawPositionLines();
 }
 
 async function refreshHist() {
@@ -913,6 +938,87 @@ function setBar(lblId,barId,val,max,isGood) {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 setDir('sell');
+// ── Chart Position Lines ──────────────────────────────────────────────────
+// Draws open price, SL and TP lines on chart for all positions of current symbol
+let _posLines = []; // track created price lines so we can remove them
+
+function drawPositionLines() {
+  if (!series) return;
+
+  // Remove all previous position lines
+  _posLines.forEach(l => { try { series.removePriceLine(l); } catch(_){} });
+  _posLines = [];
+
+  // Filter positions for current symbol
+  const symPos = positions.filter(p => p.symbol === sym);
+  if (!symPos.length) return;
+
+  symPos.forEach(p => {
+    const dg = digits(sym);
+    const isBuy = p.direction === 'buy';
+
+    // ── Open price line (blue / solid) ──────────────────────────────────
+    if (p.open_price) {
+      const pnl = p.profit || 0;
+      const color = pnl >= 0 ? '#26d07c' : '#f5504a';
+      const line = series.createPriceLine({
+        price: p.open_price,
+        color: color,
+        lineWidth: 1,
+        lineStyle: 0, // solid
+        axisLabelVisible: true,
+        title: `${isBuy?'▲':'▼'} ${p.volume}L @ ${p.open_price.toFixed(dg)} (${pnl>=0?'+':''}${pnl.toFixed(2)})`,
+      });
+      _posLines.push(line);
+    }
+
+    // ── Stop Loss line (red / dashed) ────────────────────────────────────
+    if (p.stop_loss) {
+      const line = series.createPriceLine({
+        price: p.stop_loss,
+        color: '#f5504a',
+        lineWidth: 1,
+        lineStyle: 2, // dashed
+        axisLabelVisible: true,
+        title: `SL ${p.stop_loss.toFixed(dg)}`,
+      });
+      _posLines.push(line);
+    }
+
+    // ── Take Profit line (green / dashed) ────────────────────────────────
+    if (p.take_profit) {
+      const line = series.createPriceLine({
+        price: p.take_profit,
+        color: '#26d07c',
+        lineWidth: 1,
+        lineStyle: 2, // dashed
+        axisLabelVisible: true,
+        title: `TP ${p.take_profit.toFixed(dg)}`,
+      });
+      _posLines.push(line);
+    }
+  });
+}
+
+// ── Weekend / Market Hours Indicator ─────────────────────────────────────────
+function updateMarketStatus() {
+  const now = new Date();
+  const day = now.getUTCDay(), h = now.getUTCHours(), m = now.getUTCMinutes();
+  const isClosed = day === 6 || (day === 0 && (h < 22)) || (day === 5 && h >= 22);
+  const el = $('mktStatus');
+  if (!el) return;
+  if (isClosed) {
+    el.innerHTML = '<span style="color:#f5504a">⛔ Market Closed</span>';
+    el.title = day===6 ? 'Saturday — reopens Sun 22:00 UTC'
+      : day===0 ? `Sunday — opens in ${22-h}h ${m?60-m:0}m UTC`
+      : 'Friday close — reopens Sun 22:00 UTC';
+  } else {
+    el.innerHTML = '<span style="color:#26d07c">● Market Open</span>';
+    el.title = 'Forex & CFD markets live';
+  }
+}
+setInterval(updateMarketStatus, 60000);
+
 boot();
 </script>
 </body>

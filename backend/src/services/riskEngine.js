@@ -1,5 +1,4 @@
 const { queryOne, run } = require('../models/database');
-const ctrader = require('./ctrader');
 const config = require('../../config');
 
 // ============================================================
@@ -81,12 +80,11 @@ class RiskEngine {
     run(`UPDATE challenges SET status='failed', failed_at=NOW()::TEXT, breach_reason=? WHERE id=?`,
       [reason, challengeId]);
 
-    // 2. Disable on cTrader (production)
-    const ch = await queryOne(`SELECT ctrader_account_id FROM challenges WHERE id=$1`, [challengeId]);
-    if (ch?.ctrader_account_id) {
-      await ctrader.disableAccount(ch.ctrader_account_id, 'CLOSE_ONLY');
-      await ctrader.closeAllPositions(ch.ctrader_account_id);
-    }
+    // 2. Close all open positions via PlutoTrader order engine
+    try {
+      const orderEngine = require('./orderEngine');
+      await orderEngine._closeAllForAccount(challengeId, null);
+    } catch(e) { console.error('[RiskEngine] closeAll error:', e.message); }
 
     // 3. Audit log
     run(`INSERT INTO audit_log (id, action, entity_type, entity_id, details)
@@ -115,11 +113,8 @@ class RiskEngine {
       // Create Phase 2 challenge
       const phase2Id = require('uuid').v4();
       const phase2Target = config.twoStepRules.phase2_target_pct;
-      const ctraderResult = await ctrader.createAccount({
-        balance: ch.account_size,
-        leverage: ch.leverage,
-        group: 'demo_prop_evaluation',
-      });
+      // PlutoTrader: use trader's email as login, generate new password
+      const ctraderResult = { login: ch.ctrader_login, accountId: require('uuid').v4().slice(0,8), server: 'PlutoTrader', password: require('../utils/helpers').generateId ? require('../utils/helpers').generateId().slice(0,12) : Math.random().toString(36).slice(2,14) };
 
       await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, phase, parent_challenge_id,
            starting_balance, current_balance, current_equity, highest_balance, lowest_equity, day_start_balance,
@@ -154,11 +149,8 @@ class RiskEngine {
     await run(`UPDATE challenges SET status='passed', passed_at=NOW()::TEXT WHERE id=?`, [challengeId]);
 
     const fundedId = require('uuid').v4();
-    const ctraderResult = await ctrader.createAccount({
-      balance: ch.account_size,
-      leverage: ch.leverage,
-      group: 'demo_prop_funded',
-    });
+    // PlutoTrader: funded account uses same login as challenge
+    const ctraderResult = { login: ch.ctrader_login, accountId: require('uuid').v4().slice(0,8), server: 'PlutoTrader', password: ch.ctrader_password || Math.random().toString(36).slice(2,14) };
 
     await run(`INSERT INTO funded_accounts (id, user_id, challenge_id, account_size, starting_balance,
          current_balance, current_equity, highest_balance, lowest_equity, day_start_balance,

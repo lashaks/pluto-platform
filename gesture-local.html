@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pluto Capital — Gesture Control</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#06050a;--sf:#11101b;--brd:rgba(255,255,255,.07);
+    --ac:#8b5cf6;--ac2:#a78bfa;--gr:#34d399;--rd:#f87171;--am:#fbbf24;
+    --t1:#eeedf4;--t2:#8b87a0;--t3:#5a5672;
+    --ff:'Manrope',sans-serif;--fm:'JetBrains Mono',monospace;
+  }
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:var(--ff)}
+
+  /* CAMERA — full background, mirrored */
+  #video{
+    position:fixed;inset:0;width:100%;height:100%;
+    object-fit:cover;transform:scaleX(-1);
+    z-index:0;
+  }
+
+  /* Dark overlay */
+  #overlay{position:fixed;inset:0;background:rgba(6,5,10,.5);z-index:1;pointer-events:none}
+
+  /* Hand skeleton canvas — mirrors video */
+  #handCanvas{
+    position:fixed;inset:0;width:100%;height:100%;
+    z-index:2;pointer-events:none;
+  }
+
+  /* Cursor */
+  #cursor{
+    position:fixed;pointer-events:none;z-index:100;
+    transform:translate(-50%,-50%);display:none;
+  }
+  #cursorOuter{
+    width:40px;height:40px;border-radius:50%;
+    border:1.8px solid rgba(167,139,250,.7);
+    background:rgba(139,92,246,.1);
+    transition:all .15s ease;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #cursorInner{
+    width:8px;height:8px;border-radius:50%;
+    background:#a78bfa;
+    transition:all .15s ease;
+    box-shadow:0 0 10px rgba(167,139,250,.9);
+  }
+  #cursor.pinching #cursorOuter{
+    width:28px;height:28px;border-color:#fff;
+    background:rgba(167,139,250,.4);
+    box-shadow:0 0 24px rgba(167,139,250,.7);
+  }
+  #cursor.pinching #cursorInner{width:12px;height:12px;background:#fff}
+  #cursor.hovering #cursorOuter{
+    width:50px;height:50px;
+    border-color:var(--ac2);
+    background:rgba(139,92,246,.18);
+  }
+
+  /* Ripple on click */
+  .ripple{
+    position:fixed;pointer-events:none;z-index:99;
+    width:60px;height:60px;margin-left:-30px;margin-top:-30px;
+    border-radius:50%;border:2px solid var(--ac2);
+    animation:ripOut .5s ease-out forwards;
+  }
+  @keyframes ripOut{0%{transform:scale(0);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+
+  /* Screen flash */
+  #flash{position:fixed;inset:0;z-index:300;pointer-events:none;opacity:0;background:rgba(167,139,250,.07);transition:opacity .1s}
+  #flash.on{opacity:1}
+
+  /* UI layer */
+  #ui{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+  /* Brand */
+  .brand{position:fixed;top:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;}
+  .bdot{width:8px;height:8px;border-radius:50%;background:var(--ac2);box-shadow:0 0 10px var(--ac2);animation:bpulse 2s ease-in-out infinite;}
+  @keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.75)}}
+  .bname{font-size:.7rem;font-weight:700;letter-spacing:.22em;color:var(--t3);text-transform:uppercase}
+
+  /* Status chips */
+  #statusBar{position:fixed;top:18px;right:18px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .chip{
+    padding:5px 12px;border-radius:20px;font-size:.63rem;font-weight:700;
+    letter-spacing:.1em;font-family:var(--fm);border:1px solid var(--brd);
+    background:rgba(17,16,27,.88);backdrop-filter:blur(8px);
+    transition:all .2s;
+  }
+  .chip.green{border-color:rgba(52,211,153,.3);color:var(--gr)}
+  .chip.red{border-color:rgba(248,113,113,.2);color:var(--rd)}
+  .chip.purple{border-color:rgba(167,139,250,.35);color:var(--ac2)}
+  .chip.amber{border-color:rgba(251,191,36,.3);color:var(--am)}
+
+  /* Demo buttons */
+  .btn-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+    width:min(560px,88vw);
+  }
+  .gBtn{
+    padding:26px 16px;border-radius:14px;
+    background:rgba(17,16,27,.75);border:1px solid var(--brd);
+    backdrop-filter:blur(14px);cursor:pointer;text-align:center;
+    transition:all .18s;position:relative;overflow:hidden;
+    user-select:none;pointer-events:all;
+  }
+  .gBtn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,92,246,.15),transparent);opacity:0;transition:opacity .18s}
+  .gBtn.hovered,.gBtn:hover{border-color:rgba(139,92,246,.5);transform:translateY(-3px);box-shadow:0 8px 30px rgba(139,92,246,.22)}
+  .gBtn.hovered::before,.gBtn:hover::before{opacity:1}
+  .gBtn.clicked{transform:scale(.94);background:rgba(139,92,246,.2);border-color:var(--ac2)}
+  .gBtn .ico{font-size:1.7rem;display:block;margin-bottom:8px}
+  .gBtn .lbl{font-size:.78rem;font-weight:700;color:var(--t1);display:block}
+  .gBtn .sub{font-size:.62rem;color:var(--t3);margin-top:2px;display:block}
+
+  /* Pinch progress ring around cursor */
+  #pinchProgress{
+    position:fixed;pointer-events:none;z-index:101;
+    transform:translate(-50%,-50%);display:none;
+  }
+  #pinchProgress circle{
+    fill:none;stroke:var(--ac2);stroke-width:2.5;
+    stroke-dasharray:138;stroke-dashoffset:138;
+    stroke-linecap:round;
+    transition:stroke-dashoffset .1s linear;
+    transform-origin:center;transform:rotate(-90deg);
+  }
+
+  /* Toast */
+  #toast{
+    position:fixed;bottom:34px;left:50%;
+    transform:translateX(-50%) translateY(60px);
+    padding:9px 22px;background:rgba(17,16,27,.96);
+    border:1px solid rgba(139,92,246,.25);border-radius:10px;
+    backdrop-filter:blur(16px);font-size:.8rem;font-weight:600;color:var(--t1);
+    z-index:200;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+    opacity:0;white-space:nowrap;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  /* Stats bar */
+  #stats{position:fixed;bottom:18px;right:18px;font-size:.6rem;font-family:var(--fm);color:var(--t3);text-align:right;line-height:2}
+
+  /* Guide */
+  #guide{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:5px}
+  .gRow{display:flex;align-items:center;gap:8px;font-size:.62rem;color:var(--t3);font-family:var(--fm)}
+  .gKey{padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--brd);color:var(--t2);font-size:.6rem}
+
+  /* Loading / instructions screen */
+  #loadScreen{
+    position:fixed;inset:0;z-index:500;background:#06050a;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:36px;
+  }
+  .lTitle{font-size:2rem;font-weight:800;color:var(--t1);letter-spacing:-.03em;text-align:center}
+  .lSub{font-size:.88rem;color:var(--t2);text-align:center;max-width:400px;line-height:1.7}
+  .steps{display:flex;flex-direction:column;gap:10px;width:min(380px,90vw)}
+  .step{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;background:rgba(17,16,27,.9);border:1px solid var(--brd);border-radius:11px}
+  .snum{width:26px;height:26px;border-radius:50%;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:var(--ac2);flex-shrink:0}
+  .stxt{font-size:.78rem;color:var(--t2);line-height:1.5}
+  .stxt strong{color:var(--t1)}
+  .note{font-size:.66rem;color:var(--t3);text-align:center;max-width:340px;line-height:1.5}
+  #loadBtn{
+    padding:13px 42px;background:linear-gradient(135deg,#7c3aed,#8b5cf6);
+    border:none;border-radius:11px;font-family:var(--ff);font-size:.9rem;font-weight:700;
+    color:#fff;cursor:pointer;box-shadow:0 4px 24px rgba(139,92,246,.3);transition:all .2s;
+  }
+  #loadBtn:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(139,92,246,.4)}
+  #loadBtn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+  /* Progress bar for model load */
+  #loadProgress{width:min(320px,80vw);height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;display:none}
+  #loadBar{height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:2px;width:0%;transition:width .4s ease}
+  #loadMsg{font-size:.7rem;font-family:var(--fm);color:var(--t3);text-align:center}
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+<div id="overlay"></div>
+<canvas id="handCanvas"></canvas>
+<div id="flash"></div>
+
+<!-- Cursor -->
+<div id="cursor"><div id="cursorOuter"><div id="cursorInner"></div></div></div>
+
+<!-- Pinch ring -->
+<div id="pinchProgress">
+  <svg width="60" height="60" viewBox="0 0 60 60">
+    <circle cx="30" cy="30" r="22"/>
+  </svg>
+</div>
+
+<!-- Status -->
+<div id="statusBar">
+  <div class="chip red" id="handChip">NO HAND</div>
+  <div class="chip purple" id="modeChip">TF.JS LOCAL</div>
+</div>
+
+<!-- Main UI -->
+<div id="ui">
+  <div class="brand"><div class="bdot"></div><div class="bname">Pluto Capital · Gesture Control</div></div>
+  <div class="btn-grid">
+    <div class="gBtn" data-label="Dashboard" onclick="onBtnClick(this)"><span class="ico">⚡</span><span class="lbl">Dashboard</span><span class="sub">Overview</span></div>
+    <div class="gBtn" data-label="Challenges" onclick="onBtnClick(this)"><span class="ico">🎯</span><span class="lbl">Challenges</span><span class="sub">Evaluations</span></div>
+    <div class="gBtn" data-label="Funded Accounts" onclick="onBtnClick(this)"><span class="ico">💰</span><span class="lbl">Funded</span><span class="sub">Live accounts</span></div>
+    <div class="gBtn" data-label="Trade History" onclick="onBtnClick(this)"><span class="ico">📈</span><span class="lbl">Trades</span><span class="sub">History</span></div>
+    <div class="gBtn" data-label="Payouts" onclick="onBtnClick(this)"><span class="ico">🏦</span><span class="lbl">Payouts</span><span class="sub">Withdraw</span></div>
+    <div class="gBtn" data-label="AI Coach" onclick="onBtnClick(this)"><span class="ico">🤖</span><span class="lbl">AI Coach</span><span class="sub">Analysis</span></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="guide">
+  <div class="gRow"><span class="gKey">☝️ POINT</span> Move cursor</div>
+  <div class="gRow"><span class="gKey">🤌 PINCH</span> Click</div>
+</div>
+
+<div id="stats">
+  <div id="fpsDisp">— fps</div>
+  <div id="handDisp">—</div>
+</div>
+
+<!-- Load screen -->
+<div id="loadScreen">
+  <div class="lTitle">Gesture Control</div>
+  <div class="lSub">100% local · No API key · No tokens · Runs on your GPU via TensorFlow.js</div>
+  <div class="steps">
+    <div class="step"><div class="snum">1</div><div class="stxt"><strong>Allow camera access</strong> — your feed never leaves your device</div></div>
+    <div class="step"><div class="snum">2</div><div class="stxt"><strong>Model loads once</strong> (~20MB) then runs at 30fps locally forever</div></div>
+    <div class="step"><div class="snum">3</div><div class="stxt"><strong>Point</strong> with index finger to move · <strong>Pinch</strong> thumb+index to click</div></div>
+  </div>
+  <div id="loadProgress"><div id="loadBar"></div></div>
+  <div id="loadMsg">Ready to load</div>
+  <button id="loadBtn" onclick="init()">Start Gesture Control →</button>
+  <p class="note">Uses TensorFlow.js HandPose model — free, open source, runs entirely in your browser</p>
+</div>
+
+<!-- TensorFlow.js + HandPose -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.21.0/dist/tf-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.21.0/dist/tf-backend-webgl.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
+
+<script>
+// ─── Elements ────────────────────────────────────────────────────────────────
+const video      = document.getElementById('video');
+const canvas     = document.getElementById('handCanvas');
+const ctx        = canvas.getContext('2d');
+const cursorEl   = document.getElementById('cursor');
+const pinchRing  = document.getElementById('pinchProgress');
+const flashEl    = document.getElementById('flash');
+const toastEl    = document.getElementById('toast');
+const handChip   = document.getElementById('handChip');
+const modeChip   = document.getElementById('modeChip');
+const fpsDisp    = document.getElementById('fpsDisp');
+const handDisp   = document.getElementById('handDisp');
+const loadScreen = document.getElementById('loadScreen');
+const loadMsg    = document.getElementById('loadMsg');
+const loadBar    = document.getElementById('loadBar');
+const loadProg   = document.getElementById('loadProgress');
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let model       = null;
+let running     = false;
+let curX        = window.innerWidth  / 2;
+let curY        = window.innerHeight / 2;
+let targetX     = curX, targetY = curY;
+let isPinching  = false, wasPinching = false;
+let pinchCooldown = 0;
+let pinchHoldMs = 0, pinchStart = 0;
+let frameTime   = 0, lastFrame = 0;
+let fps         = 0, fpsFrames = 0, fpsTimer = Date.now();
+
+// ─── Resize canvas ───────────────────────────────────────────────────────────
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Smooth cursor animation (runs independently at 60fps) ───────────────────
+(function animLoop() {
+  const EASE = 0.22;
+  curX += (targetX - curX) * EASE;
+  curY += (targetY - curY) * EASE;
+
+  cursorEl.style.left = curX + 'px';
+  cursorEl.style.top  = curY + 'px';
+  pinchRing.style.left = curX + 'px';
+  pinchRing.style.top  = curY + 'px';
+
+  // Hover detection
+  let hovering = false;
+  document.querySelectorAll('.gBtn').forEach(b => {
+    const r = b.getBoundingClientRect();
+    const inside = curX >= r.left && curX <= r.right && curY >= r.top && curY <= r.bottom;
+    b.classList.toggle('hovered', inside);
+    if (inside) hovering = true;
+  });
+  cursorEl.classList.toggle('hovering', hovering && !isPinching);
+
+  requestAnimationFrame(animLoop);
+})();
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function toast(msg, type = 'purple') {
+  const borderColors = { purple:'rgba(139,92,246,.3)', green:'rgba(52,211,153,.3)', red:'rgba(248,113,113,.3)', amber:'rgba(251,191,36,.3)' };
+  toastEl.textContent = msg;
+  toastEl.style.borderColor = borderColors[type] || borderColors.purple;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2300);
+}
+
+function flash() {
+  flashEl.classList.add('on');
+  setTimeout(() => flashEl.classList.remove('on'), 120);
+}
+
+function ripple(x, y) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left = x + 'px';
+  r.style.top  = y + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+function onBtnClick(btn) {
+  btn.classList.add('clicked');
+  setTimeout(() => btn.classList.remove('clicked'), 300);
+  toast('✅ ' + btn.dataset.label + ' opened!', 'green');
+}
+
+function gestureClick(x, y) {
+  ripple(x, y);
+  flash();
+  cursorEl.style.display = 'none';
+  const el = document.elementFromPoint(x, y);
+  cursorEl.style.display = 'block';
+  if (!el) return;
+  let t = el;
+  for (let i = 0; i < 6; i++) {
+    if (!t) break;
+    if (t.classList?.contains('gBtn') || t.tagName === 'BUTTON') { t.click(); return; }
+    t = t.parentElement;
+  }
+}
+
+// ─── Draw hand skeleton ──────────────────────────────────────────────────────
+// HandPose landmark indices
+const FINGER_CHAINS = [
+  [0,1,2,3,4],       // thumb
+  [0,5,6,7,8],       // index
+  [0,9,10,11,12],    // middle
+  [0,13,14,15,16],   // ring
+  [0,17,18,19,20],   // pinky
+];
+const PALM = [0,1,5,9,13,17,0]; // palm outline
+
+function drawHand(landmarks, W, H) {
+  if (!landmarks || landmarks.length === 0) return;
+
+  // Map landmark coords to screen — mirror X to match mirrored video
+  const pts = landmarks.map(([x, y]) => [
+    (1 - x / video.videoWidth)  * W,
+    (y / video.videoHeight) * H
+  ]);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw palm
+  ctx.beginPath();
+  PALM.forEach((i, idx) => idx === 0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]));
+  ctx.strokeStyle = 'rgba(139,92,246,0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw finger chains
+  FINGER_CHAINS.forEach((chain, fi) => {
+    ctx.beginPath();
+    chain.forEach((i, idx) => idx === 0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]));
+    ctx.strokeStyle = fi === 1 ? 'rgba(167,139,250,0.7)' : 'rgba(139,92,246,0.45)';
+    ctx.lineWidth = fi === 1 ? 2.5 : 1.8;
+    ctx.stroke();
+  });
+
+  // Draw joint dots
+  pts.forEach(([x, y], i) => {
+    const isIndex = i === 8;
+    const isThumb = i === 4;
+    const isTip   = [4,8,12,16,20].includes(i);
+    ctx.beginPath();
+    ctx.arc(x, y, isIndex || isThumb ? 7 : isTip ? 4 : 3, 0, Math.PI * 2);
+    ctx.fillStyle = isIndex ? '#a78bfa' : isThumb ? '#34d399' : isTip ? 'rgba(167,139,250,0.6)' : 'rgba(100,90,180,0.4)';
+    ctx.fill();
+    // Glow on tips
+    if (isIndex || isThumb) {
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = isIndex ? 'rgba(167,139,250,0.12)' : 'rgba(52,211,153,0.12)';
+      ctx.fill();
+    }
+  });
+
+  // Draw pinch line between thumb and index
+  const thumb = pts[4], index = pts[8];
+  const dx = thumb[0] - index[0], dy = thumb[1] - index[1];
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const alpha = Math.max(0, 1 - dist / 150);
+  if (alpha > 0.05) {
+    ctx.beginPath();
+    ctx.moveTo(thumb[0], thumb[1]);
+    ctx.lineTo(index[0], index[1]);
+    ctx.strokeStyle = `rgba(167,139,250,${alpha * 0.8})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ─── Pinch ring progress ─────────────────────────────────────────────────────
+const PINCH_HOLD = 500; // ms hold to confirm click
+function updatePinchRing(holding, progress) {
+  const circle = pinchRing.querySelector('circle');
+  if (!circle) return;
+  const circumference = 2 * Math.PI * 22; // r=22
+  circle.style.strokeDasharray  = circumference;
+  circle.style.strokeDashoffset = circumference * (1 - progress);
+  pinchRing.style.display = holding ? 'block' : 'none';
+}
+
+// ─── Detection loop ──────────────────────────────────────────────────────────
+async function detectLoop() {
+  if (!running || !model) return;
+
+  const predictions = await model.estimateHands(video);
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // FPS tracking
+  fpsFrames++;
+  const now = Date.now();
+  if (now - fpsTimer >= 1000) {
+    fps = fpsFrames;
+    fpsFrames = 0;
+    fpsTimer = now;
+    fpsDisp.textContent = fps + ' fps';
+  }
+
+  if (predictions.length > 0) {
+    const hand = predictions[0];
+    const lm   = hand.landmarks; // array of [x,y,z]
+
+    handChip.textContent = '✋ HAND DETECTED';
+    handChip.className   = 'chip green';
+
+    // Draw skeleton
+    drawHand(lm, W, H);
+
+    // Index fingertip = landmark 8, thumb tip = landmark 4
+    const [ix, iy] = lm[8];
+    const [tx, ty] = lm[4];
+
+    // Map to screen (mirror x because video is CSS-mirrored)
+    targetX = (1 - ix / video.videoWidth)  * window.innerWidth;
+    targetY = (    iy / video.videoHeight) * window.innerHeight;
+
+    // Pinch distance in pixels
+    const dx   = ix - tx, dy = iy - ty;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const PINCH_THRESH = 38; // pixels in video space
+
+    isPinching = dist < PINCH_THRESH;
+    handDisp.textContent = `dist: ${Math.round(dist)}px`;
+
+    cursorEl.classList.toggle('pinching', isPinching);
+    modeChip.textContent = isPinching ? 'PINCHING 🤌' : 'LOCAL 30fps';
+    modeChip.className   = isPinching ? 'chip amber'  : 'chip purple';
+
+    // Hold-to-click with progress ring
+    if (isPinching) {
+      if (!wasPinching) { pinchStart = now; }
+      const held = Math.min(1, (now - pinchStart) / PINCH_HOLD);
+      updatePinchRing(true, held);
+
+      if (held >= 1 && now > pinchCooldown) {
+        pinchCooldown = now + 900;
+        pinchStart    = now; // reset hold
+        gestureClick(targetX, targetY);
+      }
+    } else {
+      updatePinchRing(false, 0);
+    }
+    wasPinching = isPinching;
+
+  } else {
+    handChip.textContent = 'NO HAND';
+    handChip.className   = 'chip red';
+    handDisp.textContent = '—';
+    modeChip.textContent = 'LOCAL 30fps';
+    modeChip.className   = 'chip purple';
+    updatePinchRing(false, 0);
+    wasPinching = false;
+    isPinching  = false;
+  }
+
+  requestAnimationFrame(detectLoop);
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  loadProg.style.display = 'block';
+
+  // Step 1 — camera
+  loadMsg.textContent = 'Requesting camera…';
+  loadBar.style.width = '15%';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ ideal:640 }, height:{ ideal:480 }, facingMode:'user' },
+      audio: false
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    await video.play();
+  } catch(e) {
+    loadMsg.textContent = '⚠️ Camera denied — please allow access and reload';
+    btn.disabled = false;
+    btn.textContent = 'Retry →';
+    return;
+  }
+
+  loadBar.style.width = '35%';
+  loadMsg.textContent = 'Setting up TensorFlow WebGL backend…';
+  await tf.setBackend('webgl');
+  await tf.ready();
+
+  loadBar.style.width = '55%';
+  loadMsg.textContent = 'Loading HandPose model (~20MB, cached after first load)…';
+
+  try {
+    model = await handpose.load({
+      detectionConfidence: 0.9,
+      scoreThreshold:      0.75,
+    });
+  } catch(e) {
+    loadMsg.textContent = '⚠️ Model failed to load: ' + e.message;
+    btn.disabled = false;
+    return;
+  }
+
+  loadBar.style.width = '90%';
+  loadMsg.textContent = 'Warming up model…';
+
+  // Warm up with a blank frame
+  const warmup = document.createElement('canvas');
+  warmup.width = 64; warmup.height = 64;
+  await model.estimateHands(warmup);
+
+  loadBar.style.width = '100%';
+  loadMsg.textContent = 'Ready!';
+  await new Promise(r => setTimeout(r, 400));
+
+  // Go!
+  loadScreen.style.display = 'none';
+  cursorEl.style.display   = 'block';
+  running = true;
+  toast('👋 Raise your hand!');
+  detectLoop();
+}
+</script>
+</body>
+</html>

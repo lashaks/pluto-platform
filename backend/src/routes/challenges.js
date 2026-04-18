@@ -2,7 +2,6 @@ const express = require('express');
 const { authenticate } = require('../middleware/auth');
 const { queryAll, queryOne, run } = require('../models/database');
 const { generateId, generateLogin, generatePassword, sanitize } = require('../utils/helpers');
-const ctrader = require('../services/ctrader');
 const payments = require('../services/payments');
 const config = require('../../config');
 const email = require('../services/email');
@@ -41,9 +40,7 @@ router.post('/purchase', authenticate, async (req, res) => {
     const fee = config.challengePricing[account_size];
     if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(config.challengePricing).map(Number) });
 
-    // Platform selection — only cTrader live at launch; MT5 and Match-Trader coming soon
-    const validPlatforms = ['ctrader']; // add 'mt5', 'matchtrader' when integrated
-    const selectedPlatform = validPlatforms.includes(platform) ? platform : 'ctrader';
+    const selectedPlatform = 'plutotrade';
 
     const type = challenge_type === 'two_step' ? 'two_step' : 'one_step';
     const rules = type === 'two_step' ? config.twoStepRules : config.oneStepRules;
@@ -117,17 +114,11 @@ router.post('/purchase', authenticate, async (req, res) => {
       }
     }
 
-    // Fetch user for name/email on the cTrader account
+    // Create PlutoTrader account — same email as prop firm login
     const creatorUser = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [req.user.id]);
-
-    // Demo/fallback mode — activate immediately (for testing or when payment processor is down)
-    const ctraderResult = await ctrader.createAccount({
-      balance: account_size,
-      leverage: rules.leverage,
-      group: 'demo_prop_evaluation',
-      name: creatorUser ? `${creatorUser.first_name || ''} ${creatorUser.last_name || ''}`.trim() : '',
-      email: creatorUser?.email || '',
-    });
+    const traderLogin = creatorUser?.email || req.user.email;
+    const traderPassword = generateId().slice(0, 12); // random 12-char password
+    const terminalUrl = process.env.PLUTOTRADE_URL || '/terminal.html';
 
     await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
          highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
@@ -136,8 +127,8 @@ router.post('/purchase', authenticate, async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
       [id, req.user.id, account_size, type, account_size, account_size, account_size,
        account_size, account_size, account_size, totalFee, split, rules.leverage,
-       profitTarget, maxDaily, maxDrawdown, selectedPlatform,
-       ctraderResult.login, ctraderResult.accountId, ctraderResult.server, ctraderResult.password]);
+       profitTarget, maxDaily, maxDrawdown, 'plutotrade',
+       traderLogin, id, 'PlutoTrader', traderPassword]);
 
     await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method)
          VALUES (?, ?, 'purchase', ?, ?, ?, ?)`,
@@ -147,13 +138,14 @@ router.post('/purchase', authenticate, async (req, res) => {
          VALUES (?, ?, 'CHALLENGE_CREATED', 'challenge', ?, ?)`,
       [generateId(), req.user.id, id, `$${(account_size/1000)}K ${type} challenge purchased for $${totalFee}`]);
 
-    // Send purchase confirmation email
-    const usr = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [req.user.id]);
-    if (usr) {
-      email.sendChallengePurchased(usr.email, usr.first_name || 'Trader', {
+    // Send purchase confirmation email with PlutoTrader credentials
+    if (creatorUser) {
+      email.sendChallengePurchased(creatorUser.email, creatorUser.first_name || 'Trader', {
         account_size, challenge_type: type, profit_target: profitTarget,
         daily_loss: maxDaily, max_drawdown: maxDrawdown, profit_split: split,
-        fee: totalFee, login: ctraderResult.login, password: ctraderResult.password, server: ctraderResult.server,
+        fee: totalFee,
+        login: traderLogin, password: traderPassword, server: 'PlutoTrader Terminal',
+        terminal_url: terminalUrl,
       }).catch(e => console.error('[Challenge] Email error:', e.message));
     }
 
@@ -163,9 +155,9 @@ router.post('/purchase', authenticate, async (req, res) => {
       fee_paid: totalFee,
       profit_split: split,
       challenge_type: type,
-      ctrader: { login: ctraderResult.login, password: ctraderResult.password, server: ctraderResult.server },
+      terminal: { login: traderLogin, password: traderPassword, url: terminalUrl },
       rules: { profit_target: profitTarget, max_daily_loss: maxDaily, max_total_drawdown: maxDrawdown },
-      message: 'Challenge activated! Log into cTrader with your credentials to start trading.',
+      message: 'Challenge activated! Open PlutoTrader to start trading.',
     });
   } catch (e) {
     console.error('Purchase error:', e);
@@ -217,13 +209,9 @@ router.post('/:id/reset', authenticate, async (req, res) => {
 
     // Demo mode — activate immediately
     const creatorUser = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [req.user.id]);
-    const ctraderResult = await ctrader.createAccount({
-      balance: old.account_size,
-      leverage: rules.leverage,
-      group: 'demo_prop_evaluation',
-      name: creatorUser ? `${creatorUser.first_name || ''} ${creatorUser.last_name || ''}`.trim() : '',
-      email: creatorUser?.email || '',
-    });
+    const traderLogin = creatorUser?.email || req.user.email;
+    const traderPassword = generateId().slice(0, 12);
+    const terminalUrl = process.env.PLUTOTRADE_URL || '/terminal.html';
 
     await run(`INSERT INTO challenges (id, user_id, account_size, challenge_type, starting_balance, current_balance, current_equity,
          highest_balance, lowest_equity, day_start_balance, fee_paid, profit_split_pct, leverage,
@@ -232,13 +220,13 @@ router.post('/:id/reset', authenticate, async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW()::TEXT)`,
       [id, req.user.id, old.account_size, type, old.account_size, old.account_size, old.account_size,
        old.account_size, old.account_size, old.account_size, resetFee, old.profit_split_pct, rules.leverage,
-       profitTarget, rules.max_daily_loss_pct, rules.max_total_loss_pct, old.platform || 'ctrader',
-       ctraderResult.login, ctraderResult.accountId, ctraderResult.server, ctraderResult.password]);
+       profitTarget, rules.max_daily_loss_pct, rules.max_total_loss_pct, 'plutotrade',
+       traderLogin, id, 'PlutoTrader', traderPassword]);
 
     await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'CHALLENGE_RESET', 'challenge', ?, ?)`,
       [generateId(), req.user.id, id, `Reset from ${old.id.slice(0,8)} — $${resetFee} (10% off $${baseFee})`]);
 
-    res.status(201).json({ challenge_id: id, fee_paid: resetFee, original_fee: baseFee, discount: '10%', ctrader: { login: ctraderResult.login, server: ctraderResult.server } });
+    res.status(201).json({ challenge_id: id, fee_paid: resetFee, original_fee: baseFee, discount: '10%', terminal: { login: traderLogin, url: terminalUrl } });
   } catch (e) {
     console.error('Reset error:', e);
     res.status(500).json({ error: 'Failed to reset challenge' });
