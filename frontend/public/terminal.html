@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%2525%27%20stop-color%3D%27%25236d28d9%27%2F%3E%3Cstop%20offset%3D%27100%2525%27%20stop-color%3D%27%25234c1d95%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27url(%2523g)%27%2F%3E%3Cellipse%20cx%3D%2716%27%20cy%3D%2716%27%20rx%3D%2713%27%20ry%3D%274%27%20fill%3D%27none%27%20stroke%3D%27rgba(196%2C181%2C253%2C0.6)%27%20stroke-width%3D%271.3%27%20transform%3D%27rotate(-25%2016%2016)%27%2F%3E%3Ctext%20x%3D%278%27%20y%3D%2722%27%20font-family%3D%27system-ui%2Csans-serif%27%20font-weight%3D%27900%27%20font-size%3D%2717%27%20fill%3D%27white%27%20letter-spacing%3D%27-1%27%3EP%3C%2Ftext%3E%3C%2Fsvg%3E">
-
-
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=49">
+<link rel="alternate icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
+<link rel="apple-touch-icon" href="/img/favicon.svg?v=49">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>PlutoTrader</title>
@@ -130,10 +130,10 @@ input,select,button,textarea{font-family:inherit;font-size:inherit}
 .mw-qb{background:var(--grn);color:#000}
 
 /* ─── CHART ──────────────────────────────────────────────────────────── */
-#ca{position:relative;overflow:hidden;background:#131722;display:flex;flex-direction:column}
+#ca{position:relative;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
 #lwc{position:absolute;inset:0}
 #dc{position:absolute;inset:0;pointer-events:none;z-index:5}
-.ca-ohlc{position:absolute;top:4px;left:6px;z-index:6;font-family:var(--fm);font-size:.62rem;color:#787b86;pointer-events:none;line-height:1.8;background:rgba(19,23,34,.85);border:1px solid #2a2e39;border-radius:var(--r);padding:4px 9px}
+.ca-ohlc{position:absolute;top:4px;left:6px;z-index:6;font-family:var(--fm);font-size:.58rem;color:var(--ink3);pointer-events:none;line-height:1.8;background:rgba(8,12,18,.75);border:1px solid var(--wire);border-radius:var(--r);padding:3px 7px}
 .ca-crosshair-price{position:absolute;right:0;background:var(--p3);border:1px solid var(--wire2);padding:1px 5px;font-family:var(--fm);font-size:.6rem;color:var(--ink1);pointer-events:none;z-index:7;transform:translateY(-50%)}
 .ca-sym-badge{position:absolute;top:4px;right:8px;z-index:6;background:rgba(8,12,18,.75);border:1px solid var(--wire);border-radius:var(--r);padding:3px 8px;font-family:var(--fm);font-size:.65rem;font-weight:700;color:var(--teal);pointer-events:none}
 
@@ -481,27 +481,16 @@ const TF={'1m':'1min','3m':'3min','5m':'5min','15m':'15min','30m':'30min','1h':'
 function initChart(){
   const el=$('lwc'); if(!el||chart)return;
   chart=LightweightCharts.createChart(el,{
-    layout:{background:{type:LightweightCharts.ColorType.Solid,color:'#131722'},textColor:'#787b86'},
-    grid:{vertLines:{color:showGrid?'#1e222d':'transparent'},horzLines:{color:showGrid?'#1e222d':'transparent'}},
-    crosshair:{
-      mode:LightweightCharts.CrosshairMode.Normal,
-      vertLine:{color:'rgba(42,46,57,.9)',width:1,style:0,labelBackgroundColor:'#2a2e39'},
-      horzLine:{color:'rgba(42,46,57,.9)',width:1,style:0,labelBackgroundColor:'#2a2e39'}
-    },
-    rightPriceScale:{borderColor:'#2a2e39',textColor:'#787b86',scaleMargins:{top:0.1,bottom:0.15}},
-    timeScale:{borderColor:'#2a2e39',timeVisible:true,secondsVisible:false,barSpacing:6,rightOffset:5},
+    layout:{background:{type:LightweightCharts.ColorType.Solid,color:'#080c12'},textColor:'#4a5568'},
+    grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal,vertLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'},horzLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'}},
+    rightPriceScale:{borderColor:'rgba(255,255,255,.045)',textColor:'#4a5568'},
+    timeScale:{borderColor:'rgba(255,255,255,.045)',timeVisible:true,secondsVisible:false},
     width:el.offsetWidth,height:el.offsetHeight,
-    handleScroll:{mouseWheel:true,pressedMouseMove:true},
-    handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true},
   });
-  cSeries=chart.addCandlestickSeries({
-    upColor:'#26a69a',downColor:'#ef5350',
-    borderUpColor:'#26a69a',borderDownColor:'#ef5350',
-    wickUpColor:'#26a69a',wickDownColor:'#ef5350',
-    priceLineVisible:true,priceLineColor:'#787b86',priceLineWidth:1,priceLineStyle:2,
-  });
-  vSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:.85,bottom:0}});
-  chart.priceScale('vol').applyOptions({scaleMargins:{top:.85,bottom:0}});
+  cSeries=chart.addCandlestickSeries({upColor:'#00e676',downColor:'#ff4757',borderUpColor:'#00e676',borderDownColor:'#ff4757',wickUpColor:'#00c160',wickDownColor:'#cc3a47'});
+  vSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:.82,bottom:0}});
+  chart.priceScale('vol').applyOptions({scaleMargins:{top:.82,bottom:0}});
 
   // OHLC on crosshair
   chart.subscribeCrosshairMove(p=>{
@@ -518,12 +507,18 @@ function initChart(){
 
   // Init drawing canvas
   // Pre-size the drawing canvas to match chart container
-  setTimeout(()=>{syncCanvas();initDC();},100);
+  setTimeout(()=>{
+    const cv=$('dc'),el=$('lwc');
+    if(cv&&el){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
+  },100);
+  initDC();
 
   // Resize observer
   const ro=new ResizeObserver(()=>{
     if(chart) chart.resize(el.offsetWidth,el.offsetHeight);
-    syncCanvas();
+    // Sync canvas size immediately
+    const cv=$('dc');
+    if(cv){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
     setTimeout(reDraw,20);
   });
   ro.observe(el);
@@ -531,7 +526,7 @@ function initChart(){
 
 function toggleGrid(){
   showGrid=!showGrid;
-  if(chart)chart.applyOptions({grid:{vertLines:{color:showGrid?'#1e222d':'transparent'},horzLines:{color:showGrid?'#1e222d':'transparent'}}});
+  if(chart)chart.applyOptions({grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}}});
   $('gridBtn')?.classList.toggle('on',showGrid);
 }
 
@@ -582,7 +577,6 @@ function initDC(){
 
   // Get coordinates relative to chart container (same origin as LightweightCharts)
   function coords(e){
-    syncCanvas();  // ensure canvas is right size before reading coords
     const r=$('lwc').getBoundingClientRect();
     return {x:e.clientX-r.left, y:e.clientY-r.top};
   }
@@ -641,18 +635,11 @@ function initDC(){
   });
 }
 
-function syncCanvas(){
-  const cv=$('dc'),el=$('lwc');
-  if(!cv||!el)return;
-  const W=el.offsetWidth,H=el.offsetHeight;
-  if(cv.width!==W||cv.height!==H){
-    cv.width=W; cv.height=H;
-  }
-}
 function reDraw(){
   const cv=$('dc'); if(!cv||!chart)return;
-  const W=cv.width, H=cv.height;
-  if(!W||!H)return;
+  // Sync canvas size to container WITHOUT wiping it via width= assignment
+  const W=cv.offsetWidth, H=cv.offsetHeight;
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
   const ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
   const all=[...drawings,...(drawPt?[drawPt]:[])];
@@ -1299,21 +1286,14 @@ function updateClock(){
 //  LOGIN
 // ══════════════════════════════════════════════════════════════════════
 function showLogin(){
-  $('app').innerHTML=`<div class="lp" style="background:#080c12;background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(109,40,217,.12) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(0,212,200,.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(68,138,255,.06) 0%, transparent 50%)">
-  <!-- Animated chart lines background -->
-  <canvas id="loginBg" style="position:absolute;inset:0;opacity:.35"></canvas>
-  <div class="lc" style="position:relative;z-index:2;backdrop-filter:blur(12px);background:rgba(15,20,28,.85);border:1px solid rgba(255,255,255,.06)">
+  $('app').innerHTML=`<div class="lp" style="background:#080c12;background-image:radial-gradient(ellipse at 20% 50%,rgba(109,40,217,.12) 0%,transparent 60%),radial-gradient(ellipse at 80% 30%,rgba(0,212,200,.08) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(68,138,255,.06) 0%,transparent 50%)">
+  <canvas id="loginBg" style="position:absolute;inset:0;opacity:.3"></canvas>
+  <div class="lc" style="position:relative;z-index:2;backdrop-filter:blur(12px);background:rgba(15,20,28,.88);border:1px solid rgba(255,255,255,.06)">
 <div class="lhead" style="flex-direction:column;align-items:center;text-align:center;gap:6px">
   <div style="width:52px;height:52px;background:linear-gradient(135deg,#6d28d9,#4c1d95);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;box-shadow:0 8px 32px rgba(109,40,217,.3)">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
   </div>
-  <div>
-    <div style="font-size:1.05rem;font-weight:800;letter-spacing:.01em;color:var(--ink1)">PlutoTrader</div>
-    <div style="font-size:.62rem;color:var(--ink3);margin-top:2px">Professional Trading Terminal</div>
-  </div>
+  <div><div style="font-size:1.05rem;font-weight:800;letter-spacing:.01em;color:var(--ink1)">PlutoTrader</div><div style="font-size:.62rem;color:var(--ink3);margin-top:2px">Professional Trading Terminal</div></div>
 </div>
 <div style="display:flex;justify-content:center;gap:16px;margin:16px 0 20px;font-size:.58rem;color:var(--ink3)">
   <span style="display:flex;align-items:center;gap:4px"><span style="width:4px;height:4px;background:var(--grn);border-radius:50%;display:inline-block"></span>Live Charts</span>
@@ -1327,17 +1307,7 @@ function showLogin(){
 <div style="text-align:center;margin-top:12px;font-size:.65rem;color:var(--ink3)">No account? <a href="/" style="color:#a78bfa;text-decoration:none">Get funded at Pluto Capital →</a></div>
 <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04);font-size:.5rem;color:var(--ink4)">Pluto Capital Funding · Simulated Trading Environment</div>
 </div></div>`;
-  // Draw animated chart lines on login background
-  try{
-    const cv=document.getElementById('loginBg');if(!cv)return;
-    const ctx=cv.getContext('2d');
-    cv.width=window.innerWidth;cv.height=window.innerHeight;
-    let pts=[];for(let i=0;i<3;i++){let line=[];let y=cv.height*(.3+i*.2);for(let x=0;x<=cv.width;x+=4){y+=Math.sin(x*.008+i*2)*.8+(Math.random()-.5)*1.2;line.push({x,y});}pts.push(line);}
-    const cols=['rgba(109,40,217,.3)','rgba(0,212,200,.25)','rgba(68,138,255,.2)'];
-    let frame=0;
-    function drawBg(){ctx.clearRect(0,0,cv.width,cv.height);frame++;pts.forEach((line,li)=>{ctx.beginPath();ctx.strokeStyle=cols[li];ctx.lineWidth=1.2;line.forEach((p,pi)=>{const y=p.y+Math.sin(frame*.01+pi*.02+li)*3;if(pi===0)ctx.moveTo(p.x,y);else ctx.lineTo(p.x,y);});ctx.stroke();});requestAnimationFrame(drawBg);}
-    drawBg();
-  }catch(e){}
+  try{const cv=document.getElementById('loginBg');if(!cv)return;const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;let pts=[];for(let i=0;i<3;i++){let line=[];let y=cv.height*(.3+i*.2);for(let x=0;x<=cv.width;x+=4){y+=Math.sin(x*.008+i*2)*.8+(Math.random()-.5)*1.2;line.push({x,y});}pts.push(line);}const cols=['rgba(109,40,217,.3)','rgba(0,212,200,.25)','rgba(68,138,255,.2)'];let frame=0;function drawBg(){ctx.clearRect(0,0,cv.width,cv.height);frame++;pts.forEach((line,li)=>{ctx.beginPath();ctx.strokeStyle=cols[li];ctx.lineWidth=1.2;line.forEach((p,pi)=>{const y=p.y+Math.sin(frame*.01+pi*.02+li)*3;if(pi===0)ctx.moveTo(p.x,y);else ctx.lineTo(p.x,y);});ctx.stroke();});requestAnimationFrame(drawBg);}drawBg();}catch(e){}
 }
 
 async function doLogin(){

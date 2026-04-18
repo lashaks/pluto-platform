@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%2525%27%20stop-color%3D%27%25236d28d9%27%2F%3E%3Cstop%20offset%3D%27100%2525%27%20stop-color%3D%27%25234c1d95%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27url(%2523g)%27%2F%3E%3Cellipse%20cx%3D%2716%27%20cy%3D%2716%27%20rx%3D%2713%27%20ry%3D%274%27%20fill%3D%27none%27%20stroke%3D%27rgba(196%2C181%2C253%2C0.6)%27%20stroke-width%3D%271.3%27%20transform%3D%27rotate(-25%2016%2016)%27%2F%3E%3Ctext%20x%3D%278%27%20y%3D%2722%27%20font-family%3D%27system-ui%2Csans-serif%27%20font-weight%3D%27900%27%20font-size%3D%2717%27%20fill%3D%27white%27%20letter-spacing%3D%27-1%27%3EP%3C%2Ftext%3E%3C%2Fsvg%3E">
-
-
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=49">
+<link rel="alternate icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
+<link rel="apple-touch-icon" href="/img/favicon.svg?v=49">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Pluto Capital Funding — Proprietary Trading Firm. 1-Step and 2-Step evaluations. Up to $200K funding.">
@@ -354,10 +354,10 @@
 <!-- PARTICLE ANIMATION + CONFETTI CELEBRATIONS -->
 <script>
 (function(){
-  var cv = document.getElementById('heroCanvas');
-  if (!cv) { console.warn('No heroCanvas'); return; }
-  var ctx = cv.getContext('2d');
-  var W, H, mx = 0.5, my = 0.5, raf;
+  const cv = document.getElementById('heroCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  let W, H, mx = 0.5, my = 0.5, raf, lastTheme = null;
 
   function resize() {
     W = cv.width  = window.innerWidth;
@@ -365,167 +365,183 @@
   }
   resize();
   window.addEventListener('resize', resize);
-  document.addEventListener('mousemove', function(e){ mx = e.clientX/W; my = e.clientY/H; });
+  document.addEventListener('mousemove', e => { mx = e.clientX / W; my = e.clientY / H; });
 
-  /* DARK MODE — 5 orbital rings with bright dots */
-  var rings = [
-    {rx:160, ry:48,  rot:-30, spd:.14, ph:0,   al:.35, lw:1.5, dotR:3.5},
-    {rx:270, ry:78,  rot:-22, spd:.10, ph:1.4, al:.28, lw:1.2, dotR:3},
-    {rx:380, ry:105, rot:-14, spd:.08, ph:2.7, al:.22, lw:1.1, dotR:2.5},
-    {rx:490, ry:130, rot:-8,  spd:.06, ph:3.9, al:.17, lw:1.0, dotR:2},
-    {rx:600, ry:155, rot:-3,  spd:.04, ph:5.1, al:.13, lw:0.8, dotR:1.8},
+  // ── DARK MODE DATA ─────────────────────────────────────────────────────────
+  // 5 orbital ellipses, each with a glowing dot orbiting it
+  const rings = [
+    {rx:180, ry:45,  rot:-30, spd:.12, ph:0,   al:.18, lw:1.2},
+    {rx:290, ry:70,  rot:-22, spd:.09, ph:1.3, al:.14, lw:1.0},
+    {rx:400, ry:95,  rot:-14, spd:.07, ph:2.5, al:.11, lw:0.9},
+    {rx:510, ry:118, rot:-8,  spd:.05, ph:3.7, al:.09, lw:0.8},
+    {rx:620, ry:140, rot:-3,  spd:.04, ph:4.9, al:.07, lw:0.7},
   ];
-  var orbs = [];
-  for (var i=0; i<45; i++) orbs.push({
-    x: Math.random()*1920, y: Math.random()*1080,
-    r: Math.random()*3+1, vy: .18+Math.random()*.35,
-    drift: Math.random()*Math.PI*2, al: .35+Math.random()*.45
-  });
+  const orbs = Array.from({length:40}, () => ({
+    x:  Math.random() * 1920,
+    y:  Math.random() * 1080,
+    r:  Math.random() * 3 + 0.5,
+    vy: 0.15 + Math.random() * 0.35,
+    drift: Math.random() * Math.PI * 2,
+    al: Math.random() * 0.5 + 0.2,
+  }));
 
-  /* LIGHT MODE — animated mesh + blobs */
-  var COLS=10, ROWS=7;
-  var nodes = [];
-  for (var gy=0;gy<=ROWS;gy++) for (var gx=0;gx<=COLS;gx++)
-    nodes.push({gx:gx,gy:gy,ox:0,oy:0,ph:Math.random()*Math.PI*2,amp:.9+Math.random(),spd:.25+Math.random()*.35});
-  var ldots = [];
-  for (var j=0;j<25;j++) ldots.push({
-    x:Math.random(), y:Math.random()*1.3,
-    r:Math.random()*3+1.5, vy:.00035+Math.random()*.00025,
-    drift:Math.random()*Math.PI*2, al:.45+Math.random()*.4
-  });
+  // ── LIGHT MODE DATA ────────────────────────────────────────────────────────
+  const COLS = 10, ROWS = 7;
+  const nodes = [];
+  for (let gy = 0; gy <= ROWS; gy++)
+    for (let gx = 0; gx <= COLS; gx++)
+      nodes.push({gx, gy, ox:0, oy:0, ph: Math.random()*Math.PI*2, amp:.9+Math.random(), spd:.25+Math.random()*.35});
+  const ldots = Array.from({length:22}, () => ({
+    x: Math.random(), y: Math.random()*1.3,
+    r: Math.random()*3 + 1.5,
+    vy: 0.00035 + Math.random() * 0.00025,
+    drift: Math.random() * Math.PI * 2,
+    al: Math.random() * 0.5 + 0.3,
+  }));
 
+  // ── DRAW DARK ──────────────────────────────────────────────────────────────
   function drawDark(t) {
-    var cx = W*.42 + mx*W*.16;
-    var cy = H*.44 + my*H*.12;
+    const cx = W * 0.42 + mx * W * 0.16;
+    const cy = H * 0.44 + my * H * 0.12;
 
-    /* Big nebula glow */
-    var g1 = ctx.createRadialGradient(cx,cy,0, cx,cy, Math.max(W,H)*.6);
-    g1.addColorStop(0,   'rgba(109,40,217,.18)');
-    g1.addColorStop(0.4, 'rgba(88,28,195,.07)');
+    // Large nebula glow at cursor-reactive center
+    const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.55);
+    g1.addColorStop(0,   'rgba(124,58,237,.12)');
+    g1.addColorStop(0.35,'rgba(88,28,195,.05)');
     g1.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = g1; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, W, H);
 
-    var g2 = ctx.createRadialGradient(W*.75,H*.6,0, W*.75,H*.6, W*.3);
-    g2.addColorStop(0,'rgba(96,165,250,.1)');
+    // Secondary accent glow (blue)
+    const g2 = ctx.createRadialGradient(W*.75, H*.65, 0, W*.75, H*.65, W*.28);
+    g2.addColorStop(0,'rgba(96,165,250,.07)');
     g2.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
 
-    /* Rings + orbiting dots */
+    // Orbital rings + orbiting dots
     ctx.save(); ctx.translate(cx, cy);
-    for (var k=0; k<rings.length; k++) {
-      var r = rings[k];
-      var wobble = Math.sin(t*r.spd + r.ph)*3;
+    for (const r of rings) {
+      const wobble = Math.sin(t * r.spd + r.ph) * 3;
       ctx.save();
-      ctx.rotate((r.rot + wobble) * Math.PI/180);
+      ctx.rotate((r.rot + wobble) * Math.PI / 180);
       ctx.beginPath();
-      ctx.ellipse(0,0, r.rx, r.ry, 0, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(167,139,250,'+r.al+')';
+      ctx.ellipse(0, 0, r.rx, r.ry, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(167,139,250,${r.al})`;
       ctx.lineWidth = r.lw;
       ctx.stroke();
       ctx.restore();
 
-      /* Orbiting dot */
-      var a  = t*r.spd + r.ph;
-      var ox = Math.cos(a)*r.rx, oy = Math.sin(a)*r.ry;
-      var rr = r.rot*Math.PI/180;
-      var fx = ox*Math.cos(rr) - oy*Math.sin(rr);
-      var fy = ox*Math.sin(rr) + oy*Math.cos(rr);
-      var gd = ctx.createRadialGradient(fx,fy,0, fx,fy, r.dotR*5);
-      gd.addColorStop(0,'rgba(221,214,254,.8)');
-      gd.addColorStop(1,'rgba(221,214,254,0)');
-      ctx.fillStyle = gd;
-      ctx.beginPath(); ctx.arc(fx,fy,r.dotR*5,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(fx,fy,r.dotR,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(237,233,254,.95)'; ctx.fill();
+      // Orbiting dot
+      const a  = t * r.spd + r.ph;
+      const ox = Math.cos(a) * r.rx;
+      const oy = Math.sin(a) * r.ry;
+      const rr = r.rot * Math.PI / 180;
+      const fx = ox * Math.cos(rr) - oy * Math.sin(rr);
+      const fy = ox * Math.sin(rr) + oy * Math.cos(rr);
+
+      // Glow halo
+      const gd = ctx.createRadialGradient(fx, fy, 0, fx, fy, 10);
+      gd.addColorStop(0, 'rgba(196,181,253,.65)');
+      gd.addColorStop(1, 'rgba(196,181,253,0)');
+      ctx.fillStyle = gd; ctx.beginPath(); ctx.arc(fx, fy, 10, 0, Math.PI*2); ctx.fill();
+      // Bright core
+      ctx.beginPath(); ctx.arc(fx, fy, 2.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(221,214,254,.9)'; ctx.fill();
     }
     ctx.restore();
 
-    /* Floating orbs */
-    for (var n=0; n<orbs.length; n++) {
-      var o = orbs[n];
-      o.y -= o.vy; o.x += Math.sin(t + o.drift)*.5;
-      if (o.y < -15) { o.y = H+15; o.x = Math.random()*W; }
-      var al = o.al + Math.sin(t*2+o.drift)*.1;
-      ctx.beginPath(); ctx.arc(o.x,o.y,o.r*5,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(139,92,246,'+(al*.22)+')'; ctx.fill();
-      ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(196,181,253,'+al+')'; ctx.fill();
+    // Floating particle orbs
+    for (const o of orbs) {
+      o.y -= o.vy; o.x += Math.sin(t + o.drift) * 0.4;
+      if (o.y < -12) { o.y = H + 12; o.x = Math.random() * W; }
+      const al = o.al + Math.sin(t * 2 + o.drift) * 0.12;
+      // Soft glow
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 5, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(139,92,246,${al * .18})`; ctx.fill();
+      // Bright dot
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(196,181,253,${al})`; ctx.fill();
     }
   }
 
+  // ── DRAW LIGHT ─────────────────────────────────────────────────────────────
   function drawLight(t) {
-    /* Gradient wash */
-    var bg = ctx.createLinearGradient(0,0,W,H);
-    bg.addColorStop(0,   'rgba(210,225,255,.75)');
-    bg.addColorStop(0.5, 'rgba(225,215,255,.55)');
-    bg.addColorStop(1,   'rgba(205,230,255,.65)');
+    // Subtle directional gradient tint
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0,   'rgba(214,226,255,.65)');
+    bg.addColorStop(0.5, 'rgba(230,221,255,.45)');
+    bg.addColorStop(1,   'rgba(210,235,255,.55)');
     ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
 
-    /* Mesh grid */
-    var pw=W/COLS, ph=H/ROWS;
-    for (var ni=0;ni<nodes.length;ni++) {
-      var nd=nodes[ni];
-      var tx = nd.gx*pw + Math.sin(t*nd.spd+nd.ph)*nd.amp*pw*.2 + (mx-.5)*pw*.15;
-      var ty = nd.gy*ph + Math.cos(t*nd.spd*.65+nd.ph)*nd.amp*ph*.18 + (my-.5)*ph*.12;
-      nd.ox += (tx-nd.ox)*.07; nd.oy += (ty-nd.oy)*.07;
-    }
-    for (var gy=0;gy<=ROWS;gy++) for (var gx=0;gx<=COLS;gx++) {
-      var idx=gy*(COLS+1)+gx, nd=nodes[idx];
-      if(gx<COLS){
-        var n2=nodes[idx+1], d=Math.hypot(n2.ox-nd.ox,n2.oy-nd.oy);
-        var a=Math.max(0,.28-d/(pw*6));
-        if(a>.004){ctx.strokeStyle='rgba(79,70,229,'+a+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(nd.ox,nd.oy);ctx.lineTo(n2.ox,n2.oy);ctx.stroke();}
-      }
-      if(gy<ROWS){
-        var n2b=nodes[idx+COLS+1], db=Math.hypot(n2b.ox-nd.ox,n2b.oy-nd.oy);
-        var ab=Math.max(0,.28-db/(ph*6));
-        if(ab>.004){ctx.strokeStyle='rgba(79,70,229,'+ab+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(nd.ox,nd.oy);ctx.lineTo(n2b.ox,n2b.oy);ctx.stroke();}
-      }
-    }
-    for(var ni2=0;ni2<nodes.length;ni2++){
-      var nd2=nodes[ni2], p=.5+Math.sin(t*nd2.spd+nd2.ph)*.5;
-      ctx.beginPath();ctx.arc(nd2.ox,nd2.oy,2+p*.8,0,Math.PI*2);
-      ctx.fillStyle='rgba(79,70,229,'+(0.22+p*.16)+')';ctx.fill();
+    // Animated mesh grid
+    const pw = W / COLS, ph = H / ROWS;
+    for (const n of nodes) {
+      const tx = n.gx*pw + Math.sin(t*n.spd + n.ph)*n.amp*pw*.2 + (mx-.5)*pw*.15;
+      const ty = n.gy*ph + Math.cos(t*n.spd*.65 + n.ph)*n.amp*ph*.18 + (my-.5)*ph*.12;
+      n.ox += (tx - n.ox) * .07;
+      n.oy += (ty - n.oy) * .07;
     }
 
-    /* Soft drifting blobs */
-    for(var li=0;li<ldots.length;li++){
-      var lo=ldots[li];
-      lo.y-=lo.vy; lo.x+=Math.sin(t*.35+lo.drift)*.0006;
-      if(lo.y<-.06) lo.y=1.12;
-      var la=lo.al+Math.sin(t*1.1+lo.drift)*.1;
-      var lx=lo.x*W, ly=lo.y*H;
-      var gr=ctx.createRadialGradient(lx,ly,0,lx,ly,lo.r*18);
-      gr.addColorStop(0,'rgba(99,102,241,'+(la*.65)+')');
-      gr.addColorStop(1,'rgba(99,102,241,0)');
-      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(lx,ly,lo.r*18,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(lx,ly,lo.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(79,70,229,'+(la*.85)+')';ctx.fill();
+    for (let gy=0; gy<=ROWS; gy++) for (let gx=0; gx<=COLS; gx++) {
+      const i = gy*(COLS+1)+gx, n = nodes[i];
+      const drawEdge = (n2, baseA) => {
+        const d = Math.hypot(n2.ox-n.ox, n2.oy-n.oy);
+        const a = Math.max(0, baseA - d/(pw*8));
+        if (a < 0.004) return;
+        ctx.strokeStyle = `rgba(79,70,229,${a})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(n.ox, n.oy); ctx.lineTo(n2.ox, n2.oy); ctx.stroke();
+      };
+      if (gx < COLS) drawEdge(nodes[i+1], .22);
+      if (gy < ROWS) drawEdge(nodes[i+COLS+1], .22);
     }
 
-    /* Corner accent */
-    var gc=ctx.createRadialGradient(W*.8,H*.18,0,W*.8,H*.18,W*.32);
-    gc.addColorStop(0,'rgba(37,99,235,.12)');gc.addColorStop(1,'rgba(37,99,235,0)');
-    ctx.fillStyle=gc;ctx.fillRect(0,0,W,H);
+    // Node dots with pulse
+    for (const n of nodes) {
+      const p = .5 + Math.sin(t*n.spd + n.ph) * .5;
+      ctx.beginPath(); ctx.arc(n.ox, n.oy, 1.8 + p*.7, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(79,70,229,${.18 + p*.14})`; ctx.fill();
+    }
+
+    // Soft drifting blobs
+    for (const o of ldots) {
+      o.y -= o.vy; o.x += Math.sin(t*.35 + o.drift) * .0006;
+      if (o.y < -.06) o.y = 1.12;
+      const al = o.al + Math.sin(t * 1.1 + o.drift) * .1;
+      const px = o.x*W, py = o.y*H;
+      const gr = ctx.createRadialGradient(px, py, 0, px, py, o.r*16);
+      gr.addColorStop(0, `rgba(99,102,241,${al*.55})`);
+      gr.addColorStop(1, 'rgba(99,102,241,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(px, py, o.r*16, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, o.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(79,70,229,${al*.75})`; ctx.fill();
+    }
+
+    // Large corner accent
+    const gc = ctx.createRadialGradient(W*.82, H*.18, 0, W*.82, H*.18, W*.3);
+    gc.addColorStop(0, 'rgba(37,99,235,.08)');
+    gc.addColorStop(1, 'rgba(37,99,235,0)');
+    ctx.fillStyle = gc; ctx.fillRect(0,0,W,H);
   }
 
+  // ── MAIN LOOP ──────────────────────────────────────────────────────────────
   function draw() {
-    ctx.clearRect(0,0,W,H);
-    var t = Date.now()*.001;
-    var isLight = document.documentElement.getAttribute('data-theme')==='light';
-    if(isLight) drawLight(t);
+    ctx.clearRect(0, 0, W, H);
+    const t = Date.now() * .001;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) drawLight(t);
     else drawDark(t);
     raf = requestAnimationFrame(draw);
   }
 
-  /* Restart on theme toggle */
-  new MutationObserver(function(){
+  // Restart cleanly when theme toggles
+  new MutationObserver(() => {
     cancelAnimationFrame(raf);
-    ctx.clearRect(0,0,W,H);
-    setTimeout(draw,10);
-  }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    ctx.clearRect(0, 0, W, H);
+    draw();
+  }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
 
   draw();
-  console.log('[PlutoCapital] Animation started, canvas:', W+'x'+H, 'z-index:', getComputedStyle(cv).zIndex);
 })()
+// ============================================================
 // CONFETTI CELEBRATION

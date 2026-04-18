@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%2525%27%20stop-color%3D%27%25236d28d9%27%2F%3E%3Cstop%20offset%3D%27100%2525%27%20stop-color%3D%27%25234c1d95%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27url(%2523g)%27%2F%3E%3Cellipse%20cx%3D%2716%27%20cy%3D%2716%27%20rx%3D%2713%27%20ry%3D%274%27%20fill%3D%27none%27%20stroke%3D%27rgba(196%2C181%2C253%2C0.6)%27%20stroke-width%3D%271.3%27%20transform%3D%27rotate(-25%2016%2016)%27%2F%3E%3Ctext%20x%3D%278%27%20y%3D%2722%27%20font-family%3D%27system-ui%2Csans-serif%27%20font-weight%3D%27900%27%20font-size%3D%2717%27%20fill%3D%27white%27%20letter-spacing%3D%27-1%27%3EP%3C%2Ftext%3E%3C%2Fsvg%3E">
-
-
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=49">
+<link rel="alternate icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
+<link rel="apple-touch-icon" href="/img/favicon.svg?v=49">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>PlutoAdmin</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -820,7 +820,7 @@ function initApp(){
 <div class="sidebar">
   <div style="padding:6px 0 4px">
     <div class="nav-sec">Monitor</div>
-    <div class="nav-i" data-pg="overview" onclick="navTo('overview');loadSlippage()">📊 <span>Overview</span></div>
+    <div class="nav-i" data-pg="overview" onclick="navTo('overview');ldSlip()">📊 <span>Overview</span></div>
     <div class="nav-i" data-pg="accounts" onclick="navTo('accounts')">👥 <span>Accounts</span></div>
     <div class="nav-i" data-pg="positions" onclick="navTo('positions')">📈 <span>Live Positions <span class="nav-badge" id="posBadge">0</span></span></div>
     <div class="nav-i" data-pg="alerts" onclick="navTo('alerts')">⚠️ <span>Risk Alerts <span class="nav-badge" id="rBadge">0</span></span></div>
@@ -840,26 +840,18 @@ function initApp(){
   setInterval(updateClock,1000);updateClock();
   setInterval(async()=>{try{const p=await api('/api/pluto-admin/positions');const b=$('posBadge');if(b){b.textContent=p.length;b.style.display=p.length?'':'none';}}catch(_){}},12000);
   navTo('overview');
+ldSlip();
 }
 
 // BOOT
 if(!token){showLogin();}else{initApp();}
 
-// ── Slippage Control ──────────────────────────────
-let currentSlippage=0.3;
-async function loadSlippage(){
-  try{const r=await api('/api/pluto-admin/slippage');currentSlippage=r.slippage_pips;updateSlippageUI();
-  var card=document.getElementById('slippageCard');if(card)card.style.display='';}catch(e){}
-}
-function updateSlippageUI(){
-  var b=document.getElementById('slippageBar'),v=document.getElementById('slippageValue'),bg=document.getElementById('slippageBadge');
-  if(b)b.style.width=Math.max(1,(currentSlippage/10)*100)+'%';
-  if(v)v.textContent=currentSlippage.toFixed(1);
-  if(bg){bg.textContent=currentSlippage.toFixed(1)+' pips';bg.style.background=currentSlippage===0?'rgba(0,230,118,.12)':currentSlippage<=1?'rgba(124,58,237,.15)':'rgba(255,179,0,.12)';bg.style.color=currentSlippage===0?'#00e676':currentSlippage<=1?'#a78bfa':'#ffb300';}
-}
-async function adjSlip(d){currentSlippage=Math.max(0,Math.min(10,+(currentSlippage+d).toFixed(1)));updateSlippageUI();await saveSlip();}
-async function setSlip(v){currentSlippage=v;updateSlippageUI();await saveSlip();}
-async function saveSlip(){try{await api('/api/pluto-admin/slippage',{method:'PUT',body:JSON.stringify({slippage_pips:currentSlippage})})}catch(e){console.error(e);}}
+let cSlip=0.3;
+async function ldSlip(){try{const r=await api('/api/pluto-admin/slippage');cSlip=r.slippage_pips;uSlip();var d=document.getElementById('slippageCard');if(d)d.style.display=''}catch(e){}}
+function uSlip(){var b=document.getElementById('slipBar'),v=document.getElementById('slipVal'),bg=document.getElementById('slipBdg');if(b)b.style.width=Math.max(1,(cSlip/10)*100)+'%';if(v)v.textContent=cSlip.toFixed(1);if(bg){bg.textContent=cSlip.toFixed(1)+' pips';bg.style.background=cSlip===0?'rgba(0,230,118,.12)':cSlip<=1?'rgba(124,58,237,.15)':'rgba(255,179,0,.12)';bg.style.color=cSlip===0?'#00e676':cSlip<=1?'#a78bfa':'#ffb300'}}
+async function aSlip(d){cSlip=Math.max(0,Math.min(10,+(cSlip+d).toFixed(1)));uSlip();await sSlip()}
+async function pSlip(v){cSlip=v;uSlip();await sSlip()}
+async function sSlip(){try{await api('/api/pluto-admin/slippage',{method:'PUT',body:JSON.stringify({slippage_pips:cSlip})})}catch(e){}}
 
 </script>
 </body>

@@ -460,14 +460,12 @@ class OrderEngine {
     return { success: true };
   }
 
-  setSlippage(pips) {
-    this.slippagePips = parseFloat(pips) || 0;
-    console.log('[OrderEngine] Slippage set to ' + this.slippagePips + ' pips');
+  setSlippage(pips){
+    this.slippagePips=parseFloat(pips)||0;
+    console.log("[OrderEngine] Slippage set to "+this.slippagePips+" pips");
   }
 
-  getSlippage() {
-    return this.slippagePips;
-  }
+  getSlippage(){return this.slippagePips;}
 }
 
 module.exports = new OrderEngine();
