@@ -15,7 +15,8 @@ const fundedRoutes = require('./src/routes/funded');
 const payoutRoutes = require('./src/routes/payouts');
 const tradeRoutes = require('./src/routes/trades');
 const adminRoutes = require('./src/routes/admin');
-const tradingRoutes = require('./src/routes/trading');
+const tradingRoutes   = require('./src/routes/trading');
+const plutoAdminRoutes = require('./src/routes/plutoAdmin');
 
 const app = express();
 const server = http.createServer(app);
@@ -95,6 +96,7 @@ app.use('/api/payouts', payoutRoutes);
 app.use('/api/trades', tradeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/trading', tradingRoutes);
+app.use('/api/pluto-admin', plutoAdminRoutes);
 
 // Dashboard stats (authenticated)
 const { authenticate } = require('./src/middleware/auth');
