@@ -215,8 +215,9 @@ class RiskEngine {
 
       const phase2Id = uuidv4();
       const phase2Target = config.twoStepRules.phase2_target_pct;
-      const traderLogin  = ch.ctrader_login || usr?.email || '';
-      const traderPass   = require('../utils/helpers').generateId ? require('../utils/helpers').generateId().slice(0,12) : Math.random().toString(36).slice(2,14);
+      // PlutoTrader: login = same email, new password
+      const traderLogin = usr?.email || ch.ctrader_login || '';
+      const traderPass  = require('../utils/helpers').generateId().slice(0, 12);
 
       await run(`INSERT INTO challenges (id,user_id,account_size,challenge_type,phase,parent_challenge_id,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,day_start_balance,fee_paid,profit_split_pct,leverage,profit_target_pct,max_daily_loss_pct,max_total_loss_pct,ctrader_login,ctrader_account_id,ctrader_server,ctrader_password,platform,status,activated_at) VALUES (?,?,?,'two_step',2,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,'plutotrade','active',?)`,
         [phase2Id, ch.user_id, ch.account_size, challengeId,
@@ -244,11 +245,14 @@ class RiskEngine {
     console.log(`[RiskEngine] PASSED ${challengeId.slice(0,8)} — creating funded account`);
     await run(`UPDATE challenges SET status='passed',passed_at=? WHERE id=?`, [new Date().toISOString(), challengeId]);
 
+    // Create funded account — PlutoTrader only
     const fundedId = uuidv4();
-    await run(`INSERT INTO funded_accounts (id,user_id,challenge_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,day_start_balance,profit_split_pct,ctrader_login,ctrader_account_id,max_daily_loss_pct,max_total_loss_pct) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    const fundedLogin = usr?.email || ch.ctrader_login || '';
+    const fundedPass  = require('../utils/helpers').generateId().slice(0, 12);
+    await run(`INSERT INTO funded_accounts (id,user_id,challenge_id,account_size,starting_balance,current_balance,current_equity,highest_balance,lowest_equity,day_start_balance,profit_split_pct,ctrader_login,ctrader_password,ctrader_account_id,max_daily_loss_pct,max_total_loss_pct) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [fundedId, ch.user_id, challengeId, ch.account_size, ch.account_size,
        ch.account_size, ch.account_size, ch.account_size, ch.account_size, ch.account_size,
-       ch.profit_split_pct, ch.ctrader_login, fundedId, ch.max_daily_loss_pct, ch.max_total_loss_pct]);
+       ch.profit_split_pct, fundedLogin, fundedPass, fundedId, ch.max_daily_loss_pct, ch.max_total_loss_pct]);
 
     await run(`INSERT INTO audit_log (id,user_id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?,?)`,
       [uuidv4(), ch.user_id, 'CHALLENGE_PASSED', 'challenge', challengeId, 'Profit target reached — funded account created']);

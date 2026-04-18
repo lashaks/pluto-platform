@@ -1,881 +1,674 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlutoAdmin — Broker Dashboard</title>
-<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=44">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PlutoAdmin</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=47">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#06050a;--bg2:#0b0a12;--sf:#0f0e18;--sf2:#141320;--sf3:#1a1828;
+  --bg:#06050a;--bg2:#0b0a12;--sf:#0f0e18;--sf2:#141320;--sf3:#1a1828;--sf4:#1f1d2e;
   --brd:rgba(255,255,255,.055);--brd2:rgba(255,255,255,.09);
-  --ac:#8b5cf6;--ac2:#a78bfa;--ac3:#7c3aed;
-  --ac-bg:rgba(139,92,246,.08);--ac-gl:rgba(139,92,246,.22);
-  --gr:#34d399;--gr2:#10b981;--gr-bg:rgba(52,211,153,.08);
-  --rd:#f87171;--rd2:#ef4444;--rd-bg:rgba(248,113,113,.08);
-  --am:#fbbf24;--am-bg:rgba(251,191,36,.08);
-  --bl:#60a5fa;--bl-bg:rgba(96,165,250,.08);
+  --ac:#7c3aed;--ac2:#a78bfa;--ac3:#6d28d9;--acbg:rgba(124,58,237,.08);--acgl:rgba(124,58,237,.22);
+  --gr:#34d399;--gr2:#10b981;--grbg:rgba(52,211,153,.08);
+  --rd:#f87171;--rd2:#ef4444;--rdbg:rgba(248,113,113,.08);
+  --am:#fbbf24;--ambg:rgba(251,191,36,.08);
+  --bl:#60a5fa;--blbg:rgba(96,165,250,.08);
+  --tl:#2dd4bf;--tlbg:rgba(45,212,191,.08);
   --t1:#eeedf4;--t2:#8b87a0;--t3:#5a5672;--t4:#3d3955;
   --ff:'Manrope',sans-serif;--fm:'JetBrains Mono',monospace;
   --r:6px;--r2:10px;--r3:14px;
 }
 html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--ff);font-size:13px;-webkit-font-smoothing:antialiased;overflow:hidden}
-
-/* ── Layout ── */
-.layout{display:grid;grid-template-columns:220px 1fr;grid-template-rows:48px 1fr;height:100vh}
-.topbar{grid-column:1/-1;display:flex;align-items:center;background:var(--sf);border-bottom:1px solid var(--brd);z-index:10;padding:0 16px;gap:12px}
-.sidebar{grid-row:2;background:var(--sf2);border-right:1px solid var(--brd);overflow-y:auto;padding:8px 0}
-.main{grid-row:2;overflow-y:auto;padding:24px}
-
-/* ── Topbar ── */
-.tb-logo{display:flex;align-items:center;gap:8px;margin-right:16px;padding-right:16px;border-right:1px solid var(--brd)}
-.tb-logo img{width:22px;height:22px}
-.tb-logo-text{font-size:.78rem;font-weight:800;letter-spacing:-.01em}
-.tb-logo-text em{color:var(--ac2);font-style:normal}
-.tb-badge{padding:3px 9px;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
-.tb-badge.admin{background:var(--rd-bg);color:var(--rd);border:1px solid rgba(248,113,113,.2)}
-.tb-mkt{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700}
-.tb-mkt .dot{width:7px;height:7px;border-radius:50%}
-.tb-mkt .dot.open{background:var(--gr);box-shadow:0 0 6px rgba(52,211,153,.5)}
-.tb-mkt .dot.closed{background:var(--rd)}
-.tb-time{font-family:var(--fm);font-size:.7rem;color:var(--t3);margin-left:8px}
-.tb-back{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--ac-bg);border:1px solid var(--ac-gl);border-radius:var(--r);color:var(--ac2);font-size:.72rem;font-weight:700;text-decoration:none;margin-left:12px;transition:all .15s}
-.tb-back:hover{background:var(--ac);color:#fff}
-
-/* ── Sidebar nav ── */
-.nav-section{padding:4px 12px 2px;font-size:.55rem;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.15em;margin-top:8px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:7px 14px;cursor:pointer;border-radius:var(--r);margin:1px 6px;transition:all .12s;color:var(--t2);font-size:.74rem;font-weight:600}
-.nav-item:hover{background:rgba(255,255,255,.04);color:var(--t1)}
-.nav-item.active{background:var(--ac-bg);color:var(--ac2);border-right:2px solid var(--ac)}
-.nav-item .icon{width:15px;text-align:center;font-size:.8rem;flex-shrink:0}
-.nav-badge{margin-left:auto;background:var(--rd-bg);color:var(--rd);padding:1px 6px;border-radius:8px;font-size:.58rem;font-family:var(--fm);font-weight:700}
-
-/* ── Page header ── */
-.page-head{margin-bottom:20px}
-.page-head h1{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
-.page-head p{font-size:.76rem;color:var(--t3)}
-
-/* ── Stat cards ── */
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden}
+input,select,textarea,button{font-family:inherit;font-size:inherit}
+.layout{display:grid;grid-template-columns:220px 1fr;grid-template-rows:50px 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;background:var(--sf);border-bottom:1px solid var(--brd);z-index:20;padding:0 16px;gap:10px}
+.sidebar{grid-row:2;background:var(--sf2);border-right:1px solid var(--brd);overflow-y:auto;display:flex;flex-direction:column}
+.main{grid-row:2;overflow-y:auto;padding:20px 24px}
+.logo-wrap{display:flex;align-items:center;gap:8px;padding-right:14px;border-right:1px solid var(--brd)}
+.logo-c{width:26px;height:26px;background:var(--ac);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:12px;flex-shrink:0}
+.logo-t{font-size:.78rem;font-weight:800}
+.logo-t span{color:var(--ac2)}
+.tb-badge{padding:2px 7px;border-radius:10px;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;border:1px solid;background:var(--rdbg);color:var(--rd);border-color:rgba(248,113,113,.2)}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.mkt-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mkt-dot.open{background:var(--gr);box-shadow:0 0 6px rgba(52,211,153,.5)}
+.mkt-dot.closed{background:var(--rd)}
+.nav-sec{padding:5px 14px 2px;font-size:.54rem;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.15em;margin-top:5px}
+.nav-i{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;border-radius:var(--r);margin:1px 6px;transition:.12s;color:var(--t2);font-size:.74rem;font-weight:600}
+.nav-i:hover{background:rgba(255,255,255,.04);color:var(--t1)}
+.nav-i.active{background:var(--acbg);color:var(--ac2);border-left:3px solid var(--ac);padding-left:11px}
+.nav-badge{margin-left:auto;background:var(--rdbg);color:var(--rd);padding:1px 5px;border-radius:8px;font-size:.58rem;font-weight:800;display:none}
+.page-head{margin-bottom:18px}
+.page-head h1{font-size:1.2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.page-head p{font-size:.74rem;color:var(--t3)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.stat-card{background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);padding:14px;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.stat-card.blue::before{background:var(--bl)}
-.stat-card.green::before{background:var(--gr)}
-.stat-card.red::before{background:var(--rd)}
-.stat-card.purple::before{background:var(--ac)}
-.stat-card.amber::before{background:var(--am)}
-.stat-label{font-size:.6rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
-.stat-val{font-size:1.5rem;font-weight:800;font-family:var(--fm);letter-spacing:-.02em;color:var(--t1)}
-.stat-sub{font-size:.66rem;color:var(--t3);margin-top:4px}
-
-/* ── Cards ── */
-.card{background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin-bottom:16px}
-.card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--brd)}
-.card-title{font-size:.78rem;font-weight:700;color:var(--t1)}
-.card-actions{display:flex;gap:6px}
-
-/* ── Tables ── */
-.tbl-wrap{overflow-x:auto}
+.sc-p::before{background:var(--ac)}.sc-g::before{background:var(--gr)}.sc-r::before{background:var(--rd)}.sc-a::before{background:var(--am)}.sc-b::before{background:var(--bl)}.sc-t::before{background:var(--tl)}
+.stat-lbl{font-size:.58rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.stat-val{font-size:1.35rem;font-weight:800;font-family:var(--fm)}
+.stat-sub{font-size:.62rem;color:var(--t3);margin-top:2px}
+.card{background:var(--sf);border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin-bottom:14px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--brd);gap:8px;flex-wrap:wrap}
+.ct{font-size:.78rem;font-weight:700}
+.cs{font-size:.65rem;color:var(--t3);margin-top:1px}
+.ca{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.cb{padding:13px 16px}
+.tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.7rem}
-th{padding:7px 12px;text-align:left;font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);font-weight:700;border-bottom:1px solid var(--brd);background:var(--sf2);white-space:nowrap;position:sticky;top:0}
-td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.028);white-space:nowrap;font-family:var(--fm)}
-tr:hover td{background:rgba(255,255,255,.02)}
-.td-email{font-family:var(--ff);color:var(--t2);font-size:.68rem}
-
-/* ── Badges ── */
-.badge{padding:2px 8px;border-radius:12px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:var(--ff)}
-.badge-active{background:var(--gr-bg);color:var(--gr);border:1px solid rgba(52,211,153,.2)}
-.badge-failed{background:var(--rd-bg);color:var(--rd);border:1px solid rgba(248,113,113,.2)}
-.badge-passed{background:var(--bl-bg);color:var(--bl);border:1px solid rgba(96,165,250,.2)}
-.badge-funded{background:var(--ac-bg);color:var(--ac2);border:1px solid var(--ac-gl)}
-.badge-pending{background:var(--am-bg);color:var(--am);border:1px solid rgba(251,191,36,.2)}
-.badge-buy{color:var(--gr);font-weight:800}
-.badge-sell{color:var(--rd);font-weight:800}
-
-/* ── Risk level ── */
-.risk-ok{color:var(--gr)}
-.risk-warn{color:var(--am);font-weight:700}
-.risk-crit{color:var(--rd);font-weight:800;animation:pulse .8s ease infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-
-/* ── Pnl colors ── */
-.pnl-p{color:var(--gr);font-weight:700}
-.pnl-n{color:var(--rd);font-weight:700}
-.pnl-z{color:var(--t3)}
-
-/* ── Buttons ── */
-.btn{padding:5px 12px;border-radius:var(--r);border:none;cursor:pointer;font-family:var(--ff);font-size:.72rem;font-weight:700;transition:all .15s}
-.btn-sm{padding:3px 9px;font-size:.65rem}
-.btn-primary{background:var(--ac3);color:#fff}
-.btn-primary:hover{background:var(--ac)}
-.btn-danger{background:var(--rd-bg);color:var(--rd);border:1px solid rgba(248,113,113,.2)}
-.btn-danger:hover{background:rgba(248,113,113,.2)}
-.btn-outline{background:transparent;color:var(--t2);border:1px solid var(--brd2)}
-.btn-outline:hover{color:var(--t1);border-color:var(--brd)}
-.btn-green{background:var(--gr-bg);color:var(--gr);border:1px solid rgba(52,211,153,.2)}
-.btn-green:hover{background:rgba(52,211,153,.2)}
-.btn-amber{background:var(--am-bg);color:var(--am);border:1px solid rgba(251,191,36,.2)}
-
-/* ── Modal ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center}
-.modal{background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r3);padding:24px;min-width:360px;max-width:520px;width:100%}
-.modal h3{font-size:.95rem;font-weight:700;margin-bottom:16px}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:.62rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.field input,.field select{width:100%;background:var(--bg2);border:1.5px solid var(--brd2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--fm);font-size:.8rem;outline:none;transition:border .15s}
-.field input:focus,.field select:focus{border-color:var(--ac)}
-.field select option{background:var(--bg2)}
-.modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
-
-/* ── Progress bar ── */
-.prog-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:4px}
-.prog-fill{height:100%;border-radius:3px;transition:width .5s}
-
-/* ── Search ── */
-.search-row{display:flex;gap:8px;margin-bottom:14px;align-items:center}
-.search-input{flex:1;background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r);padding:7px 12px;color:var(--t1);font-family:var(--ff);font-size:.78rem;outline:none}
-.search-input:focus{border-color:var(--ac)}
-.filter-select{background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r);padding:7px 10px;color:var(--t2);font-family:var(--ff);font-size:.75rem;outline:none}
-
-/* ── Alert box ── */
-.alert{padding:10px 14px;border-radius:var(--r2);margin-bottom:12px;font-size:.75rem;font-weight:600;display:flex;align-items:center;gap:10px}
-.alert-crit{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--rd)}
-.alert-warn{background:var(--am-bg);border:1px solid rgba(251,191,36,.2);color:var(--am)}
-
-/* ── Empty state ── */
-.empty{padding:40px;text-align:center;color:var(--t3);font-size:.78rem}
-
-/* ── Toast ── */
-#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:6px}
-.toast-item{padding:9px 16px;border-radius:var(--r2);font-size:.75rem;font-weight:600;border:1px solid;animation:tin .3s ease both}
-.toast-item.ok{background:rgba(16,185,129,.12);border-color:rgba(52,211,153,.3);color:var(--gr)}
-.toast-item.err{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.3);color:var(--rd)}
-.toast-item.inf{background:rgba(139,92,246,.12);border-color:rgba(167,139,250,.3);color:var(--ac2)}
-@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
-
-/* ── Detail panel ── */
-.detail-panel{position:fixed;right:0;top:48px;bottom:0;width:480px;background:var(--sf2);border-left:1px solid var(--brd2);z-index:50;overflow-y:auto;padding:20px;transform:translateX(100%);transition:transform .25s cubic-bezier(.22,1,.36,1)}
-.detail-panel.open{transform:none}
-.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.dp-close{background:rgba(255,255,255,.06);border:none;color:var(--t2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center}
-.dp-close:hover{background:rgba(255,255,255,.1);color:var(--t1)}
-.dp-metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-.dp-metric{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:10px 12px}
-.dp-metric-label{font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:3px}
-.dp-metric-val{font-size:.85rem;font-family:var(--fm);font-weight:700;color:var(--t1)}
+th{padding:6px 10px;text-align:left;font-size:.57rem;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);font-weight:700;background:var(--sf2);border-bottom:1px solid var(--brd);white-space:nowrap;position:sticky;top:0;z-index:1}
+td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.025);font-family:var(--fm);font-size:.71rem;white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,.018)}
+.tn{font-family:var(--ff);font-weight:600;font-size:.75rem;color:var(--t1)}
+.te{font-family:var(--ff);font-size:.67rem;color:var(--t2)}
+.empty{padding:36px;text-align:center;color:var(--t3);font-size:.78rem}
+.bdg{padding:2px 7px;border-radius:10px;font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-family:var(--ff);border:1px solid;display:inline-block}
+.b-active{background:var(--grbg);color:var(--gr);border-color:rgba(52,211,153,.2)}
+.b-failed,.b-breached{background:var(--rdbg);color:var(--rd);border-color:rgba(248,113,113,.2)}
+.b-passed{background:var(--blbg);color:var(--bl);border-color:rgba(96,165,250,.2)}
+.b-funded{background:var(--acbg);color:var(--ac2);border-color:var(--acgl)}
+.b-pending,.b-pending_payment{background:var(--ambg);color:var(--am);border-color:rgba(251,191,36,.2)}
+.pos{color:var(--gr);font-weight:700}.neg{color:var(--rd);font-weight:700}
+.prog{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.pf{height:100%;border-radius:2px;transition:width .4s}
+.btn{padding:5px 11px;border-radius:var(--r);border:none;cursor:pointer;font-size:.72rem;font-weight:700;transition:.15s;display:inline-flex;align-items:center;gap:4px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:3px 8px;font-size:.65rem}.btn-xs{padding:2px 6px;font-size:.6rem}
+.btn-p{background:var(--ac3);color:#fff}.btn-p:hover{background:var(--ac)}
+.btn-d{background:var(--rdbg);color:var(--rd);border:1px solid rgba(248,113,113,.18)}.btn-d:hover{background:rgba(248,113,113,.2)}
+.btn-g{background:var(--grbg);color:var(--gr);border:1px solid rgba(52,211,153,.18)}.btn-g:hover{background:rgba(52,211,153,.2)}
+.btn-a{background:var(--ambg);color:var(--am);border:1px solid rgba(251,191,36,.18)}.btn-a:hover{background:rgba(251,191,36,.2)}
+.btn-o{background:transparent;color:var(--t2);border:1px solid var(--brd2)}.btn-o:hover{color:var(--t1);border-color:var(--brd)}
+.btn-b{background:var(--blbg);color:var(--bl);border:1px solid rgba(96,165,250,.18)}.btn-b:hover{background:rgba(96,165,250,.2)}
+.field{margin-bottom:10px}
+.field label,.flbl{display:block;font-size:.58rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.inp{width:100%;background:var(--bg2);border:1.5px solid var(--brd2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:var(--fm);font-size:.8rem;outline:none;transition:border .15s}
+.inp:focus{border-color:var(--ac)}
+.sel{width:100%;background:var(--bg2);border:1.5px solid var(--brd2);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:.78rem;outline:none;cursor:pointer}
+.sel:focus{border-color:var(--ac)}
+.sel option{background:var(--bg2)}
+.si{flex:1;background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r);padding:7px 11px;color:var(--t1);font-size:.78rem;outline:none}
+.si:focus{border-color:var(--ac)}
+.fs{background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r);padding:7px 9px;color:var(--t2);font-size:.73rem;outline:none;cursor:pointer}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center}
+.mbox{background:var(--sf2);border:1px solid var(--brd2);border-radius:var(--r3);padding:22px;min-width:320px;max-width:520px;width:calc(100% - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.mbox h3{font-size:.88rem;font-weight:700;margin-bottom:12px}
+.mbtns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.dp{position:fixed;right:0;top:50px;bottom:0;width:420px;background:var(--sf2);border-left:1px solid var(--brd2);z-index:50;overflow-y:auto;padding:16px;transform:translateX(100%);transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.dp.open{transform:none}
+.dph{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dpx{background:rgba(255,255,255,.06);border:none;color:var(--t2);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dpx:hover{background:rgba(255,255,255,.12);color:var(--t1)}
+.dpg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.dpm{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:7px 9px}
+.dpml{font-size:.54rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:2px}
+.dpmv{font-size:.8rem;font-family:var(--fm);font-weight:700}
+.alert{padding:8px 12px;border-radius:var(--r2);margin-bottom:10px;font-size:.74rem;font-weight:600;display:flex;align-items:center;gap:8px;border:1px solid}
+.a-r{background:var(--rdbg);border-color:rgba(248,113,113,.2);color:var(--rd)}
+.a-a{background:var(--ambg);border-color:rgba(251,191,36,.2);color:var(--am)}
+.a-g{background:var(--grbg);border-color:rgba(52,211,153,.2);color:var(--gr)}
+.a-b{background:var(--blbg);border-color:rgba(96,165,250,.2);color:var(--bl)}
+#toasts{position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.ti{padding:8px 14px;border-radius:var(--r2);font-size:.74rem;font-weight:600;border:1px solid;animation:tin .25s ease}
+.t-ok{background:rgba(16,185,129,.12);border-color:rgba(52,211,153,.3);color:var(--gr)}
+.t-err{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.3);color:var(--rd)}
+.t-inf{background:rgba(124,58,237,.12);border-color:var(--acgl);color:var(--ac2)}
+@keyframes tin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.tc{display:flex;gap:2px;background:var(--sf2);border:1px solid var(--brd);border-radius:var(--r2);padding:3px;margin-bottom:13px}
+.tabi{padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.72rem;font-weight:600;color:var(--t2);transition:.15s}
+.tabi.active{background:var(--ac);color:#fff}
+.tabi:hover:not(.active){background:rgba(255,255,255,.05);color:var(--t1)}
+.tgl{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-s{position:absolute;cursor:pointer;inset:0;background:var(--sf3);border-radius:10px;transition:.2s}
+.tgl-s::before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:var(--t3);border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-s{background:var(--ac)}
+.tgl input:checked+.tgl-s::before{transform:translateX(16px);background:#fff}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.lp{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.lc{background:var(--sf);border:1px solid var(--brd2);border-radius:var(--r3);padding:34px;width:355px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.le{display:none;background:var(--rdbg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);padding:8px 12px;color:var(--rd);font-size:.73rem;margin-bottom:11px}
+.lb{width:100%;background:var(--ac);border:none;border-radius:var(--r2);padding:11px;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s}
+.lb:hover{background:var(--ac3)}
+.nav-foot{margin-top:auto;padding:10px 14px;border-top:1px solid var(--brd);font-size:.64rem;color:var(--t3)}
 </style>
 </head>
 <body>
-
-<div id="toast"></div>
-
-<div class="layout">
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="tb-logo">
-      <img src="/img/favicon.svg" alt="P">
-      <div class="tb-logo-text">Pluto<em>Admin</em></div>
-    </div>
-    <div class="tb-badge admin">ADMIN</div>
-    <div id="adminNameDisplay" style="font-size:.72rem;color:var(--t3);margin-left:2px"></div>
-    <div id="riskAlertCount" style="display:none" class="tb-badge" style="background:var(--rd-bg);color:var(--rd)">0 ALERTS</div>
-    <div class="tb-mkt">
-      <div class="dot" id="mktDot"></div>
-      <span id="mktLabel">—</span>
-    </div>
-    <div class="tb-time" id="tbTime">—</div>
-    <a href="/" class="tb-back">← Prop Firm</a>
-    <button onclick="logout()" style="margin-left:8px;padding:6px 12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:6px;color:#f87171;font-size:.72rem;font-weight:700;cursor:pointer">Sign Out</button>
-  </div>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div style="padding:10px 14px 6px;font-size:.78rem;font-weight:700;color:var(--t1)">Broker Dashboard</div>
-    <div class="nav-section">Monitor</div>
-    <div class="nav-item active" onclick="navTo('overview')"><span class="icon">📊</span>Overview</div>
-    <div class="nav-item" onclick="navTo('accounts')"><span class="icon">👥</span>Accounts</div>
-    <div class="nav-item" onclick="navTo('positions')"><span class="icon">📈</span>Live Positions <span class="nav-badge" id="posCountNav">0</span></div>
-    <div class="nav-item" onclick="navTo('risk')"><span class="icon">⚠️</span>Risk Alerts <span class="nav-badge" id="riskCountNav" style="display:none">0</span></div>
-    <div class="nav-section">Configure</div>
-    <div class="nav-item" onclick="navTo('symbols')"><span class="icon">💱</span>Spreads & Symbols</div>
-    <div class="nav-item" onclick="navTo('sessions')"><span class="icon">🌐</span>Active Sessions</div>
-    <div class="nav-section">Finance</div>
-    <div class="nav-item" onclick="navTo('payouts')"><span class="icon">💸</span>Payouts</div>
-    <div class="nav-item" onclick="navTo('users')"><span class="icon">🔑</span>Users</div>
-  </div>
-
-  <!-- Main content -->
-  <div class="main" id="main">
-    <div class="empty">Loading…</div>
-  </div>
-</div>
-
-<!-- Account detail panel -->
-<div class="detail-panel" id="detailPanel">
-  <div class="dp-head">
-    <strong id="dpTitle">Account Details</strong>
-    <button class="dp-close" onclick="closeDetail()">✕</button>
-  </div>
-  <div id="dpContent"></div>
-</div>
-
-<!-- Generic modal -->
-<div id="modalBg" style="display:none" class="modal-bg">
-  <div class="modal" id="modalBox"></div>
-</div>
-
+<div id="toasts"></div>
+<div id="dp" class="dp"><div class="dph"><span id="dpTitle" style="font-size:.85rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="dpx" onclick="closeDP()">✕</button></div><div id="dpContent"></div></div>
+<div id="mbg" style="display:none" class="mbg" onclick="if(event.target===this)closeModal()"><div class="mbox" id="mbox"></div></div>
+<div id="app"></div>
 <script>
-const BACKEND = window.location.hostname==='localhost' ? '' : 'https://pluto-platform-production.up.railway.app';
+const BE = location.hostname==='localhost'?'':'https://pluto-platform-production.up.railway.app';
 let token = localStorage.getItem('pcf_token');
-
-// ── Standalone login overlay ────────────────────────────────────────
-if (!token) {
-  document.body.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06050a;font-family:'Manrope',sans-serif">
-      <div style="background:#0f0e18;border:1px solid rgba(139,92,246,.3);border-radius:16px;padding:40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px">
-          <div style="width:36px;height:36px;background:#7c3aed;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px">P</div>
-          <div>
-            <div style="font-size:.85rem;font-weight:800;color:#fff;letter-spacing:-.01em">PlutoAdmin</div>
-            <div style="font-size:.68rem;color:#8b87a0">Admin Access Only</div>
-          </div>
-        </div>
-        <div id="loginErr" style="display:none;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:9px 12px;color:#f87171;font-size:.75rem;margin-bottom:14px"></div>
-        <label style="display:block;font-size:.6rem;font-weight:700;color:#5a5672;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Email</label>
-        <input id="loginEmail" type="email" placeholder="admin@plutocapitalfunding.com"
-          style="width:100%;background:#0b0a12;border:1.5px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;color:#eeedf4;font-size:.85rem;outline:none;margin-bottom:14px;box-sizing:border-box"
-          onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='rgba(255,255,255,.08)'" />
-        <label style="display:block;font-size:.6rem;font-weight:700;color:#5a5672;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px">Password</label>
-        <input id="loginPass" type="password" placeholder="••••••••"
-          style="width:100%;background:#0b0a12;border:1.5px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;color:#eeedf4;font-size:.85rem;outline:none;margin-bottom:20px;box-sizing:border-box"
-          onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='rgba(255,255,255,.08)'"
-          onkeydown="if(event.key==='Enter')doLogin()" />
-        <button onclick="doLogin()" id="loginBtn"
-          style="width:100%;background:#7c3aed;border:none;border-radius:8px;padding:12px;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .15s"
-          onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
-          Sign In to PlutoAdmin
-        </button>
-        <div style="text-align:center;margin-top:16px;font-size:.7rem;color:#5a5672">
-          <a href="/" style="color:#8b87a0;text-decoration:none">← Back to Prop Firm Dashboard</a>
-        </div>
-      </div>
-    </div>`;
-
-  window.doLogin = async function() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pass  = document.getElementById('loginPass').value;
-    const btn   = document.getElementById('loginBtn');
-    const err   = document.getElementById('loginErr');
-    if (!email || !pass) { err.style.display='block'; err.textContent='Enter email and password'; return; }
-    btn.textContent = 'Signing in…'; btn.disabled = true;
-    try {
-      const r = await fetch(BACKEND+'/api/auth/login', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ email, password: pass })
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error||'Login failed');
-      if (d.user?.role !== 'admin') throw new Error('Admin access only. Your account does not have admin privileges.');
-      localStorage.setItem('pcf_token', d.token);
-      localStorage.setItem('pcf_user', JSON.stringify(d.user));
-      location.reload();
-    } catch(e) {
-      err.style.display='block'; err.textContent=e.message;
-      btn.textContent='Sign In to PlutoAdmin'; btn.disabled=false;
-    }
-  };
-  // Stop rest of script from running
-  throw new Error('LOGIN_REQUIRED');
-}
-
-const $ = id => document.getElementById(id);
-let currentPage = 'overview';
-let refreshTimer = null;
-let accounts = [], allPositions = [], riskAlerts = [];
+let adminUser = null;
+try{adminUser=JSON.parse(localStorage.getItem('pcf_user')||'null')}catch(_){}
 
 async function api(path, opts={}) {
-  const r = await fetch(BACKEND+path, { ...opts, headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) } });
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.error||'Error');
+  const r = await fetch(BE+path, {...opts, headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||''),...(opts.headers||{})}});
+  const d = await r.json().catch(()=>({}));
+  if (r.status===401){logout();return;}
+  if (!r.ok) throw new Error(d.error||`HTTP ${r.status}`);
   return d;
 }
-
-function toast(msg, type='inf', ms=3000) {
-  const el = document.createElement('div');
-  el.className = 'toast-item '+type;
-  el.textContent = msg;
-  $('toast').appendChild(el);
-  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)}, ms);
+function toast(msg, type='inf', ms=3500) {
+  const el = Object.assign(document.createElement('div'),{className:`ti t-${type}`,textContent:msg});
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},ms);
 }
+const F = n => '$'+Number(n||0).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+const N2 = n => Number(n||0).toFixed(2);
+const $ = id => document.getElementById(id);
+function bdg(s){const m={active:'b-active',failed:'b-failed',passed:'b-passed',funded:'b-funded',pending_payment:'b-pending_payment',pending:'b-pending',breached:'b-breached'};return`<span class="bdg ${m[s]||'b-pending'}">${(s||'').replace(/_/g,' ')}</span>`}
+function showModal(h){$('mbg').style.display='flex';$('mbox').innerHTML=h}
+function closeModal(){$('mbg').style.display='none'}
+function openDP(t,h){$('dpTitle').textContent=t;$('dpContent').innerHTML=h;$('dp').classList.add('open')}
+function closeDP(){$('dp').classList.remove('open')}
 
-const fmtU = n => '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtN = n => Number(n||0).toFixed(2);
-const fmtP = n => (n>=0?'+':'')+fmtN(n);
-const badge = (s) => `<span class="badge badge-${s}">${s}</span>`;
-
-// ── Nav ────────────────────────────────────────────────────────────────────
-function navTo(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelector(`.nav-item[onclick="navTo('${page}')"]`)?.classList.add('active');
-  clearTimeout(refreshTimer);
-  load(page);
+let curPage='overview', refreshT=null;
+function navTo(p){
+  curPage=p;
+  document.querySelectorAll('.nav-i').forEach(n=>n.classList.remove('active'));
+  const el=document.querySelector(`.nav-i[data-pg="${p}"]`);
+  if(el)el.classList.add('active');
+  clearTimeout(refreshT);
+  closeDP();
+  doRender(p);
 }
-
-async function load(page) {
-  const main = $('main');
-  main.innerHTML = '<div class="empty" style="padding:60px">Loading…</div>';
-  try {
-    switch(page) {
-      case 'overview':  await loadOverview(); break;
-      case 'accounts':  await loadAccounts(); break;
-      case 'positions': await loadPositions(); break;
-      case 'risk':      await loadRiskAlerts(); break;
-      case 'symbols':   await loadSymbols(); break;
-      case 'sessions':  await loadSessions(); break;
-      case 'payouts':   await loadPayouts(); break;
-      case 'users':     await loadUsers(); break;
+async function doRender(p){
+  const m=$('mc');if(!m)return;
+  m.innerHTML='<div class="empty">Loading…</div>';
+  try{
+    switch(p){
+      case 'overview': await rOverview(m); break;
+      case 'accounts': await rAccounts(m); break;
+      case 'positions': await rPositions(m); break;
+      case 'alerts': await rAlerts(m); break;
+      case 'risk': await rRisk(m); break;
+      case 'symbols': await rSymbols(m); break;
+      case 'sessions': await rSessions(m); break;
+      case 'payouts': await rPayouts(m); break;
+      case 'audit': await rAudit(m); break;
+      case 'users': await rUsers(m); break;
     }
-    // Auto-refresh active pages
-    if (['overview','positions','risk'].includes(page)) {
-      refreshTimer = setTimeout(()=>load(page), 5000);
-    }
-  } catch(e) {
-    main.innerHTML = `<div class="alert alert-crit">Failed to load: ${e.message}</div>`;
-  }
+    if(['overview','positions','alerts'].includes(p)) refreshT=setTimeout(()=>doRender(p),6000);
+  }catch(e){m.innerHTML=`<div class="alert a-r">⚠ ${e.message}</div>`}
 }
 
-// ── Overview ──────────────────────────────────────────────────────────────
-async function loadOverview() {
-  const [overview, alerts] = await Promise.all([
-    api('/api/pluto-admin/overview'),
-    api('/api/pluto-admin/risk-alerts').catch(()=>[])
-  ]);
-  riskAlerts = alerts;
-  updateRiskBadge();
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Overview</h1><p>Real-time platform monitor</p></div>
-    <div class="stat-grid">
-      <div class="stat-card blue"><div class="stat-label">Total Traders</div><div class="stat-val">${overview.total_users||0}</div><div class="stat-sub">registered accounts</div></div>
-      <div class="stat-card green"><div class="stat-label">Active Challenges</div><div class="stat-val">${overview.active_challenges||0}</div><div class="stat-sub">${overview.passed_challenges||0} passed</div></div>
-      <div class="stat-card red"><div class="stat-label">Failed</div><div class="stat-val">${overview.failed_challenges||0}</div><div class="stat-sub">all time breaches</div></div>
-      <div class="stat-card purple"><div class="stat-label">Funded Accounts</div><div class="stat-val">${overview.funded_accounts||0}</div><div class="stat-sub">active funded</div></div>
-      <div class="stat-card amber"><div class="stat-label">Pending Payouts</div><div class="stat-val">${overview.pending_payouts||0}</div><div class="stat-sub">awaiting approval</div></div>
-      <div class="stat-card green"><div class="stat-label">Revenue</div><div class="stat-val">${fmtU(overview.total_revenue)}</div><div class="stat-sub">total fees collected</div></div>
-      <div class="stat-card blue"><div class="stat-label">Open Positions</div><div class="stat-val">${overview.open_positions||0}</div><div class="stat-sub">across all accounts</div></div>
-      <div class="stat-card purple"><div class="stat-label">Today's Trades</div><div class="stat-val">${overview.today_trades||0}</div><div class="stat-sub">closed today</div></div>
-    </div>
-    ${alerts.length ? `
-    <div class="card">
-      <div class="card-head"><div class="card-title" style="color:var(--rd)">⚠️ Risk Alerts — ${alerts.length} accounts need attention</div><button class="btn btn-sm btn-danger" onclick="navTo('risk')">View All</button></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Account ID</th><th>Trader</th><th>Size</th><th>Drawdown</th><th>Daily Loss</th><th>Level</th><th>Action</th></tr></thead>
-        <tbody>${alerts.slice(0,5).map(a=>`<tr>
-          <td style="color:var(--ac2)">${a.id.slice(0,8)}</td>
-          <td class="td-email">${a.email}</td>
-          <td>${fmtU(a.account_size)}</td>
-          <td class="${a.drawdown_pct>a.max_total_loss_pct*.9?'pnl-n':'risk-warn'}">${fmtN(a.drawdown_pct)}% / ${a.max_total_loss_pct}%
-            <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,a.drawdown_pct/a.max_total_loss_pct*100).toFixed(0)}%;background:${a.drawdown_pct/a.max_total_loss_pct>0.9?'var(--rd)':'var(--am)'}"></div></div>
-          </td>
-          <td class="${a.daily_loss_pct>a.max_daily_loss_pct*.9?'pnl-n':'risk-warn'}">${fmtN(a.daily_loss_pct)}% / ${a.max_daily_loss_pct}%</td>
-          <td><span class="badge ${a.risk_level==='critical'?'badge-failed':'badge-pending'}">${a.risk_level}</span></td>
-          <td><button class="btn btn-sm btn-danger" onclick="openAccountDetail('${a.id}')">Inspect</button></td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-    </div>` : ''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card">
-        <div class="card-head"><div class="card-title">Market Status</div></div>
-        <div style="padding:16px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div class="dot ${overview.market_status==='open'?'open':'closed'}" style="width:10px;height:10px;border-radius:50%;background:${overview.market_status==='open'?'var(--gr)':'var(--rd)'}"></div>
-            <strong style="font-size:.85rem">${overview.market_status==='open'?'Forex Markets Open':'Markets Closed'}</strong>
-          </div>
-          <div style="font-size:.72rem;color:var(--t3)">
-            Forex hours: Sun 22:00 — Fri 21:55 UTC<br>
-            Weekend: all new positions blocked automatically
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><div class="card-title">Quick Actions</div></div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-outline" onclick="navTo('accounts')" style="text-align:left">👥 View All Accounts</button>
-          <button class="btn btn-outline" onclick="navTo('positions')" style="text-align:left">📈 Monitor Live Positions</button>
-          <button class="btn btn-outline" onclick="navTo('payouts')" style="text-align:left">💸 Process Payouts</button>
-          <button class="btn btn-outline" onclick="navTo('symbols')" style="text-align:left">💱 Adjust Spreads</button>
-        </div>
-      </div>
-    </div>`;
+// OVERVIEW
+async function rOverview(el) {
+  const [ov, alerts] = await Promise.all([api('/api/pluto-admin/overview'), api('/api/pluto-admin/risk-alerts').catch(()=>[])]);
+  updateRBadge(alerts.length);
+  el.innerHTML=`
+<div class="page-head"><h1>Overview</h1><p>Live platform snapshot • ${ov.market_open?'<span style="color:var(--gr)">Markets Open</span>':'<span style="color:var(--rd)">Markets Closed</span>'}</p></div>
+<div class="stat-grid">
+  <div class="stat-card sc-b"><div class="stat-lbl">Traders</div><div class="stat-val">${ov.total_users||0}</div></div>
+  <div class="stat-card sc-g"><div class="stat-lbl">Active Challenges</div><div class="stat-val">${ov.active_challenges||0}</div><div class="stat-sub">${ov.passed_challenges||0} passed</div></div>
+  <div class="stat-card sc-r"><div class="stat-lbl">Failed</div><div class="stat-val">${ov.failed_challenges||0}</div></div>
+  <div class="stat-card sc-p"><div class="stat-lbl">Funded</div><div class="stat-val">${ov.funded_accounts||0}</div></div>
+  <div class="stat-card sc-a"><div class="stat-lbl">Payout Queue</div><div class="stat-val">${ov.pending_payouts||0}</div></div>
+  <div class="stat-card sc-g"><div class="stat-lbl">Revenue</div><div class="stat-val" style="font-size:.95rem">${F(ov.total_revenue)}</div></div>
+  <div class="stat-card sc-t"><div class="stat-lbl">Open Positions</div><div class="stat-val">${ov.open_positions||0}</div></div>
+  <div class="stat-card sc-p"><div class="stat-lbl">Risk Engine</div><div class="stat-val" style="font-size:.82rem;color:${ov.risk_engine_running?'var(--gr)':'var(--rd)'}">${ov.risk_engine_running?'RUNNING':'STOPPED'}</div></div>
+</div>
+<div class="g2">
+<div>
+${alerts.length?`<div class="card" style="border-color:rgba(248,113,113,.3)"><div class="ch"><div class="ct" style="color:var(--rd)">⚠ Risk Alerts (${alerts.length})</div><button class="btn btn-sm btn-d" onclick="navTo('alerts')">View All</button></div>
+<table><thead><tr><th>Trader</th><th>DD Used</th><th>Daily</th><th>Level</th><th></th></tr></thead><tbody>${alerts.slice(0,5).map(a=>`<tr>
+<td><div class="te">${a.email}</div></td>
+<td class="${a.risk_level==='critical'?'neg':''}"><span style="font-weight:700">${N2(a.drawdown_pct)}%</span> / ${a.max_total_loss_pct}%<div class="prog" style="margin-top:3px"><div class="pf" style="width:${Math.min(100,a.drawdown_pct/a.max_total_loss_pct*100).toFixed(0)}%;background:${a.risk_level==='critical'?'var(--rd)':'var(--am)'}"></div></div></td>
+<td class="${a.risk_level==='critical'?'neg':''}"><span style="font-weight:700">${N2(a.daily_loss_pct)}%</span> / ${a.max_daily_loss_pct}%</td>
+<td><span class="bdg ${a.risk_level==='critical'?'b-failed':'b-pending'}">${a.risk_level}</span></td>
+<td><button class="btn btn-xs btn-d" onclick="openAccDetail('${a.id}')">Inspect</button></td>
+</tr>`).join('')}</tbody></table></div>`:
+`<div class="alert a-g">✓ No risk alerts — all accounts within safe parameters</div>`}
+<div class="card"><div class="ch"><div class="ct">Quick Actions</div></div><div class="cb" style="display:flex;flex-direction:column;gap:5px">
+${[['accounts','👥 All Accounts'],['positions','📈 Live Positions'],['risk','⚙ Risk Engine'],['payouts','💸 Payouts'],['symbols','💱 Spreads']].map(([p,l])=>`<button class="btn btn-o" onclick="navTo('${p}')" style="justify-content:flex-start">${l}</button>`).join('')}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid var(--brd);margin-top:4px">
+<span style="font-size:.75rem;font-weight:600">Demo Mode</span>
+<label class="tgl"><input type="checkbox" id="demoTgl" ${ov.demo_mode?'checked':''} onchange="toggleDemo(this.checked)"><span class="tgl-s"></span></label>
+</div></div></div>
+</div>
+<div>
+<div class="card"><div class="ch"><div class="ct">Platform Status</div></div><div class="cb" style="font-size:.78rem;display:flex;flex-direction:column;gap:8px">
+${[['Risk Engine',ov.risk_engine_running?'Running ✓':'Stopped ✗',ov.risk_engine_running?'var(--gr)':'var(--rd)'],['Market',ov.market_open?'Open':'Closed',ov.market_open?'var(--gr)':'var(--rd)'],['Demo Mode',ov.demo_mode?'ENABLED':'Off',ov.demo_mode?'var(--am)':'var(--gr)']].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">${l}</span><strong style="color:${c}">${v}</strong></div>`).join('')}
+</div></div>
+<div class="card"><div class="ch"><div class="ct">Risk Defaults</div><button class="btn btn-sm btn-b" onclick="navTo('risk')">Configure →</button></div>
+<div class="cb" style="font-size:.76rem;color:var(--t2)">
+${ov.risk_defaults?.one_step?Object.entries(ov.risk_defaults.one_step).slice(0,5).map(([k,v])=>`<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${k.replace(/_/g,' ')}</span><span style="font-family:var(--fm);color:var(--ac2)">${v}</span></div>`).join(''):'<span style="color:var(--t3)">Not configured — click Configure</span>'}
+</div></div>
+</div>
+</div>`;
+}
+async function toggleDemo(e){try{await api('/api/pluto-admin/settings/demo-mode',{method:'POST',body:JSON.stringify({enabled:e})});toast(`Demo mode ${e?'ENABLED':'disabled'}`,e?'err':'ok')}catch(ex){toast(ex.message,'err')}}
+
+// ACCOUNTS
+let asTimer;
+async function rAccounts(el, search='', status='', type='') {
+  let url='/api/pluto-admin/accounts?limit=250';
+  if(status) url+='&status='+status;
+  if(type) url+='&type='+type;
+  if(search) url+='&search='+encodeURIComponent(search);
+  const accts = await api(url);
+  el.innerHTML=`
+<div class="page-head"><h1>Accounts</h1><p>${accts.length} accounts • challenges + funded</p></div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+  <input class="si" id="asSrch" placeholder="Search email, name, ID…" value="${search}" oninput="clearTimeout(asTimer);asTimer=setTimeout(()=>rAccounts($('mc'),this.value,$('asSt').value,$('asTy').value),300)">
+  <select class="fs" id="asSt" onchange="rAccounts($('mc'),$('asSrch').value,this.value,$('asTy').value)">
+    <option value="">All Status</option><option ${status==='active'?'selected':''} value="active">Active</option><option ${status==='failed'?'selected':''} value="failed">Failed</option><option ${status==='passed'?'selected':''} value="passed">Passed</option>
+  </select>
+  <select class="fs" id="asTy" onchange="rAccounts($('mc'),$('asSrch').value,$('asSt').value,this.value)">
+    <option value="">All Types</option><option value="challenge">Challenges</option><option value="funded">Funded</option>
+  </select>
+  <button class="btn btn-sm btn-o" onclick="rAccounts($('mc'))">↻</button>
+</div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>ID</th><th>Trader</th><th>Type</th><th>Size</th><th>Balance</th><th>Equity</th><th>DD%</th><th>Daily%</th><th>Open</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>${accts.map(a=>{
+  const eq=(a.current_balance||a.starting_balance||0)+(a.floating_pnl||0);
+  const dd=a.starting_balance?((a.starting_balance-eq)/a.starting_balance*100):0;
+  const dl=a.day_start_balance?Math.max(0,(a.day_start_balance-eq)/a.day_start_balance*100):0;
+  return`<tr>
+  <td style="color:var(--ac2);cursor:pointer" onclick="openAccDetail('${a.id}')">${a.id.slice(0,8)}</td>
+  <td><div class="tn">${a.first_name||''} ${a.last_name||''}</div><div class="te">${a.email}</div></td>
+  <td>${bdg(a.account_kind==='funded'?'funded':'challenge')}</td>
+  <td>${F(a.account_size)}</td>
+  <td>${F(a.current_balance||a.starting_balance)}</td>
+  <td class="${eq>=(a.current_balance||a.starting_balance||0)?'pos':'neg'}">${F(eq)}</td>
+  <td class="${dd>a.max_total_loss_pct*0.7?'neg':''}">${N2(dd)}%<div class="prog" style="margin-top:2px"><div class="pf" style="width:${Math.min(100,dd/(a.max_total_loss_pct||8)*100).toFixed(0)}%;background:${dd/(a.max_total_loss_pct||8)>0.9?'var(--rd)':dd/(a.max_total_loss_pct||8)>0.7?'var(--am)':'var(--gr)'}"></div></div></td>
+  <td class="${dl>a.max_daily_loss_pct*0.7?'neg':''}">${N2(dl)}%</td>
+  <td>${a.open_positions>0?`<span style="color:var(--am)">${a.open_positions}</span>`:'—'}</td>
+  <td>${bdg(a.status)}</td>
+  <td style="display:flex;gap:3px">
+    <button class="btn btn-xs btn-b" onclick="openAccDetail('${a.id}')">Detail</button>
+    ${a.status==='active'?`<button class="btn btn-xs btn-d" onclick="cfcModal('${a.id}')">✕</button>`:''}
+  </td>
+</tr>`}).join('')}
+${!accts.length?'<tr><td colspan="11" class="empty">No accounts found</td></tr>':''}
+</tbody></table></div></div>`;
 }
 
-// ── Accounts ──────────────────────────────────────────────────────────────
-async function loadAccounts(search='', status='') {
-  let url = '/api/pluto-admin/accounts?limit=200';
-  if (status) url += '&status='+status;
-  if (search) url += '&search='+encodeURIComponent(search);
-  accounts = await api(url);
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Accounts</h1><p>${accounts.length} accounts loaded</p></div>
-    <div class="search-row">
-      <input class="search-input" placeholder="Search by email, name, ID…" id="acctSearch" value="${search}" oninput="debounceSearch(this.value)">
-      <select class="filter-select" id="acctFilter" onchange="loadAccounts($('acctSearch').value, this.value)">
-        <option value="">All Status</option>
-        <option value="active" ${status==='active'?'selected':''}>Active</option>
-        <option value="failed" ${status==='failed'?'selected':''}>Failed</option>
-        <option value="passed" ${status==='passed'?'selected':''}>Passed</option>
-      </select>
-      <button class="btn btn-outline btn-sm" onclick="loadAccounts()">↻ Refresh</button>
-    </div>
-    <div class="card">
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>ID</th><th>Trader</th><th>Country</th><th>Size</th><th>Balance</th><th>Equity</th><th>Drawdown</th><th>Daily</th><th>Trades</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>${accounts.map(a=>{
-          const dd = a.starting_balance ? ((a.starting_balance-(a.current_equity||a.current_balance||a.starting_balance))/a.starting_balance*100) : 0;
-          const ddCls = dd>a.max_total_loss_pct*.9?'pnl-n':dd>a.max_total_loss_pct*.7?'risk-warn':'risk-ok';
-          const eq = (a.current_balance||a.starting_balance||0)+(a.floating_pnl||0);
-          return `<tr>
-            <td style="color:var(--ac2);cursor:pointer" onclick="openAccountDetail('${a.id}')">${a.id.slice(0,8)}</td>
-            <td>
-              <div style="font-weight:600;font-size:.74rem">${a.first_name||''} ${a.last_name||''}</div>
-              <div class="td-email">${a.email}</div>
-            </td>
-            <td style="color:var(--t3)">${a.country||'—'}</td>
-            <td>${fmtU(a.account_size)}</td>
-            <td>${fmtU(a.current_balance||a.starting_balance)}</td>
-            <td class="${(eq-(a.current_balance||a.starting_balance||0))>=0?'pnl-p':'pnl-n'}">${fmtU(eq)}</td>
-            <td class="${ddCls}">${fmtN(dd)}%</td>
-            <td>${a.open_positions>0?`<span style="color:var(--am)">${a.open_positions} open</span>`:'—'}</td>
-            <td>${a.total_trades||0}</td>
-            <td>${badge(a.status)}</td>
-            <td style="display:flex;gap:4px">
-              <button class="btn btn-sm btn-outline" onclick="openAccountDetail('${a.id}')">Detail</button>
-              ${a.status==='active'?`<button class="btn btn-sm btn-danger" onclick="confirmForceClose('${a.id}')">⛔</button>`:''}
-            </td>
-          </tr>`;
-        }).join('')}
-        ${!accounts.length?'<tr><td colspan="11" class="empty">No accounts found</td></tr>':''}</tbody>
-      </table></div>
-    </div>`;
-}
-
-let searchTimer;
-function debounceSearch(v) { clearTimeout(searchTimer); searchTimer = setTimeout(()=>loadAccounts(v,$('acctFilter')?.value||''),350); }
-
-// ── Live Positions ────────────────────────────────────────────────────────
-async function loadPositions() {
-  allPositions = await api('/api/pluto-admin/positions/all');
-  $('posCountNav').textContent = allPositions.length;
-  const totalPnL = allPositions.reduce((s,p)=>s+(p.profit||0),0);
-  $('main').innerHTML = `
-    <div class="page-head">
-      <h1>Live Positions</h1>
-      <p>${allPositions.length} open trades across all accounts — Float P&L: <strong style="color:${totalPnL>=0?'var(--gr)':'var(--rd)'}">${fmtP(totalPnL)}</strong></p>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <div class="card-title">All Open Positions</div>
-        <div class="card-actions">
-          <button class="btn btn-sm btn-outline" onclick="loadPositions()">↻ Refresh</button>
-        </div>
-      </div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Trader</th><th>Account</th><th>Symbol</th><th>Dir</th><th>Volume</th><th>Open</th><th>Current</th><th>SL</th><th>TP</th><th>Pips</th><th>P&L</th><th>Time</th><th>Action</th></tr></thead>
-        <tbody>${allPositions.map(p=>{
-          const pnlCls = p.profit>0?'pnl-p':p.profit<0?'pnl-n':'pnl-z';
-          const dg = p.symbol.includes('JPY')||['US30','NAS100','US500','GER40','USOIL'].includes(p.symbol)?2:5;
-          const dur = p.open_time ? Math.round((Date.now()-new Date(p.open_time))/60000) : 0;
-          return `<tr>
-            <td>
-              <div style="font-size:.7rem;font-weight:600">${p.first_name||''} ${p.last_name||''}</div>
-              <div class="td-email">${p.email}</div>
-            </td>
-            <td style="color:var(--ac2);cursor:pointer" onclick="openAccountDetail('${p.challenge_id||''}')">
-              ${(p.challenge_id||p.funded_account_id||'').slice(0,8)}
-            </td>
-            <td style="font-weight:700;color:var(--t1)">${p.symbol}</td>
-            <td class="badge-${p.direction}">${p.direction.toUpperCase()}</td>
-            <td>${p.volume}</td>
-            <td>${Number(p.open_price).toFixed(dg)}</td>
-            <td>${Number(p.current_price||p.open_price).toFixed(dg)}</td>
-            <td style="color:var(--rd)">${p.stop_loss?Number(p.stop_loss).toFixed(dg):'—'}</td>
-            <td style="color:var(--gr)">${p.take_profit?Number(p.take_profit).toFixed(dg):'—'}</td>
-            <td class="${p.pips>=0?'pnl-p':'pnl-n'}">${(p.pips>=0?'+':'')+Number(p.pips||0).toFixed(1)}</td>
-            <td class="${pnlCls}">${fmtP(p.profit)}</td>
-            <td style="color:var(--t3);font-size:.65rem">${dur<60?dur+'m':Math.round(dur/60)+'h'} ago</td>
-            <td><button class="btn btn-sm btn-danger" onclick="adminClosePos('${p.challenge_id||''}','${p.id}')">✕</button></td>
-          </tr>`;
-        }).join('')}
-        ${!allPositions.length?'<tr><td colspan="13" class="empty">No open positions</td></tr>':''}</tbody>
-      </table></div>
-    </div>`;
-}
-
-// ── Risk Alerts ───────────────────────────────────────────────────────────
-async function loadRiskAlerts() {
-  riskAlerts = await api('/api/pluto-admin/risk-alerts');
-  updateRiskBadge();
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Risk Alerts</h1><p>Accounts approaching breach thresholds</p></div>
-    ${riskAlerts.length===0 ? '<div class="alert alert-crit" style="background:var(--gr-bg);border-color:rgba(52,211,153,.2);color:var(--gr)">✓ No risk alerts — all accounts within safe limits</div>' : ''}
-    ${riskAlerts.map(a=>`
-      <div class="card" style="border-color:${a.risk_level==='critical'?'rgba(248,113,113,.3)':'rgba(251,191,36,.2)'}">
-        <div class="card-head">
-          <div>
-            <div class="card-title">${a.first_name||''} ${a.last_name||''} — ${a.email}</div>
-            <div style="font-size:.66rem;color:var(--t3);margin-top:2px">Account ${a.id.slice(0,8)} · ${fmtU(a.account_size)} · ${badge(a.status)}</div>
-          </div>
-          <div class="card-actions">
-            <span class="badge ${a.risk_level==='critical'?'badge-failed':'badge-pending'}">${a.risk_level.toUpperCase()}</span>
-            <button class="btn btn-sm btn-outline" onclick="openAccountDetail('${a.id}')">Inspect</button>
-            ${a.status==='active'?`<button class="btn btn-sm btn-danger" onclick="confirmForceClose('${a.id}')">Force Close All</button>`:''}
-          </div>
-        </div>
-        <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
-          <div>
-            <div style="font-size:.62rem;color:var(--t3);margin-bottom:4px">TOTAL DRAWDOWN</div>
-            <div style="font-size:1.1rem;font-weight:800;font-family:var(--fm);color:${a.drawdown_pct/a.max_total_loss_pct>0.9?'var(--rd)':'var(--am)'}">${fmtN(a.drawdown_pct)}% <span style="font-size:.7rem;color:var(--t3)">/ ${a.max_total_loss_pct}%</span></div>
-            <div class="prog-bar" style="height:6px;margin-top:6px"><div class="prog-fill" style="width:${Math.min(100,a.drawdown_pct/a.max_total_loss_pct*100).toFixed(0)}%;background:${a.drawdown_pct/a.max_total_loss_pct>0.9?'var(--rd)':'var(--am)'}"></div></div>
-          </div>
-          <div>
-            <div style="font-size:.62rem;color:var(--t3);margin-bottom:4px">DAILY LOSS</div>
-            <div style="font-size:1.1rem;font-weight:800;font-family:var(--fm);color:${a.daily_loss_pct/a.max_daily_loss_pct>0.9?'var(--rd)':'var(--am)'}">${fmtN(a.daily_loss_pct)}% <span style="font-size:.7rem;color:var(--t3)">/ ${a.max_daily_loss_pct}%</span></div>
-            <div class="prog-bar" style="height:6px;margin-top:6px"><div class="prog-fill" style="width:${Math.min(100,a.daily_loss_pct/a.max_daily_loss_pct*100).toFixed(0)}%;background:${a.daily_loss_pct/a.max_daily_loss_pct>0.9?'var(--rd)':'var(--am)'}"></div></div>
-          </div>
-          <div>
-            <div style="font-size:.62rem;color:var(--t3);margin-bottom:4px">BALANCE / EQUITY</div>
-            <div style="font-size:.85rem;font-weight:700;font-family:var(--fm)">${fmtU(a.current_balance||a.starting_balance)}</div>
-            <div style="font-size:.7rem;color:var(--t3)">Started: ${fmtU(a.starting_balance)}</div>
-          </div>
-        </div>
-      </div>
-    `).join('')}`;
-}
-
-function updateRiskBadge() {
-  const n = riskAlerts.length;
-  const el = $('riskCountNav');
-  if (el) { el.textContent = n; el.style.display = n>0?'':'none'; }
-  const el2 = $('riskAlertCount');
-  if (el2) { el2.textContent = n+' ALERTS'; el2.style.display = n>0?'':'none'; }
-}
-
-// ── Symbols / Spreads ─────────────────────────────────────────────────────
-async function loadSymbols() {
-  const symbols = await api('/api/pluto-admin/symbols');
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Spreads & Symbols</h1><p>Configure spread markup and commission per instrument</p></div>
-    <div class="alert alert-warn">Changes take effect immediately on all new orders. Existing positions are not affected.</div>
-    <div class="card">
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Symbol</th><th>Name</th><th>Type</th><th>Base Spread</th><th>Markup</th><th>Total Spread</th><th>Commission/Lot</th><th>Trading</th><th>Edit</th></tr></thead>
-        <tbody>${symbols.map(s=>`<tr>
-          <td style="font-weight:700;color:var(--t1)">${s.symbol}</td>
-          <td class="td-email">${s.name||'—'}</td>
-          <td><span class="badge" style="background:var(--ac-bg);color:var(--ac2);border:1px solid var(--ac-gl)">${s.type||'forex'}</span></td>
-          <td style="color:var(--t3)">${Number(s.base_spread||0).toFixed(5)}</td>
-          <td style="color:var(--am)">${Number(s.spread_markup||0).toFixed(5)}</td>
-          <td style="color:var(--t1);font-weight:700">${(Number(s.base_spread||0)+Number(s.spread_markup||0)).toFixed(5)}</td>
-          <td>$${Number(s.commission_per_lot||3.5).toFixed(2)}</td>
-          <td><span class="badge ${s.trading_enabled?'badge-active':'badge-failed'}">${s.trading_enabled?'On':'Off'}</span></td>
-          <td><button class="btn btn-sm btn-outline" onclick="editSymbol('${s.symbol}',${s.spread_markup||0},${s.commission_per_lot||3.5},${s.trading_enabled??1})">Edit</button></td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-    </div>`;
-}
-
-function editSymbol(symbol, markup, commission, enabled) {
-  showModal(`
-    <h3>Edit ${symbol}</h3>
-    <div class="field"><label>Spread Markup (added to base spread)</label><input type="number" id="editMarkup" value="${markup}" step="0.00001" min="0"></div>
-    <div class="field"><label>Commission per Lot (USD)</label><input type="number" id="editComm" value="${commission}" step="0.1" min="0"></div>
-    <div class="field"><label>Trading</label>
-      <select id="editEnabled"><option value="1" ${enabled?'selected':''}>Enabled</option><option value="0" ${!enabled?'selected':''}>Disabled</option></select>
-    </div>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSymbol('${symbol}')">Save</button>
-    </div>
-  `);
-}
-
-async function saveSymbol(symbol) {
-  try {
-    await api('/api/pluto-admin/symbols/'+symbol, {
-      method:'PUT',
-      body: JSON.stringify({
-        spread_markup:      parseFloat($('editMarkup').value)||0,
-        commission_per_lot: parseFloat($('editComm').value)||3.5,
-        trading_enabled:    parseInt($('editEnabled').value),
-      })
-    });
-    toast('Symbol settings saved','ok');
-    closeModal();
-    loadSymbols();
-  } catch(e) { toast(e.message,'err'); }
-}
-
-// ── Sessions ──────────────────────────────────────────────────────────────
-async function loadSessions() {
-  let sessions = [];
-  try { sessions = await api('/api/pluto-admin/sessions'); } catch(_) {}
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Active Sessions</h1><p>Live trader connections</p></div>
-    <div class="card">
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Trader</th><th>IP Address</th><th>Country</th><th>Platform</th><th>Login Time</th><th>Last Seen</th><th>Status</th></tr></thead>
-        <tbody>${sessions.length ? sessions.map(s=>`<tr>
-          <td>
-            <div style="font-weight:600;font-size:.74rem">${s.first_name||''} ${s.last_name||''}</div>
-            <div class="td-email">${s.email}</div>
-          </td>
-          <td style="font-family:var(--fm)">${s.ip_address||'—'}</td>
-          <td>${s.country||'—'}</td>
-          <td>${s.platform||'web'}</td>
-          <td style="color:var(--t3)">${s.login_at?new Date(s.login_at).toLocaleString():'—'}</td>
-          <td style="color:var(--t3)">${s.last_seen?new Date(s.last_seen).toLocaleString():'—'}</td>
-          <td><span class="badge ${s.is_active?'badge-active':'badge-failed'}">${s.is_active?'active':'offline'}</span></td>
-        </tr>`).join('') : '<tr><td colspan="7" class="empty">No session data yet — sessions are tracked on login</td></tr>'}
-        </tbody>
-      </table></div>
-    </div>`;
-}
-
-// ── Payouts (redirect to main admin) ─────────────────────────────────────
-async function loadPayouts() {
-  const payouts = await api('/api/payouts/all').catch(()=>[]);
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Payouts</h1><p>Review and process payout requests</p></div>
-    <div class="alert alert-warn">Full payout management is in the main <a href="/" style="color:var(--am)">Admin Panel → Payouts tab</a></div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">Recent Payout Requests</div></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Trader</th><th>Amount</th><th>Method</th><th>Status</th><th>Requested</th></tr></thead>
-        <tbody><tr><td colspan="5" class="empty">Use the main Admin Panel for full payout management</td></tr></tbody>
-      </table></div>
-    </div>`;
-}
-
-// ── Users ─────────────────────────────────────────────────────────────────
-async function loadUsers() {
-  $('main').innerHTML = `
-    <div class="page-head"><h1>Users</h1></div>
-    <div class="alert alert-warn">Full user management is in the main <a href="/" style="color:var(--am)">Admin Panel → Users tab</a></div>`;
-}
-
-// ── Account detail panel ──────────────────────────────────────────────────
-async function openAccountDetail(id) {
-  if (!id) return;
-  const panel = $('detailPanel');
-  $('dpContent').innerHTML = '<div class="empty">Loading…</div>';
-  panel.classList.add('open');
-  try {
+async function openAccDetail(id) {
+  $('dp').classList.add('open');
+  $('dpContent').innerHTML='<div class="empty">Loading…</div>';
+  try{
     const a = await api('/api/pluto-admin/accounts/'+id);
-    const eq = (a.current_balance||a.starting_balance||0) + (a.floating_pnl||0);
-    const dd = a.starting_balance ? ((a.starting_balance-eq)/a.starting_balance*100) : 0;
-    $('dpTitle').textContent = `${a.first_name||''} ${a.last_name||''} — ${id.slice(0,8)}`;
-    $('dpContent').innerHTML = `
-      <div style="margin-bottom:12px;font-size:.72rem;color:var(--t2)">${a.email} · ${a.country||'N/A'} · KYC: <strong style="color:${a.kyc_status==='approved'?'var(--gr)':'var(--am)'}">${a.kyc_status||'none'}</strong></div>
-      ${badge(a.status)}
-      <div class="dp-metric-grid" style="margin-top:12px">
-        <div class="dp-metric"><div class="dp-metric-label">Account Size</div><div class="dp-metric-val">${fmtU(a.account_size)}</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Balance</div><div class="dp-metric-val">${fmtU(a.current_balance||a.starting_balance)}</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Equity</div><div class="dp-metric-val" style="color:${eq>=(a.current_balance||a.starting_balance||0)?'var(--gr)':'var(--rd)'}">${fmtU(eq)}</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Float P&L</div><div class="dp-metric-val" style="color:${(a.floating_pnl||0)>=0?'var(--gr)':'var(--rd)'}">${fmtP(a.floating_pnl||0)}</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Total Drawdown</div><div class="dp-metric-val" style="color:${dd>a.max_total_loss_pct*.9?'var(--rd)':'var(--am)'}">${fmtN(dd)}%</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Max DD</div><div class="dp-metric-val">${a.max_total_loss_pct||8}%</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Profit Target</div><div class="dp-metric-val">${a.profit_target_pct||10}%</div></div>
-        <div class="dp-metric"><div class="dp-metric-label">Total Trades</div><div class="dp-metric-val">${a.total_trades||0}</div></div>
-      </div>
-      <!-- Risk bar -->
-      <div style="margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--t3);margin-bottom:3px"><span>Drawdown Used</span><span>${fmtN(dd)}% of ${a.max_total_loss_pct}%</span></div>
-        <div class="prog-bar" style="height:7px"><div class="prog-fill" style="width:${Math.min(100,dd/a.max_total_loss_pct*100).toFixed(0)}%;background:${dd/a.max_total_loss_pct>0.9?'var(--rd)':dd/a.max_total_loss_pct>0.7?'var(--am)':'var(--gr)'}"></div></div>
-      </div>
-      <!-- Actions -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-        ${a.status==='active'?`
-          <button class="btn btn-sm btn-danger" onclick="confirmForceClose('${id}')">⛔ Force Close All</button>
-          <button class="btn btn-sm btn-amber" onclick="showBreachModal('${id}')">Breach Account</button>
-          <button class="btn btn-sm btn-green" onclick="showBalanceModal('${id}','credit')">+ Credit</button>
-          <button class="btn btn-sm btn-outline" onclick="showBalanceModal('${id}','debit')">− Debit</button>
-          <button class="btn btn-sm btn-outline" onclick="showSettingsModal('${id}',${JSON.stringify(a).replace(/'/g,"\\'")}})">⚙ Settings</button>
-        `:''}
-      </div>
-      <!-- Open positions -->
-      ${a.positions?.length ? `
-        <div style="font-size:.72rem;font-weight:700;color:var(--t2);margin-bottom:6px">Open Positions (${a.positions.length})</div>
-        <table style="font-size:.68rem;width:100%;border-collapse:collapse">
-          <thead><tr><th style="padding:4px 6px;text-align:left;color:var(--t3)">Symbol</th><th>Dir</th><th>Vol</th><th>P&L</th><th></th></tr></thead>
-          <tbody>${a.positions.map(p=>`<tr>
-            <td style="padding:4px 6px;font-weight:700">${p.symbol}</td>
-            <td class="badge-${p.direction}">${p.direction.toUpperCase()}</td>
-            <td>${p.volume}</td>
-            <td class="${p.profit>0?'pnl-p':p.profit<0?'pnl-n':'pnl-z'}">${fmtP(p.profit)}</td>
-            <td><button class="btn btn-sm btn-danger" onclick="adminClosePos('${id}','${p.id}')">✕</button></td>
-          </tr>`).join('')}</tbody>
-        </table>
-      ` : '<div style="font-size:.72rem;color:var(--t3)">No open positions</div>'}
-    `;
-  } catch(e) {
-    $('dpContent').innerHTML = `<div class="alert alert-crit">${e.message}</div>`;
-  }
+    const eq=a.equity||(a.current_balance||a.starting_balance||0);
+    const dd=a.drawdown_pct||0;
+    $('dpTitle').textContent=`${a.first_name||''} ${a.last_name||''} · ${id.slice(0,8)}`;
+    $('dpContent').innerHTML=`
+<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">
+  ${bdg(a.status)} ${bdg(a.account_kind==='funded'?'funded':'challenge')}
+  <span style="font-size:.67rem;color:var(--t3)">KYC: <strong style="color:${a.kyc_status==='approved'?'var(--gr)':'var(--am)'}">${a.kyc_status||'none'}</strong></span>
+  <span style="font-size:.67rem;color:var(--t3)">📧 ${a.email}</span>
+</div>
+<div class="dpg">
+  <div class="dpm"><div class="dpml">Size</div><div class="dpmv">${F(a.account_size)}</div></div>
+  <div class="dpm"><div class="dpml">Balance</div><div class="dpmv">${F(a.current_balance||a.starting_balance)}</div></div>
+  <div class="dpm"><div class="dpml">Equity</div><div class="dpmv" style="color:${eq>=(a.current_balance||a.starting_balance||0)?'var(--gr)':'var(--rd)'}">${F(eq)}</div></div>
+  <div class="dpm"><div class="dpml">Float P&L</div><div class="dpmv" style="color:${(a.floating_pnl||0)>=0?'var(--gr)':'var(--rd)'}">${(a.floating_pnl||0)>=0?'+':''}${F(a.floating_pnl||0)}</div></div>
+  <div class="dpm"><div class="dpml">Drawdown</div><div class="dpmv" style="color:${dd/(a.max_total_loss_pct||8)>0.9?'var(--rd)':dd/(a.max_total_loss_pct||8)>0.7?'var(--am)':'var(--t1)'}">${N2(dd)}%</div></div>
+  <div class="dpm"><div class="dpml">Max DD</div><div class="dpmv">${a.max_total_loss_pct||8}%</div></div>
+  <div class="dpm"><div class="dpml">Daily Loss</div><div class="dpmv" style="color:${(a.daily_pnl||0)<0?'var(--rd)':'var(--t1)'}">${N2(a.daily_pnl||0)}</div></div>
+  <div class="dpm"><div class="dpml">Trades</div><div class="dpmv">${a.total_trades||0}</div></div>
+</div>
+<div style="margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--t3);margin-bottom:3px"><span>Drawdown</span><span>${N2(dd)}% / ${a.max_total_loss_pct}%</span></div>
+  <div class="prog" style="height:6px"><div class="pf" style="width:${Math.min(100,dd/(a.max_total_loss_pct||8)*100).toFixed(0)}%;background:${dd/(a.max_total_loss_pct||8)>0.9?'var(--rd)':dd/(a.max_total_loss_pct||8)>0.7?'var(--am)':'var(--gr)'}"></div></div>
+</div>
+${a.breach_reason?`<div class="alert a-r" style="margin-bottom:9px;font-size:.72rem">Breach: ${a.breach_reason}</div>`:''}
+${a.status==='active'?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">
+  <button class="btn btn-sm btn-d" onclick="cfcModal('${id}')">⛔ Force Close</button>
+  <button class="btn btn-sm btn-a" onclick="breachModal('${id}')">⚠ Breach</button>
+  <button class="btn btn-sm btn-g" onclick="balModal('${id}','credit')">＋ Credit</button>
+  <button class="btn btn-sm btn-o" onclick="balModal('${id}','debit')">－ Debit</button>
+  <button class="btn btn-sm btn-b" onclick="settingsModal('${id}',${JSON.stringify({max_daily_loss_pct:a.max_daily_loss_pct,max_total_loss_pct:a.max_total_loss_pct,profit_target_pct:a.profit_target_pct,profit_split_pct:a.profit_split_pct,leverage:a.leverage,is_funded:a.account_kind==='funded'})})">⚙ Risk Params</button>
+</div>`:''}
+${a.positions?.length?`<div style="font-size:.63rem;font-weight:700;color:var(--t2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em">Open Positions (${a.positions.length})</div>
+<table style="font-size:.67rem;width:100%;border-collapse:collapse;margin-bottom:10px"><thead><tr><th style="padding:3px 6px;background:var(--sf3);text-align:left;color:var(--t3)">Symbol</th><th>Dir</th><th>Vol</th><th>P&L</th><th>SL</th><th>TP</th></tr></thead><tbody>${a.positions.map(p=>`<tr style="border-bottom:1px solid var(--brd)"><td style="padding:3px 6px;font-weight:700">${p.symbol}</td><td class="${p.direction==='buy'?'pos':'neg'}">${p.direction?.toUpperCase()}</td><td>${p.volume}</td><td class="${p.profit>=0?'pos':'neg'}">${p.profit>=0?'+':''}${F(p.profit)}</td><td style="color:var(--rd)">${p.stop_loss||'—'}</td><td style="color:var(--gr)">${p.take_profit||'—'}</td></tr>`).join('')}</tbody></table>`:''}
+${a.history?.length?`<div style="font-size:.63rem;font-weight:700;color:var(--t2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em">Recent History</div>
+<table style="font-size:.67rem;width:100%;border-collapse:collapse"><thead><tr><th style="padding:3px 6px;background:var(--sf3);text-align:left;color:var(--t3)">Symbol</th><th>Dir</th><th>P&L</th><th>Date</th></tr></thead><tbody>${a.history.slice(0,8).map(t=>`<tr style="border-bottom:1px solid var(--brd)"><td style="padding:3px 6px">${t.symbol}</td><td class="${t.direction==='buy'?'pos':'neg'}">${t.direction?.toUpperCase()||'—'}</td><td class="${t.profit>=0?'pos':'neg'}">${t.profit>=0?'+':''}${F(t.profit)}</td><td style="color:var(--t3);font-size:.62rem">${t.close_time?new Date(t.close_time).toLocaleDateString():'—'}</td></tr>`).join('')}</tbody></table>`:''}`;
+  }catch(e){$('dpContent').innerHTML=`<div class="alert a-r">${e.message}</div>`}
 }
 
-function closeDetail() { $('detailPanel').classList.remove('open'); }
-
-// ── Modals ────────────────────────────────────────────────────────────────
-function showModal(html) { $('modalBg').style.display='flex'; $('modalBox').innerHTML=html; }
-function closeModal() { $('modalBg').style.display='none'; }
-
-function confirmForceClose(id) {
-  showModal(`
-    <h3>⛔ Force Close All Positions</h3>
-    <p style="color:var(--t2);font-size:.8rem;margin-bottom:16px">This will immediately close all open positions on account <strong style="color:var(--ac2)">${id.slice(0,8)}</strong> at current market prices. This cannot be undone.</p>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="doForceClose('${id}')">Force Close</button>
-    </div>
-  `);
+// POSITIONS
+async function rPositions(el) {
+  const pos = await api('/api/pluto-admin/positions');
+  const tot = pos.reduce((s,p)=>s+(p.profit||0),0);
+  const pb=$('posBadge');if(pb){pb.textContent=pos.length;pb.style.display=pos.length?'':'none';}
+  el.innerHTML=`<div class="page-head"><h1>Live Positions</h1><p>${pos.length} open · Float P&L: <strong style="color:${tot>=0?'var(--gr)':'var(--rd)'}">${tot>=0?'+':''}${F(tot)}</strong></p></div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Trader</th><th>Account</th><th>Symbol</th><th>Dir</th><th>Vol</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>Pips</th><th>P&L</th><th>Time</th><th></th></tr></thead>
+<tbody>${pos.map(p=>{
+  const dg=['XAUUSD','XAGUSD','US30','NAS100','US500','GER40','USOIL'].includes(p.symbol)||p.symbol?.includes('JPY')?2:5;
+  const dur=p.duration_min<60?p.duration_min+'m':Math.round(p.duration_min/60)+'h';
+  return`<tr>
+  <td><div class="te">${p.email}</div><div style="font-size:.63rem;color:var(--t3)">${p.first_name||''}</div></td>
+  <td><span style="color:var(--ac2);cursor:pointer" onclick="openAccDetail('${p.account_id||p.challenge_id||''}')">${(p.account_id||p.challenge_id||'').slice(0,8)}</span></td>
+  <td style="font-weight:700;color:var(--t1)">${p.symbol}</td>
+  <td class="${p.direction==='buy'?'pos':'neg'}">${p.direction?.toUpperCase()}</td>
+  <td>${p.volume}</td>
+  <td>${Number(p.open_price||0).toFixed(dg)}</td>
+  <td>${Number(p.current_price||p.open_price||0).toFixed(dg)}</td>
+  <td style="color:var(--rd)">${p.stop_loss?Number(p.stop_loss).toFixed(dg):'—'}</td>
+  <td style="color:var(--gr)">${p.take_profit?Number(p.take_profit).toFixed(dg):'—'}</td>
+  <td class="${p.pips>=0?'pos':'neg'}">${p.pips>=0?'+':''}${Number(p.pips||0).toFixed(1)}</td>
+  <td class="${p.profit>=0?'pos':'neg'}">${p.profit>=0?'+':''}${F(p.profit)}</td>
+  <td style="color:var(--t3);font-size:.63rem">${dur}</td>
+  <td><button class="btn btn-xs btn-d" onclick="if(confirm('Force close ${p.symbol}?')){api('/api/pluto-admin/accounts/${p.account_id||p.challenge_id||''}'+'/force-close',{method:'POST'}).then(()=>{toast('Closed','ok');doRender('positions')}).catch(e=>toast(e.message,'err'))}">✕</button></td>
+</tr>`}).join('')}
+${!pos.length?'<tr><td colspan="13" class="empty">No open positions</td></tr>':''}
+</tbody></table></div></div>`;
 }
 
-async function doForceClose(id) {
-  try {
-    await api('/api/pluto-admin/accounts/'+id+'/force-close', { method:'POST' });
-    toast('All positions closed','ok');
-    closeModal();
-    openAccountDetail(id);
-  } catch(e) { toast(e.message,'err'); }
+// RISK ALERTS
+async function rAlerts(el) {
+  const alerts = await api('/api/pluto-admin/risk-alerts');
+  updateRBadge(alerts.length);
+  el.innerHTML=`<div class="page-head"><h1>Risk Alerts</h1><p>${alerts.length} accounts need attention</p></div>
+${!alerts.length?'<div class="alert a-g">✓ All accounts within safe risk parameters</div>':''}
+${alerts.map(a=>`<div class="card" style="border-color:${a.risk_level==='critical'?'rgba(248,113,113,.35)':'rgba(251,191,36,.25)'}">
+<div class="ch"><div><div class="ct">${a.first_name||''} ${a.last_name||''} — <span style="color:var(--t2)">${a.email}</span></div>
+<div class="cs">${a.id.slice(0,8)} · ${F(a.account_size)} · ${bdg(a.status)}</div></div>
+<div class="ca"><span class="bdg ${a.risk_level==='critical'?'b-failed':'b-pending'}">${a.risk_level.toUpperCase()}</span>
+<button class="btn btn-sm btn-b" onclick="openAccDetail('${a.id}')">Inspect</button>
+${a.status==='active'?`<button class="btn btn-sm btn-d" onclick="cfcModal('${a.id}')">Force Close</button>`:''}
+</div></div>
+<div style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+<div><div style="font-size:.58rem;color:var(--t3);margin-bottom:2px;font-weight:700;text-transform:uppercase;letter-spacing:.1em">TOTAL DD</div>
+<div style="font-size:1.05rem;font-weight:800;font-family:var(--fm);color:${a.drawdown_pct/a.max_total_loss_pct>0.9?'var(--rd)':'var(--am)'}">${N2(a.drawdown_pct)}% <span style="font-size:.7rem;color:var(--t3)">/ ${a.max_total_loss_pct}%</span></div>
+<div class="prog" style="height:6px;margin-top:5px"><div class="pf" style="width:${Math.min(100,a.drawdown_pct/a.max_total_loss_pct*100).toFixed(0)}%;background:${a.drawdown_pct/a.max_total_loss_pct>0.9?'var(--rd)':'var(--am)'}"></div></div></div>
+<div><div style="font-size:.58rem;color:var(--t3);margin-bottom:2px;font-weight:700;text-transform:uppercase;letter-spacing:.1em">DAILY LOSS</div>
+<div style="font-size:1.05rem;font-weight:800;font-family:var(--fm);color:${a.daily_loss_pct/a.max_daily_loss_pct>0.9?'var(--rd)':'var(--am)'}">${N2(a.daily_loss_pct)}% <span style="font-size:.7rem;color:var(--t3)">/ ${a.max_daily_loss_pct}%</span></div>
+<div class="prog" style="height:6px;margin-top:5px"><div class="pf" style="width:${Math.min(100,a.daily_loss_pct/a.max_daily_loss_pct*100).toFixed(0)}%;background:${a.daily_loss_pct/a.max_daily_loss_pct>0.9?'var(--rd)':'var(--am)'}"></div></div></div>
+<div><div style="font-size:.58rem;color:var(--t3);margin-bottom:2px;font-weight:700;text-transform:uppercase;letter-spacing:.1em">BALANCE</div>
+<div style="font-size:.95rem;font-weight:700;font-family:var(--fm)">${F(a.current_balance||a.starting_balance)}</div>
+<div style="font-size:.66rem;color:var(--t3)">Floor: ${F(a.floor)}</div></div>
+</div></div>`).join('')}`;
 }
 
-async function adminClosePos(accountId, posId) {
-  if (!confirm('Close this position?')) return;
-  try {
-    // Force close via challenge route
-    await api('/api/pluto-admin/accounts/'+accountId+'/force-close', { method:'POST' });
-    toast('Position closed','ok');
-    loadPositions();
-  } catch(e) { toast(e.message,'err'); }
+// RISK ENGINE CONTROL
+async function rRisk(el) {
+  const [status, defaults] = await Promise.all([api('/api/pluto-admin/risk-engine/status'),api('/api/pluto-admin/risk-engine/defaults')]);
+  const d=defaults||{}, o=d.one_step||{}, t1=d.two_step_p1||{}, t2=d.two_step_p2||{}, f=d.funded||{};
+  const rf = (label, id, val, ph, type='number', step='0.5', min='0', max='100') =>
+    `<div class="field" style="margin-bottom:8px"><label>${label}</label><input type="${type}" id="${id}" class="inp" value="${val??''}" placeholder="${ph}" ${type==='number'?`step="${step}" min="${min}" max="${max}"`:''}></div>`;
+  el.innerHTML=`
+<div class="page-head"><h1>Risk Engine Control</h1><p>Set evaluation parameters — automated worker checks every 5 seconds during market hours</p></div>
+<div class="g3" style="margin-bottom:16px">
+  <div class="stat-card ${status.running?'sc-g':'sc-r'}"><div class="stat-lbl">Engine</div><div class="stat-val" style="font-size:.85rem">${status.running?'RUNNING':'STOPPED'}</div></div>
+  <div class="stat-card ${status.market_open?'sc-g':'sc-r'}"><div class="stat-lbl">Market</div><div class="stat-val" style="font-size:.85rem">${status.market_open?'OPEN':'CLOSED'}</div></div>
+  <div class="stat-card sc-b"><div class="stat-lbl">Monitoring</div><div class="stat-val">${status.accounts_monitored}</div><div class="stat-sub">active accounts</div></div>
+</div>
+<div class="alert a-b">Changes save immediately and apply within 5 seconds via the automated risk engine. "Apply to All" overrides all active account settings.</div>
+<div class="g2">
+<div class="card"><div class="ch"><div><div class="ct">1-Step Evaluation</div><div class="cs">Applied to new 1-Step challenges</div></div></div><div class="cb">
+  ${rf('Profit Target %','o_pt',o.profit_target_pct,10,'number','0.5','1','50')}
+  ${rf('Max Daily Loss %','o_dl',o.max_daily_loss_pct,5,'number','0.5','1','20')}
+  ${rf('Max Total Drawdown %','o_dd',o.max_total_loss_pct,8,'number','0.5','1','30')}
+  ${rf('Profit Split %','o_sp',o.profit_split_pct,80,'number','5','50','100')}
+  ${rf('Leverage','o_lv',o.leverage||'1:30','1:30','text')}
+  ${rf('Min Trading Days','o_md',o.min_trading_days,3,'number','1','1','30')}
+  ${rf('Consistency % (max/day of total)','o_cn',o.consistency_rule_pct,20,'number','1','5','50')}
+  ${rf('Inactivity Days','o_ia',o.inactivity_days,30,'number','1','7','90')}
+</div></div>
+<div>
+  <div class="card"><div class="ch"><div class="ct">2-Step — Phase 1</div></div><div class="cb">
+    ${rf('Profit Target %','t1_pt',t1.profit_target_pct,8,'number','0.5','1','50')}
+    ${rf('Max Daily Loss %','t1_dl',t1.max_daily_loss_pct,5,'number','0.5','1','20')}
+    ${rf('Max Total Drawdown %','t1_dd',t1.max_total_loss_pct,10,'number','0.5','1','30')}
+    ${rf('Profit Split %','t1_sp',t1.profit_split_pct,80,'number','5','50','100')}
+  </div></div>
+  <div class="card"><div class="ch"><div class="ct">2-Step — Phase 2</div></div><div class="cb">
+    ${rf('Profit Target %','t2_pt',t2.profit_target_pct,5,'number','0.5','1','50')}
+    ${rf('Max Daily Loss %','t2_dl',t2.max_daily_loss_pct,5,'number','0.5','1','20')}
+    ${rf('Max Total Drawdown %','t2_dd',t2.max_total_loss_pct,10,'number','0.5','1','30')}
+  </div></div>
+  <div class="card"><div class="ch"><div class="ct">Funded Accounts</div></div><div class="cb">
+    ${rf('Max Daily Loss %','f_dl',f.max_daily_loss_pct,5,'number','0.5','1','20')}
+    ${rf('Max Total Drawdown %','f_dd',f.max_total_loss_pct,8,'number','0.5','1','30')}
+    ${rf('Profit Split %','f_sp',f.profit_split_pct,80,'number','5','50','100')}
+  </div></div>
+</div></div>
+<div style="display:flex;gap:8px;margin-top:2px;flex-wrap:wrap">
+  <button class="btn btn-p" onclick="saveDefaults()">💾 Save Global Defaults</button>
+  <button class="btn btn-a" onclick="applyAll()">📤 Apply to ALL Active Accounts</button>
+  <button class="btn btn-o" onclick="dailyReset()">🔄 Manual Daily Reset</button>
+</div>`;
+}
+async function saveDefaults() {
+  const g=id=>{const el=$(id);return el?el.value:undefined};
+  const body={
+    one_step:{profit_target_pct:+g('o_pt'),max_daily_loss_pct:+g('o_dl'),max_total_loss_pct:+g('o_dd'),profit_split_pct:+g('o_sp'),leverage:g('o_lv'),min_trading_days:+g('o_md'),consistency_rule_pct:+g('o_cn'),inactivity_days:+g('o_ia')},
+    two_step_p1:{profit_target_pct:+g('t1_pt'),max_daily_loss_pct:+g('t1_dl'),max_total_loss_pct:+g('t1_dd'),profit_split_pct:+g('t1_sp')},
+    two_step_p2:{profit_target_pct:+g('t2_pt'),max_daily_loss_pct:+g('t2_dl'),max_total_loss_pct:+g('t2_dd')},
+    funded:{max_daily_loss_pct:+g('f_dl'),max_total_loss_pct:+g('f_dd'),profit_split_pct:+g('f_sp')},
+  };
+  try{await api('/api/pluto-admin/risk-engine/defaults',{method:'PUT',body:JSON.stringify(body)});toast('Global defaults saved — active within 5s','ok')}catch(e){toast(e.message,'err')}
+}
+async function applyAll(){
+  if(!confirm('Apply global defaults to ALL active accounts? This overrides individual settings.'))return;
+  try{const r=await api('/api/pluto-admin/risk-engine/apply-defaults',{method:'POST'});toast(r.message,'ok')}catch(e){toast(e.message,'err')}
+}
+async function dailyReset(){
+  if(!confirm('Manually trigger daily balance reset for all accounts?'))return;
+  try{await api('/api/pluto-admin/risk-engine/reset-daily',{method:'POST'});toast('Daily balances reset','ok')}catch(e){toast(e.message,'err')}
 }
 
-function showBreachModal(id) {
-  showModal(`
-    <h3>Breach Account</h3>
-    <div class="field"><label>Breach Reason</label>
-      <select id="breachReason">
-        <option>MAX_TOTAL_DRAWDOWN</option>
-        <option>MAX_DAILY_LOSS</option>
-        <option>RULE_VIOLATION</option>
-        <option>ADMIN_ACTION</option>
-      </select>
-    </div>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="doBreach('${id}')">Breach Account</button>
-    </div>
-  `);
+// SYMBOLS
+async function rSymbols(el) {
+  const syms = await api('/api/pluto-admin/symbols');
+  el.innerHTML=`<div class="page-head"><h1>Spreads & Symbols</h1><p>Configure per-instrument markup — changes apply immediately to all new orders</p></div>
+<div class="alert a-a">Spread markup adds to base spread. Commission deducted per lot at trade open.</div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Symbol</th><th>Name</th><th>Type</th><th>Base</th><th>Markup</th><th>Total</th><th>Comm/Lot</th><th>Trading</th><th></th></tr></thead>
+<tbody>${syms.map(s=>`<tr>
+<td style="font-weight:700">${s.symbol}</td><td class="te">${s.name||'—'}</td>
+<td><span class="bdg b-funded" style="font-size:.55rem">${s.type||'fx'}</span></td>
+<td style="color:var(--t3)">${Number(s.base_spread||0).toFixed(5)}</td>
+<td style="color:${s.spread_markup>0?'var(--am)':'var(--t3)'}">${Number(s.spread_markup||0).toFixed(5)}</td>
+<td style="font-weight:700">${(Number(s.base_spread||0)+Number(s.spread_markup||0)).toFixed(5)}</td>
+<td>$${Number(s.commission_per_lot||3.5).toFixed(2)}</td>
+<td><span class="bdg ${s.trading_enabled?'b-active':'b-failed'}">${s.trading_enabled?'ON':'OFF'}</span></td>
+<td><button class="btn btn-xs btn-b" onclick="editSym('${s.symbol}',${s.spread_markup||0},${s.commission_per_lot||3.5},${s.trading_enabled??1})">Edit</button></td>
+</tr>`).join('')}</tbody></table></div></div>`;
+}
+function editSym(sym,mk,cm,en){
+  showModal(`<h3>⚙ ${sym}</h3>
+<div class="field"><label>Spread Markup</label><input type="number" id="sm" class="inp" value="${mk}" step="0.00001" min="0"></div>
+<div class="field"><label>Commission / Lot ($)</label><input type="number" id="sc" class="inp" value="${cm}" step="0.1" min="0"></div>
+<div class="field"><label>Trading</label><select id="se" class="inp"><option value="1" ${en?'selected':''}>Enabled</option><option value="0" ${!en?'selected':''}>Disabled</option></select></div>
+<div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="saveSym('${sym}')">Save</button></div>`);
+}
+async function saveSym(sym){
+  try{await api('/api/pluto-admin/symbols/'+sym,{method:'PUT',body:JSON.stringify({spread_markup:+$('sm').value||0,commission_per_lot:+$('sc').value||3.5,trading_enabled:+$('se').value})});
+  toast(`${sym} saved`,'ok');closeModal();rSymbols($('mc'))}catch(e){toast(e.message,'err')}
 }
 
-async function doBreach(id) {
-  try {
-    await api('/api/pluto-admin/accounts/'+id+'/breach', { method:'POST', body: JSON.stringify({ reason: $('breachReason').value }) });
-    toast('Account breached','ok');
-    closeModal(); closeDetail();
-    loadAccounts();
-  } catch(e) { toast(e.message,'err'); }
+// SESSIONS
+async function rSessions(el) {
+  const s = await api('/api/pluto-admin/sessions');
+  el.innerHTML=`<div class="page-head"><h1>Sessions</h1></div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Trader</th><th>IP</th><th>Country</th><th>Platform</th><th>Login</th><th>Last Seen</th><th>Status</th></tr></thead>
+<tbody>${s.length?s.map(x=>`<tr><td><div class="tn">${x.first_name||''} ${x.last_name||''}</div><div class="te">${x.email}</div></td>
+<td style="font-family:var(--fm)">${x.ip_address||'—'}</td><td style="color:var(--t3)">${x.country||'—'}</td><td>${x.platform||'web'}</td>
+<td style="color:var(--t3);font-size:.66rem">${x.login_at?new Date(x.login_at).toLocaleString():'—'}</td>
+<td style="color:var(--t3);font-size:.66rem">${x.last_seen?new Date(x.last_seen).toLocaleString():'—'}</td>
+<td><span class="bdg ${x.is_active?'b-active':'b-failed'}">${x.is_active?'active':'offline'}</span></td>
+</tr>`).join(''):'<tr><td colspan="7" class="empty">No sessions yet</td></tr>'}</tbody></table></div></div>`;
 }
 
-function showBalanceModal(id, op) {
-  showModal(`
-    <h3>${op==='credit'?'Credit Balance':'Debit Balance'}</h3>
-    <div class="field"><label>Amount (USD)</label><input type="number" id="balAmt" min="1" step="1" placeholder="0.00"></div>
-    <div class="field"><label>Reason</label><input type="text" id="balReason" placeholder="e.g. Bonus credit, fee refund…"></div>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="doBalance('${id}','${op}')">Confirm</button>
-    </div>
-  `);
+// PAYOUTS
+async function rPayouts(el) {
+  const py = await api('/api/pluto-admin/payouts');
+  const pending = py.filter(p=>p.status==='requested').length;
+  el.innerHTML=`<div class="page-head"><h1>Payouts</h1><p>${pending} pending approval</p></div>
+${pending>0?`<div class="alert a-a">⚠ ${pending} payout request${pending>1?'s require':'requires'} approval</div>`:''}
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Trader</th><th>Gross</th><th>Split</th><th>Payout</th><th>Method</th><th>Wallet</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+<tbody>${py.length?py.map(p=>`<tr>
+<td><div class="tn">${p.first_name||''} ${p.last_name||''}</div><div class="te">${p.email}</div></td>
+<td>${F(p.gross_profit)}</td><td>${p.split_pct||80}%</td>
+<td class="pos" style="font-weight:700">${F(p.trader_amount)}</td>
+<td style="font-size:.67rem">${(p.payout_method||'').replace(/_/g,' ').toUpperCase()}</td>
+<td style="font-size:.63rem;max-width:110px;overflow:hidden;text-overflow:ellipsis">${p.wallet_address||'—'}</td>
+<td>${bdg(p.status)}</td>
+<td style="color:var(--t3);font-size:.67rem">${p.requested_at?new Date(p.requested_at).toLocaleDateString():'—'}</td>
+<td style="display:flex;gap:3px">
+${p.status==='requested'?`<button class="btn btn-xs btn-g" onclick="payAct('${p.id}','approve')">✓</button><button class="btn btn-xs btn-d" onclick="payRej('${p.id}')">✕</button>`:
+p.status==='approved'?`<div style="display:flex;gap:3px"><input id="tx_${p.id}" class="inp" style="width:90px;padding:3px 6px;font-size:.65rem" placeholder="TX hash"><button class="btn btn-xs btn-g" onclick="payPaid('${p.id}')">Paid</button></div>`:
+`<span style="color:var(--t3);font-size:.64rem">${p.tx_reference||p.rejection_reason||'—'}</span>`}
+</td></tr>`).join(''):
+'<tr><td colspan="9" class="empty">No payouts</td></tr>'}
+</tbody></table></div></div>`;
+}
+async function payAct(id,a){try{await api(`/api/pluto-admin/payouts/${id}/${a}`,{method:'POST'});toast(a==='approve'?'Approved':'Updated','ok');rPayouts($('mc'))}catch(e){toast(e.message,'err')}}
+function payRej(id){showModal(`<h3>Reject Payout</h3><div class="field"><label>Reason</label><input type="text" id="rjR" class="inp" placeholder="e.g. KYC pending…"></div><div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-d" onclick="doRej('${id}')">Reject</button></div>`)}
+async function doRej(id){try{await api(`/api/pluto-admin/payouts/${id}/reject`,{method:'POST',body:JSON.stringify({reason:$('rjR').value})});toast('Rejected','ok');closeModal();rPayouts($('mc'))}catch(e){toast(e.message,'err')}}
+async function payPaid(id){const tx=$('tx_'+id)?.value;try{await api(`/api/pluto-admin/payouts/${id}/paid`,{method:'POST',body:JSON.stringify({tx_hash:tx})});toast('Marked paid','ok');rPayouts($('mc'))}catch(e){toast(e.message,'err')}}
+
+// AUDIT
+async function rAudit(el) {
+  const logs = await api('/api/pluto-admin/audit-log?limit=200');
+  el.innerHTML=`<div class="page-head"><h1>Audit Log</h1></div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Time</th><th>Action</th><th>Entity</th><th>ID</th><th>Details</th></tr></thead>
+<tbody>${logs.length?logs.map(l=>`<tr>
+<td style="color:var(--t3);font-size:.64rem;white-space:nowrap">${l.created_at?new Date(l.created_at).toLocaleString():'—'}</td>
+<td style="color:var(--ac2);font-size:.7rem">${l.action||'—'}</td>
+<td style="color:var(--t3)">${l.entity_type||'—'}</td>
+<td style="color:var(--t2)">${(l.entity_id||'').slice(0,8)}</td>
+<td style="color:var(--t2);font-size:.67rem;white-space:normal;max-width:220px">${l.details||'—'}</td>
+</tr>`).join(''):
+'<tr><td colspan="5" class="empty">No audit entries</td></tr>'}
+</tbody></table></div></div>`;
 }
 
-async function doBalance(id, op) {
-  try {
-    const amt = parseFloat($('balAmt').value);
-    if (!amt||amt<=0) { toast('Enter a valid amount','err'); return; }
-    const r = await api('/api/pluto-admin/accounts/'+id+'/balance', { method:'POST', body: JSON.stringify({ operation:op, amount:amt, reason:$('balReason').value }) });
-    toast(`${op==='credit'?'Credited':'Debited'} $${amt} — new balance: ${fmtU(r.new_balance)}`,'ok');
-    closeModal(); openAccountDetail(id);
-  } catch(e) { toast(e.message,'err'); }
+// USERS
+async function rUsers(el) {
+  const users = await api('/api/pluto-admin/users?limit=200');
+  el.innerHTML=`<div class="page-head"><h1>Users</h1><p>${users.length} traders</p></div>
+<div class="card"><div class="tw"><table>
+<thead><tr><th>Name</th><th>Email</th><th>Country</th><th>KYC</th><th>Role</th><th>Status</th><th>Joined</th></tr></thead>
+<tbody>${users.map(u=>`<tr>
+<td class="tn">${u.first_name||''} ${u.last_name||''}</td><td class="te">${u.email}</td>
+<td style="color:var(--t3)">${u.country||'—'}</td>
+<td><span class="bdg ${u.kyc_status==='approved'?'b-active':u.kyc_status==='rejected'?'b-failed':'b-pending'}">${u.kyc_status||'none'}</span></td>
+<td style="color:var(--t3)">${u.role}</td>
+<td><span class="bdg ${u.is_active?'b-active':'b-failed'}">${u.is_active?'active':'banned'}</span></td>
+<td style="color:var(--t3);font-size:.67rem">${u.created_at?new Date(u.created_at).toLocaleDateString():'—'}</td>
+</tr>`).join('')}
+</tbody></table></div></div>`;
 }
 
-function showSettingsModal(id) {
-  showModal(`
-    <h3>Account Settings</h3>
-    <div class="field"><label>Leverage</label>
-      <select id="setLev"><option>1:10</option><option>1:20</option><option selected>1:30</option><option>1:50</option><option>1:100</option></select>
-    </div>
-    <div class="field"><label>Max Daily Loss %</label><input type="number" id="setDaily" value="5" step="0.5" min="1" max="20"></div>
-    <div class="field"><label>Max Total Drawdown %</label><input type="number" id="setDD" value="8" step="0.5" min="1" max="30"></div>
-    <div class="field"><label>Profit Target %</label><input type="number" id="setTarget" value="10" step="0.5" min="1"></div>
-    <div class="field"><label>Profit Split %</label><input type="number" id="setSplit" value="80" step="5" min="50" max="100"></div>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="doSettings('${id}')">Save Settings</button>
-    </div>
-  `);
+// MODALS
+function cfcModal(id){showModal(`<h3>⛔ Force Close All Positions</h3><p style="color:var(--t2);font-size:.8rem;margin-bottom:12px">Immediately close all positions on <strong style="color:var(--ac2)">${id.slice(0,8)}</strong> at market price.</p><div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-d" onclick="doCFC('${id}')">Force Close</button></div>`)}
+async function doCFC(id){try{await api('/api/pluto-admin/accounts/'+id+'/force-close',{method:'POST'});toast('Closed','ok');closeModal();openAccDetail(id)}catch(e){toast(e.message,'err')}}
+function breachModal(id){showModal(`<h3>⚠ Breach Account</h3><div class="field"><label>Reason</label><select id="brR" class="inp"><option>MAX_TOTAL_DRAWDOWN</option><option>MAX_DAILY_LOSS</option><option>RULE_VIOLATION</option><option>COPY_TRADING</option><option>FRAUD</option><option>ADMIN_ACTION</option></select></div><div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-d" onclick="doBreach('${id}')">Breach</button></div>`)}
+async function doBreach(id){try{await api('/api/pluto-admin/accounts/'+id+'/breach',{method:'POST',body:JSON.stringify({reason:$('brR').value})});toast('Breached','ok');closeModal();closeDP();doRender(curPage)}catch(e){toast(e.message,'err')}}
+function balModal(id,op){showModal(`<h3>${op==='credit'?'＋ Credit':'－ Debit'}</h3><div class="field"><label>Amount (USD)</label><input type="number" id="bAmt" class="inp" min="0.01" step="0.01"></div><div class="field"><label>Reason</label><input type="text" id="bRsn" class="inp" placeholder="e.g. Bonus, correction…"></div><div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="doBal('${id}','${op}')">Confirm</button></div>`)}
+async function doBal(id,op){const amt=+$('bAmt').value;if(!amt||amt<=0)return toast('Enter valid amount','err');try{const r=await api('/api/pluto-admin/accounts/'+id+'/balance',{method:'POST',body:JSON.stringify({operation:op,amount:amt,reason:$('bRsn').value})});toast(`${op} $${amt} — balance: ${F(r.new_balance)}`,'ok');closeModal();openAccDetail(id)}catch(e){toast(e.message,'err')}}
+function settingsModal(id, cur={}){
+  showModal(`<h3>⚙ Risk Parameters — ${id.slice(0,8)}</h3>
+<div class="alert a-b" style="font-size:.71rem;margin-bottom:11px">Updates apply within 5 seconds via the risk engine</div>
+<div class="field"><label>Max Daily Loss %</label><input type="number" id="s_dl" class="inp" value="${cur.max_daily_loss_pct??5}" step="0.5" min="1" max="20"></div>
+<div class="field"><label>Max Total Drawdown %</label><input type="number" id="s_dd" class="inp" value="${cur.max_total_loss_pct??8}" step="0.5" min="1" max="30"></div>
+${!cur.is_funded?`<div class="field"><label>Profit Target %</label><input type="number" id="s_pt" class="inp" value="${cur.profit_target_pct??10}" step="0.5" min="1" max="50"></div>`:''}
+<div class="field"><label>Profit Split %</label><input type="number" id="s_sp" class="inp" value="${cur.profit_split_pct??80}" step="5" min="50" max="100"></div>
+${!cur.is_funded?`<div class="field"><label>Leverage</label><select id="s_lv" class="inp">${['1:10','1:20','1:30','1:50','1:100'].map(l=>`<option ${(cur.leverage||'1:30')===l?'selected':''}>${l}</option>`).join('')}</select></div>`:''}
+<div class="field"><label>Status (optional)</label><select id="s_st" class="inp"><option value="">— Keep current —</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+<div class="field"><label>Note</label><input type="text" id="s_nt" class="inp" placeholder="Reason for change…"></div>
+<div class="mbtns"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="doSettings('${id}',${cur.is_funded||false})">Save — Apply Now</button></div>`);
+}
+async function doSettings(id,isFunded){
+  const g=eid=>{const el=$(eid);return el?el.value:undefined};
+  const body={max_daily_loss_pct:+g('s_dl'),max_total_loss_pct:+g('s_dd'),profit_split_pct:+g('s_sp')};
+  if(!isFunded){body.profit_target_pct=+g('s_pt');body.leverage=g('s_lv');}
+  if(g('s_st'))body.status=g('s_st');
+  if(g('s_nt'))body.note=g('s_nt');
+  if(isNaN(body.max_daily_loss_pct)||isNaN(body.max_total_loss_pct))return toast('Invalid values','err');
+  try{const r=await api('/api/pluto-admin/accounts/'+id+'/settings',{method:'PUT',body:JSON.stringify(body)});toast(`Saved: ${r.updated?.join(', ')||'settings'} — active <5s`,'ok');closeModal();openAccDetail(id)}catch(e){toast(e.message,'err')}
 }
 
-async function doSettings(id) {
-  try {
-    await api('/api/pluto-admin/accounts/'+id+'/settings', {
-      method:'PUT',
-      body: JSON.stringify({
-        leverage:           $('setLev').value,
-        max_daily_loss_pct: parseFloat($('setDaily').value),
-        max_total_loss_pct: parseFloat($('setDD').value),
-        profit_target_pct:  parseFloat($('setTarget').value),
-        profit_split_pct:   parseFloat($('setSplit').value),
-      })
-    });
-    toast('Settings saved','ok');
-    closeModal(); openAccountDetail(id);
-  } catch(e) { toast(e.message,'err'); }
+function updateRBadge(n){const b=$('rBadge');if(b){b.textContent=n;b.style.display=n>0?'':'none'}}
+function updateClock(){const now=new Date();const t=$('tbTime');if(t)t.textContent=now.toUTCString().slice(17,25)+' UTC';const d=now.getUTCDay(),h=now.getUTCHours();const open=!(d===6||(d===0&&h<22)||(d===5&&h>=22));const dot=$('mktDot');const mkt=$('mktLabel');if(dot)dot.className='mkt-dot '+(open?'open':'closed');if(mkt)mkt.textContent=open?'Open':'Closed';}
+function logout(){localStorage.removeItem('pcf_token');localStorage.removeItem('pcf_user');location.href='/pluto-admin.html'}
+
+function showLogin(){
+  $('app').innerHTML=`<div class="lp"><div class="lc">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+  <div class="logo-c" style="width:38px;height:38px;font-size:16px">P</div>
+  <div><div style="font-size:.92rem;font-weight:800">PlutoAdmin</div><div style="font-size:.68rem;color:var(--t3)">Broker Dashboard — Admin Only</div></div>
+</div>
+<div class="le" id="lErr"></div>
+<div class="field"><label>Email</label><input type="email" id="lEm" class="inp" placeholder="admin@plutocapitalfunding.com" autofocus></div>
+<div class="field"><label>Password</label><input type="password" id="lPw" class="inp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+<button class="lb" onclick="doLogin()">Sign In to PlutoAdmin</button>
+<div style="text-align:center;margin-top:12px;font-size:.7rem;color:var(--t3)"><a href="/" style="color:var(--ac2);text-decoration:none">← Back to Prop Firm</a></div>
+</div></div>`;
 }
 
-// ── Clock + market status ─────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  $('tbTime').textContent = now.toUTCString().slice(17,25)+' UTC';
-  const day=now.getUTCDay(), h=now.getUTCHours();
-  const open = !(day===6||(day===0&&h<22)||(day===5&&h>=22));
-  $('mktDot').className = 'dot '+(open?'open':'closed');
-  $('mktLabel').textContent = open ? 'Market Open' : 'Market Closed';
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ── Init ──────────────────────────────────────────────────────────────────
-function logout() {
-  localStorage.removeItem('pcf_token');
-  localStorage.removeItem('pcf_user');
-  location.href = '/pluto-admin.html';
+async function doLogin(){
+  const em=$('lEm')?.value.trim(),pw=$('lPw')?.value;
+  const err=$('lErr');
+  if(!em||!pw){err.style.display='block';err.textContent='Enter email and password';return}
+  const btn=document.querySelector('.lb');btn.textContent='Signing in…';btn.disabled=true;
+  try{
+    const r=await fetch(BE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Login failed');
+    if(!['admin','super_admin'].includes(d.user?.role))throw new Error('Admin access only — your account does not have admin privileges');
+    localStorage.setItem('pcf_token',d.token);localStorage.setItem('pcf_user',JSON.stringify(d.user));
+    token=d.token;adminUser=d.user;
+    initApp();
+  }catch(e){err.style.display='block';err.textContent=e.message;btn.textContent='Sign In to PlutoAdmin';btn.disabled=false}
 }
 
-// Show admin name in topbar
-try {
-  const u = JSON.parse(localStorage.getItem('pcf_user')||'{}');
-  if (u.first_name) document.getElementById('adminNameDisplay').textContent = u.first_name + ' ' + (u.last_name||'');
-} catch(_) {}
+function initApp(){
+  $('app').innerHTML=`<div class="layout">
+<div class="topbar">
+  <div class="logo-wrap"><div class="logo-c">P</div><div class="logo-t">Pluto<span>Admin</span></div></div>
+  <span class="tb-badge">ADMIN</span>
+  <span style="font-size:.72rem;color:var(--t3)">${adminUser?.first_name||''} ${adminUser?.last_name||''}</span>
+  <div class="tb-r">
+    <div class="mkt-dot" id="mktDot"></div>
+    <span id="mktLabel" style="font-size:.68rem;font-weight:700;color:var(--t2)"></span>
+    <span id="tbTime" style="font-family:var(--fm);font-size:.68rem;color:var(--t3)"></span>
+    <a href="/" style="padding:5px 10px;background:var(--acbg);border:1px solid var(--acgl);border-radius:var(--r);color:var(--ac2);font-size:.68rem;font-weight:700;text-decoration:none">← Prop Firm</a>
+    <button onclick="logout()" style="padding:5px 10px;background:var(--rdbg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);color:var(--rd);font-size:.68rem;font-weight:700;cursor:pointer">Sign Out</button>
+  </div>
+</div>
+<div class="sidebar">
+  <div style="padding:6px 0 4px">
+    <div class="nav-sec">Monitor</div>
+    <div class="nav-i" data-pg="overview" onclick="navTo('overview')">📊 <span>Overview</span></div>
+    <div class="nav-i" data-pg="accounts" onclick="navTo('accounts')">👥 <span>Accounts</span></div>
+    <div class="nav-i" data-pg="positions" onclick="navTo('positions')">📈 <span>Live Positions <span class="nav-badge" id="posBadge">0</span></span></div>
+    <div class="nav-i" data-pg="alerts" onclick="navTo('alerts')">⚠️ <span>Risk Alerts <span class="nav-badge" id="rBadge">0</span></span></div>
+    <div class="nav-sec">Control</div>
+    <div class="nav-i" data-pg="risk" onclick="navTo('risk')">⚙️ <span>Risk Engine</span></div>
+    <div class="nav-i" data-pg="symbols" onclick="navTo('symbols')">💱 <span>Spreads</span></div>
+    <div class="nav-i" data-pg="sessions" onclick="navTo('sessions')">🌐 <span>Sessions</span></div>
+    <div class="nav-sec">Finance</div>
+    <div class="nav-i" data-pg="payouts" onclick="navTo('payouts')">💸 <span>Payouts</span></div>
+    <div class="nav-i" data-pg="users" onclick="navTo('users')">🔑 <span>Users</span></div>
+    <div class="nav-i" data-pg="audit" onclick="navTo('audit')">📋 <span>Audit Log</span></div>
+  </div>
+  <div class="nav-foot">PlutoAdmin v47 · 5s risk engine</div>
+</div>
+<div class="main" id="mc"></div>
+</div>`;
+  setInterval(updateClock,1000);updateClock();
+  setInterval(async()=>{try{const p=await api('/api/pluto-admin/positions');const b=$('posBadge');if(b){b.textContent=p.length;b.style.display=p.length?'':'none';}}catch(_){}},12000);
+  navTo('overview');
+}
 
-navTo('overview');
-// Refresh positions count periodically
-setInterval(async()=>{
-  try {
-    const p = await api('/api/pluto-admin/positions/all');
-    $('posCountNav').textContent = p.length;
-  } catch(_) {}
-}, 10000);
+// BOOT
+if(!token){showLogin();}else{initApp();}
 </script>
 </body>
 </html>

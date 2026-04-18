@@ -164,4 +164,98 @@ router.post('/symbol-settings/:symbol', requireAdmin, async (req, res) => {
   catch(e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── ALIASES — terminal uses these names ──────────────────────────────────────
+
+// POST /api/trading/order  →  alias for /open
+router.post('/order', authenticate, async (req, res) => {
+  const { symbol, direction, volume, stop_loss, take_profit, trailing_stop_pips,
+          challenge_id, funded_account_id, funded_id, comment } = req.body;
+  if (!symbol||!direction||!volume) return res.status(400).json({ error: 'symbol, direction, volume required' });
+  try {
+    res.json(await orderEngine.openPosition({
+      userId: req.user.id,
+      challengeId: challenge_id||null,
+      fundedAccountId: funded_account_id||funded_id||null,
+      symbol: symbol.toUpperCase(), direction, volume: parseFloat(volume),
+      stopLoss:         stop_loss          ? parseFloat(stop_loss)          : null,
+      takeProfit:       take_profit        ? parseFloat(take_profit)        : null,
+      trailingStopPips: trailing_stop_pips ? parseFloat(trailing_stop_pips) : 0,
+      comment,
+    }));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// POST /api/trading/pending-order  →  alias for /pending
+router.post('/pending-order', authenticate, async (req, res) => {
+  const { symbol, direction, order_type, volume, entry_price, stop_loss, take_profit,
+          trailing_stop_pips, expiry, challenge_id, funded_account_id, funded_id, comment } = req.body;
+  if (!symbol||!direction||!order_type||!volume||!entry_price)
+    return res.status(400).json({ error: 'symbol, direction, order_type, volume, entry_price required' });
+  try {
+    res.json(await orderEngine.placePendingOrder({
+      userId: req.user.id, challengeId: challenge_id||null,
+      fundedAccountId: funded_account_id||funded_id||null,
+      symbol: symbol.toUpperCase(), direction, orderType: order_type,
+      volume: parseFloat(volume), entryPrice: parseFloat(entry_price),
+      stopLoss:         stop_loss          ? parseFloat(stop_loss)          : null,
+      takeProfit:       take_profit        ? parseFloat(take_profit)        : null,
+      trailingStopPips: trailing_stop_pips ? parseFloat(trailing_stop_pips) : 0,
+      expiry: expiry||null, comment,
+    }));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// DELETE /api/trading/pending-order/:id  →  alias for DELETE /pending/:id
+router.delete('/pending-order/:id', authenticate, async (req, res) => {
+  try { res.json(await orderEngine.cancelPendingOrder(req.params.id, req.user.id)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// POST /api/trading/close  body:{position_id}  →  alias for /close/:id
+router.post('/close', authenticate, async (req, res) => {
+  const id = req.body.position_id || req.body.id;
+  if (!id) return res.status(400).json({ error: 'position_id required' });
+  const partialVol = req.body.partial_volume ? parseFloat(req.body.partial_volume) : null;
+  try { res.json(await orderEngine.closePosition(id, req.user.id, partialVol)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// POST /api/trading/partial-close  body:{position_id, volume}
+router.post('/partial-close', authenticate, async (req, res) => {
+  const { position_id, volume } = req.body;
+  if (!position_id || !volume) return res.status(400).json({ error: 'position_id and volume required' });
+  try { res.json(await orderEngine.closePosition(position_id, req.user.id, parseFloat(volume))); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// PUT /api/trading/modify  body:{position_id, stop_loss, take_profit, trailing_stop_pips}
+router.put('/modify', authenticate, async (req, res) => {
+  const id = req.body.position_id || req.body.id;
+  if (!id) return res.status(400).json({ error: 'position_id required' });
+  try {
+    res.json(await orderEngine.modifyPosition(id, req.user.id, {
+      stopLoss:         req.body.stop_loss         !==undefined ? (req.body.stop_loss         ? parseFloat(req.body.stop_loss)         : null) : undefined,
+      takeProfit:       req.body.take_profit       !==undefined ? (req.body.take_profit       ? parseFloat(req.body.take_profit)       : null) : undefined,
+      trailingStopPips: req.body.trailing_stop_pips!==undefined ? parseFloat(req.body.trailing_stop_pips||0) : undefined,
+    }));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// POST /api/trading/reverse  body:{position_id}  →  alias for /reverse/:id
+router.post('/reverse', authenticate, async (req, res) => {
+  const id = req.body.position_id || req.body.id;
+  if (!id) return res.status(400).json({ error: 'position_id required' });
+  try { res.json(await orderEngine.reversePosition(id, req.user.id)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// GET /api/trading/candles?symbol=X&timeframe=Y  →  accepts both param and query
+router.get('/candles', async (req, res) => {
+  const { symbol, timeframe='5min', count=300 } = req.query;
+  if (!symbol) return res.status(400).json({ error: 'symbol required' });
+  try { res.json(await marketData.getCandles(symbol.toUpperCase(), timeframe, parseInt(count))); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
+

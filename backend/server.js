@@ -201,8 +201,7 @@ app.get('/api/scaling-plan', (req, res) => {
 
 // NOWPayments webhook — activates challenge after crypto payment
 const payments = require('./src/services/payments');
-const ctraderService = require('./src/services/ctrader');
-const { generateId: genId, generateLogin: genLogin, generatePassword: genPass } = require('./src/utils/helpers');
+const { generateId: genId } = require('./src/utils/helpers');
 
 app.post('/api/webhooks/nowpayments', async (req, res) => {
   try {
@@ -223,20 +222,16 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
         return res.json({ success: true });
       }
 
-      // Create cTrader account
-      const creatorUsr = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [challenge.user_id]);
-      const ctraderResult = await ctraderService.createAccount({
-        balance: challenge.account_size,
-        leverage: challenge.leverage || '1:30',
-        group: 'demo_prop_evaluation',
-        name: creatorUsr ? `${creatorUsr.first_name || ''} ${creatorUsr.last_name || ''}`.trim() : '',
-        email: creatorUsr?.email || '',
-      });
+      // Generate PlutoTrader credentials — login = trader email, password = random
+      const creatorUsr  = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [challenge.user_id]);
+      const traderLogin = creatorUsr?.email || challenge.user_id;
+      const traderPass  = genId().slice(0, 12);
+      const terminalUrl = process.env.PLUTOTRADE_URL || '/terminal.html';
 
-      // Activate the challenge
+      // Activate the challenge — PlutoTrader account only
       await run(`UPDATE challenges SET status='active', activated_at=NOW()::TEXT,
-        ctrader_login=?, ctrader_account_id=?, ctrader_server=? WHERE id=?`,
-        [ctraderResult.login, ctraderResult.accountId, ctraderResult.server, order_id]);
+        ctrader_login=?, ctrader_account_id=?, ctrader_server=?, ctrader_password=?, platform='plutotrade' WHERE id=?`,
+        [traderLogin, order_id, 'PlutoTrader', traderPass, order_id]);
 
       // Record transaction
       await run(`INSERT INTO transactions (id, user_id, type, amount, description, reference_id, payment_method, payment_intent_id)
@@ -264,9 +259,10 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
           max_drawdown: challenge.max_total_loss_pct,
           profit_split: challenge.profit_split_pct,
           fee: challenge.fee_paid,
-          login: ctraderResult.login,
-          password: ctraderResult.password,
-          server: ctraderResult.server,
+          login: traderLogin,
+          password: traderPass,
+          server: 'PlutoTrader',
+          terminal_url: terminalUrl,
         }).catch(e => console.error('[Webhook] Email error:', e.message));
       }
     }
@@ -459,8 +455,6 @@ async function start() {
     });
   });
 
-  // ── Skip cTrader (replaced by our own engine) ─────────────────────────────
-  // cTraderEvents.start() — no longer needed
 
   server.listen(config.port, () => {
     console.log('');

@@ -63,6 +63,10 @@ class OrderEngine {
     const { userId, challengeId, fundedAccountId, symbol, direction, volume, stopLoss, takeProfit, trailingStopPips, comment } = params;
     const inst = marketData.getInstrument(symbol);
     if (!inst) throw new Error(`Unknown: ${symbol}`);
+    // Block weekend trading
+    const _d = new Date(), _day = _d.getUTCDay(), _h = _d.getUTCHours();
+    if (_day === 6 || (_day === 0 && _h < 22) || (_day === 5 && _h >= 22))
+      throw new Error('Markets are closed — trading resumes Sunday 22:00 UTC');
     const execPrice = this._execPrice(symbol, direction);
     if (!execPrice) throw new Error('No price for ' + symbol);
     const account = await this._getAccount(challengeId, fundedAccountId);
