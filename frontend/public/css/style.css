@@ -346,3 +346,8 @@ body.gc-active .nav{background:rgba(6,5,10,.75)!important;backdrop-filter:blur(1
 body.gc-active .card,body.gc-active .detail{background:rgba(17,16,27,.72)!important;backdrop-filter:blur(12px)}
 body.gc-active .modal{background:rgba(17,16,27,.88)!important;backdrop-filter:blur(20px)}
 body.gc-active .modal-bg{background:rgba(0,0,0,.6)!important}
+
+/* Animation canvas draws the background — keep body/landing transparent */
+#landing { background: transparent !important; }
+
+#app { background: var(--bg); min-height: 100vh; }
