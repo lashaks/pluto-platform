@@ -168,58 +168,57 @@ async function sendChallengePurchased(to, name, details) {
 }
 
 async function sendChallengePassed(to, name, details) {
+  const isFunded = details.funded;
+  const isPhase = details.phase;
+  
+  let nextSteps = '';
+  if (isFunded) {
+    nextSteps = '<p><strong style="color:#eeedf4">Your Funded Account is Ready:</strong></p>' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">' +
+      row('Platform', 'PlutoTrader') +
+      row('Login', details.login || 'Same as your email') +
+      row('Password', details.password || 'Check dashboard') +
+      '</table>' +
+      '<p>Log into the terminal with the same email you use for the dashboard.</p>' +
+      btn('Open Terminal', details.terminal_url || 'https://pluto-platform.vercel.app/terminal.html') +
+      '<p style="font-size:13px">Welcome to the funded side. Let\'s go.</p>';
+  } else if (isPhase) {
+    nextSteps = '<p><strong style="color:#eeedf4">Phase ' + details.phase + ' Complete!</strong></p>' +
+      '<p>Your Phase ' + details.next_phase + ' account is ready with a ' + details.next_target + ' profit target.</p>' +
+      btn('Start Phase ' + details.next_phase, 'https://pluto-platform.vercel.app') +
+      '<p style="font-size:13px">Keep pushing. You\'re almost there.</p>';
+  } else {
+    nextSteps = '<p><strong style="color:#eeedf4">Next Steps:</strong></p>' +
+      '<p>1. Complete KYC verification<br>2. Funded credentials will be issued<br>3. Start trading and earn payouts</p>' +
+      btn('View Dashboard', 'https://pluto-platform.vercel.app');
+  }
+
   return send(to, 'Congratulations! Challenge Passed — Pluto Capital', wrap(
     'You Passed! &#127881;',
-    `<p>Hey ${name},</p>
-    <p>Congratulations — you've successfully passed your <strong style="color:#eeedf4">${details.account_size}</strong> evaluation!</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">
-      ${row('Final Profit', details.profit)}
-      ${row('Total Trades', details.trades)}
-      ${row('Win Rate', details.win_rate)}
-    </table>
-    <p><strong style="color:#eeedf4">Next Steps:</strong></p>
-    <p>1. Complete KYC verification in your dashboard<br>
-    2. Once verified, your funded account credentials will be issued<br>
-    3. Start trading and request payouts anytime</p>
-    ${btn('Complete KYC', 'https://pluto-platform.vercel.app')}
-    <p style="font-size:13px">Welcome to the funded side. Let's go.</p>`
+    '<p>Hey ' + name + ',</p>' +
+    '<p>Congratulations — you\'ve successfully passed your <strong style="color:#eeedf4">' + details.account_size + '</strong> evaluation!</p>' +
+    '<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">' +
+    row('Final Profit', details.profit) +
+    row('Total Trades', details.trades) +
+    row('Win Rate', details.win_rate) +
+    '</table>' +
+    nextSteps
   ));
 }
 
 async function sendChallengeFailed(to, name, details) {
-  return send(to, `⚠️ Account Closed — ${details.account_type||'Challenge'} Breached`, wrap(
-    '⚠️ Trading Account Closed',
+  return send(to, 'Challenge Update — Pluto Capital', wrap(
+    'Challenge Breached',
     `<p>Hey ${name},</p>
-    <p style="font-size:14px;color:#8b87a0">Your trading account has been <strong style="color:#ff4757">immediately closed</strong> and all open positions have been force-closed. Here are the details:</p>
-
-    <div style="margin:20px 0;padding:16px 20px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:10px">
-      <div style="font-size:11px;font-weight:800;color:#ff4757;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Breach Details</div>
-      <table width="100%" cellpadding="0" cellspacing="0">
-        ${row('Account Type', details.account_type||'Evaluation')}
-        ${row('Account Size', details.account_size)}
-        <tr><td colspan="2" style="height:1px;background:rgba(255,255,255,0.06)"></td></tr>
-        <tr style="background:rgba(255,71,87,0.08)">
-          <td style="padding:10px 16px;font-size:13px;color:#8b87a0;font-weight:600">Breach Reason</td>
-          <td style="padding:10px 16px;font-size:13px;font-weight:700;color:#ff4757;text-align:right">${details.reason}</td>
-        </tr>
-        ${details.detail ? `<tr><td style="padding:8px 16px;font-size:12px;color:#8b87a0">Detail</td><td style="padding:8px 16px;font-size:12px;color:#ff4757;text-align:right">${details.detail}</td></tr>` : ''}
-        ${row('Final Balance', details.balance)}
-        ${details.equity && details.equity !== details.balance ? row('Final Equity', details.equity) : ''}
-        ${details.floor ? row('DD Floor (was)', details.floor) : ''}
-        ${row('Total Trades', details.trades)}
-        ${row('Closed At', details.breached_at||'Now')}
-      </table>
-    </div>
-
-    <p style="font-size:14px;color:#8b87a0;line-height:1.7">All open positions have been <strong style="color:#eeedf4">force-closed at market price</strong> and all pending orders cancelled. No further trading is possible on this account.</p>
-
-    <div style="margin:20px 0;padding:14px 18px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px">
-      <p style="margin:0;font-size:13px;color:#a78bfa;font-weight:700">Ready to go again?</p>
-      <p style="margin:6px 0 0;font-size:13px;color:#8b87a0">Every breach is a learning opportunity. Review your trade history, identify what went wrong, and come back stronger.</p>
-    </div>
-
-    ${btn('Start New Challenge', 'https://plutocapitalfunding.com')}
-    <p style="font-size:12px;color:#5a5672;text-align:center">Use code <strong style="color:#a78bfa">COMEBACK15</strong> for 15% off your next challenge.</p>`
+    <p>Unfortunately, your <strong style="color:#eeedf4">${details.account_size}</strong> challenge has been breached.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden">
+      ${row('Breach Reason', details.reason)}
+      ${row('Final Balance', details.balance)}
+      ${row('Total Trades', details.trades)}
+    </table>
+    <p>Every trader faces setbacks. Review your trading journal, identify the mistake, and come back stronger.</p>
+    ${btn('Try Again', 'https://pluto-platform.vercel.app')}
+    <p style="font-size:13px">Use code <strong style="color:#a78bfa">COMEBACK15</strong> for 15% off your next challenge.</p>`
   ));
 }
 

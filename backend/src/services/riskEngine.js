@@ -114,9 +114,19 @@ class RiskEngine {
     // ── CONSISTENCY RULE ──────────────────────────────────────────────────
     // No single trading day > 30% of total realized profit
     // Skipped for 'rapid' challenge type (no consistency rule)
-    const isRapid = ch.challenge_type === 'rapid';
-    const consistencyPct = config.oneStepRules.consistency_rule_pct || 30;
-    if (!isRapid && ch.total_profit > 0 && ch.best_day_profit > 0) {
+    // Check consistency rule — skip if challenge type has no consistency (e.g. Rapid or custom types)
+    // Read from challenge_types DB table for admin-created types, fall back to config
+    let consistencyPct = config.oneStepRules.consistency_rule_pct || 30;
+    let skipConsistency = ch.challenge_type === 'rapid';
+    try {
+      const ctRow = await queryOne("SELECT rules_json FROM challenge_types WHERE slug=$1", [ch.challenge_type]);
+      if (ctRow) {
+        const ctRules = JSON.parse(ctRow.rules_json || '{}');
+        if (ctRules.consistency_rule_pct === null || ctRules.consistency_rule_pct === 0) skipConsistency = true;
+        else if (ctRules.consistency_rule_pct) consistencyPct = ctRules.consistency_rule_pct;
+      }
+    } catch(_) {}
+    if (!skipConsistency && ch.total_profit > 0 && ch.best_day_profit > 0) {
       const bestDayPct = (ch.best_day_profit / ch.total_profit) * 100;
       if (bestDayPct > consistencyPct) {
         await this.breachChallenge(challengeId, 'CONSISTENCY_VIOLATION',
@@ -143,8 +153,9 @@ class RiskEngine {
         [challengeId]
       );
       const days = parseInt(tradingDays?.days || 0);
-      if (days < 3) {
-        return { breached: false, targetReached: false, reason: 'MIN_DAYS_NOT_MET', trading_days: days };
+      const minDays = ch.min_trading_days || 3;
+      if (days < minDays) {
+        return { breached: false, targetReached: false, reason: 'MIN_DAYS_NOT_MET', trading_days: days, required: minDays };
       }
       return { breached: false, targetReached: true, reason: 'PROFIT_TARGET_REACHED' };
     }
@@ -281,6 +292,10 @@ class RiskEngine {
         profit: '$' + (ch.current_balance - ch.starting_balance).toFixed(2),
         trades: String(ch.total_trades),
         win_rate: ch.total_trades ? Math.round(ch.winning_trades / ch.total_trades * 100) + '%' : '0%',
+        funded: true,
+        login: fundedLogin,
+        password: fundedPass,
+        terminal_url: process.env.PLUTOTRADE_URL || '/terminal.html',
       }).catch(e => console.error('[RiskEngine] email:', e.message));
     }
 
@@ -428,38 +443,23 @@ class RiskEngine {
         account = await queryOne(`SELECT * FROM funded_accounts WHERE id=$1`, [accountId]);
       }
       if (!account) return;
-      user = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [account.user_id]);
+      user = await queryOne(`SELECT first_name, email FROM users WHERE id=$1`, [account.user_id]);
       if (!user) return;
 
-      const reasonLabels = {
-        MAX_TOTAL_DRAWDOWN:    'Maximum Total Drawdown Exceeded',
-        MAX_DAILY_LOSS:        'Daily Loss Limit Exceeded',
+      const reasonText = {
+        MAX_TOTAL_DRAWDOWN: 'Maximum Total Drawdown Exceeded',
+        MAX_DAILY_LOSS:     'Daily Loss Limit Exceeded',
         CONSISTENCY_VIOLATION: 'Consistency Rule Violated',
-        INACTIVITY:            'Account Inactivity (45 days)',
-        RULE_VIOLATION:        'Trading Rule Violation',
-        ADMIN_ACTION:          'Administrative Action',
-      };
-      const reasonText = reasonLabels[reason] || reason;
-      const isFunded = type === 'funded';
-      const size = `$${Number(account.account_size).toLocaleString()}`;
-      const bal  = `$${Number(account.current_balance||account.starting_balance||0).toFixed(2)}`;
-      const floorStr = floor ? `$${Number(floor).toFixed(2)}` : '—';
-      const eqStr    = equity ? `$${Number(equity).toFixed(2)}` : '—';
-      const now = new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'})+ ' UTC';
+        INACTIVITY:         'Account Inactivity (30 days)',
+      }[reason] || reason;
 
       await email.sendChallengeFailed(user.email, user.first_name||'Trader', {
-        account_size:   size,
-        reason:         reasonText,
-        balance:        bal,
-        equity:         eqStr,
-        floor:          floorStr,
-        trades:         String(account.total_trades || 0),
-        breached_at:    now,
-        account_type:   isFunded ? 'Funded Account' : (account.challenge_type === 'two_step' ? '2-Step Evaluation' : account.challenge_type === 'rapid' ? 'PlutoRapid' : '1-Step Evaluation'),
-        detail:         details || '',
+        account_size: '$' + Number(account.account_size).toLocaleString(),
+        reason: reasonText,
+        balance: '$' + Number(account.current_balance || 0).toFixed(2),
+        trades: String(account.total_trades || 0),
+        detail: details || '',
       });
-
-      console.log(`[RiskEngine] Breach email sent to ${user.email} — reason: ${reason}`);
     } catch(e) { console.error('[RiskEngine] breach email error:', e.message); }
   }
 
