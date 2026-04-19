@@ -39,7 +39,7 @@ function generateCode() {
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email: userEmail, password, first_name, last_name, terms_accepted } = req.body;
+    const { email: userEmail, password, first_name, last_name, country, terms_accepted } = req.body;
     if (!userEmail || !password) return res.status(400).json({ error: 'Email and password are required' });
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     if (!terms_accepted) return res.status(400).json({ error: 'You must accept the Terms of Service, Privacy Policy, and Risk Disclosure' });
@@ -51,9 +51,9 @@ router.post('/register', async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     const affiliateCode = generateAffiliateCode(id);
 
-    await run(`INSERT INTO users (id, email, password_hash, first_name, last_name, affiliate_code, is_active, terms_accepted_at, terms_version)
-         VALUES (?, ?, ?, ?, ?, ?, 1, NOW()::TEXT, 'v1')`,
-      [id, userEmail, hash, first_name || '', last_name || '', affiliateCode]);
+    await run(`INSERT INTO users (id, email, password_hash, first_name, last_name, country, affiliate_code, is_active, terms_accepted_at, terms_version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW()::TEXT, 'v1')`,
+      [id, userEmail, hash, first_name || '', last_name || '', country || '', affiliateCode]);
 
     const token = jwt.sign({ id, email: userEmail, role: 'trader' }, config.jwtSecret, { expiresIn: config.jwtExpiry });
 
