@@ -908,12 +908,15 @@ async function rCtypes(el) {
 }
 
 function newCtype(){
-  showMod(`<h3>Create Challenge Type</h3>
-  <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" placeholder="e.g. Pluto Elite"></div>
-  <div class="mfd"><label class="mfl">Slug (URL-safe ID)</label><input id="ct_s" class="inp" placeholder="e.g. elite"></div>
-  <div class="mfd"><label class="mfl">Description</label><input id="ct_d" class="inp" placeholder="Optional description"></div>
-  <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Pricing (USD per account size)</h4>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  showModal(`<h3>Create Challenge Type</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" placeholder="e.g. Pluto Elite"></div>
+    <div class="mfd"><label class="mfl">Slug (URL ID)</label><input id="ct_s" class="inp" placeholder="e.g. elite"></div>
+  </div>
+  <div class="mfd"><label class="mfl">Description</label><input id="ct_d" class="inp" placeholder="Short description for traders"></div>
+  
+  <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">PRICING (USD per account size)</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
     <div class="mfd"><label class="mfl">$2.5K</label><input id="ct_p25" class="inp" type="number" placeholder="19"></div>
     <div class="mfd"><label class="mfl">$5K</label><input id="ct_p5" class="inp" type="number" placeholder="32"></div>
     <div class="mfd"><label class="mfl">$10K</label><input id="ct_p10" class="inp" type="number" placeholder="59"></div>
@@ -921,41 +924,58 @@ function newCtype(){
     <div class="mfd"><label class="mfl">$50K</label><input id="ct_p50" class="inp" type="number" placeholder="225"></div>
     <div class="mfd"><label class="mfl">$100K</label><input id="ct_p100" class="inp" type="number" placeholder="449"></div>
     <div class="mfd"><label class="mfl">$200K</label><input id="ct_p200" class="inp" type="number" placeholder="799"></div>
+    <div class="mfd"><label class="mfl">$500K</label><input id="ct_p500" class="inp" type="number" placeholder=""></div>
   </div>
-  <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Rules</h4>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  
+  <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">RULES</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
     <div class="mfd"><label class="mfl">Profit Target %</label><input id="ct_pt" class="inp" type="number" value="10" step="0.5"></div>
     <div class="mfd"><label class="mfl">Max Daily Loss %</label><input id="ct_dl" class="inp" type="number" value="5" step="0.5"></div>
-    <div class="mfd"><label class="mfl">Max Total Loss %</label><input id="ct_dd" class="inp" type="number" value="8" step="0.5"></div>
+    <div class="mfd"><label class="mfl">Max Total DD %</label><input id="ct_dd" class="inp" type="number" value="8" step="0.5"></div>
     <div class="mfd"><label class="mfl">Profit Split %</label><input id="ct_sp" class="inp" type="number" value="80" step="5"></div>
-    <div class="mfd"><label class="mfl">Leverage</label><input id="ct_lv" class="inp" value="1:30"></div>
+    <div class="mfd"><label class="mfl">Leverage</label><select id="ct_lv" class="inp"><option>1:10</option><option>1:20</option><option selected>1:30</option><option>1:50</option><option>1:100</option><option>1:200</option></select></div>
     <div class="mfd"><label class="mfl">Min Trading Days</label><input id="ct_md" class="inp" type="number" value="0"></div>
+    <div class="mfd"><label class="mfl">Consistency Rule %</label><input id="ct_cn" class="inp" type="number" value="20" placeholder="0 = none"></div>
+    <div class="mfd"><label class="mfl">Inactivity Days</label><input id="ct_ia" class="inp" type="number" value="30"></div>
+    <div class="mfd"><label class="mfl">Min Payout $</label><input id="ct_mp" class="inp" type="number" value="50"></div>
   </div>
-  <div class="mbtns"><button class="bo" onclick="closeMod()">Cancel</button><button class="bp" onclick="saveCtype()">Create</button></div>`);
+  
+  <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">OPTIONS</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div class="mfd"><label class="mfl">Phase Type</label><select id="ct_ph" class="inp"><option value="1">1-Step (single phase)</option><option value="2">2-Step (phase 1 + 2)</option></select></div>
+    <div class="mfd"><label class="mfl">Phase 2 Target % (if 2-step)</label><input id="ct_p2t" class="inp" type="number" value="5" step="0.5"></div>
+    <div class="mfd"><label class="mfl">Display Order</label><input id="ct_do" class="inp" type="number" value="0" placeholder="0 = first"></div>
+    <div class="mfd"><label class="mfl">Active</label><select id="ct_act" class="inp"><option value="1" selected>Active</option><option value="0">Inactive</option></select></div>
+  </div>
+  
+  <div class="mbtns" style="margin-top:14px"><button class="bo" onclick="closeModal()">Cancel</button><button class="bp" onclick="saveCtype()">Create Challenge Type</button></div>`);
 }
 
 async function saveCtype(){
   const pricing={};
-  const p25=+($('ct_p25')?.value);if(p25)pricing[2500]=p25;
-  const p5=+($('ct_p5')?.value);if(p5)pricing[5000]=p5;
-  const p10=+($('ct_p10')?.value);if(p10)pricing[10000]=p10;
-  const p25k=+($('ct_p25k')?.value);if(p25k)pricing[25000]=p25k;
-  const p50=+($('ct_p50')?.value);if(p50)pricing[50000]=p50;
-  const p100=+($('ct_p100')?.value);if(p100)pricing[100000]=p100;
-  const p200=+($('ct_p200')?.value);if(p200)pricing[200000]=p200;
+  const pmap={ct_p25:2500,ct_p5:5000,ct_p10:10000,ct_p25k:25000,ct_p50:50000,ct_p100:100000,ct_p200:200000,ct_p500:500000};
+  for(const[id,size] of Object.entries(pmap)){const v=+($(id)?.value||0);if(v>0)pricing[size]=v;}
+  if(!Object.keys(pricing).length)return toast('Set at least one price','err');
   const rules={
     profit_target_pct:+($('ct_pt')?.value)||10,
     max_daily_loss_pct:+($('ct_dl')?.value)||5,
     max_total_loss_pct:+($('ct_dd')?.value)||8,
     profit_split_pct:+($('ct_sp')?.value)||80,
     leverage:$('ct_lv')?.value||'1:30',
-    min_trading_days:+($('ct_md')?.value)||0
+    min_trading_days:+($('ct_md')?.value)||0,
+    consistency_rule_pct:+($('ct_cn')?.value)||null,
+    inactivity_days:+($('ct_ia')?.value)||30,
+    min_payout:+($('ct_mp')?.value)||50,
+    phases:+($('ct_ph')?.value)||1,
+    phase2_target_pct:+($('ct_p2t')?.value)||5,
   };
+  if(!$('ct_n')?.value||!$('ct_s')?.value)return toast('Name and slug required','err');
   try{
     await api('/api/pluto-admin/challenge-types',{method:'POST',body:JSON.stringify({
-      name:$('ct_n').value,slug:$('ct_s').value,description:$('ct_d')?.value||'',pricing,rules
+      name:$('ct_n').value, slug:$('ct_s').value, description:$('ct_d')?.value||'',
+      pricing, rules, is_active:+($('ct_act')?.value??1), display_order:+($('ct_do')?.value||0)
     })});
-    toast('Challenge type created','ok');closeMod();rCtypes($('mc'));
+    toast('Challenge type created!','ok');closeModal();rCtypes($('mc'));
   }catch(e){toast(e.message,'err');}
 }
 
@@ -965,12 +985,14 @@ async function editCtype(id){
     const t=(data.db_types||[]).find(x=>x.id===id);if(!t)return toast('Not found','err');
     const p=JSON.parse(t.pricing_json||'{}');
     const r=JSON.parse(t.rules_json||'{}');
-    showMod(`<h3>Edit: ${t.name}</h3>
-    <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" value="${t.name}"></div>
-    <div class="mfd"><label class="mfl">Slug</label><input id="ct_s" class="inp" value="${t.slug}"></div>
-    <div class="mfd"><label class="mfl">Active</label><select id="ct_a" class="inp"><option value="1" ${t.is_active?'selected':''}>Active</option><option value="0" ${!t.is_active?'selected':''}>Inactive</option></select></div>
-    <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Pricing (USD)</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    showModal(`<h3>Edit: ${t.name}</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" value="${t.name}"></div>
+      <div class="mfd"><label class="mfl">Slug</label><input id="ct_s" class="inp" value="${t.slug}"></div>
+    </div>
+    <div class="mfd"><label class="mfl">Description</label><input id="ct_d" class="inp" value="${t.description||''}"></div>
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">PRICING</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
       <div class="mfd"><label class="mfl">$2.5K</label><input id="ct_p25" class="inp" type="number" value="${p[2500]||''}"></div>
       <div class="mfd"><label class="mfl">$5K</label><input id="ct_p5" class="inp" type="number" value="${p[5000]||''}"></div>
       <div class="mfd"><label class="mfl">$10K</label><input id="ct_p10" class="inp" type="number" value="${p[10000]||''}"></div>
@@ -978,37 +1000,49 @@ async function editCtype(id){
       <div class="mfd"><label class="mfl">$50K</label><input id="ct_p50" class="inp" type="number" value="${p[50000]||''}"></div>
       <div class="mfd"><label class="mfl">$100K</label><input id="ct_p100" class="inp" type="number" value="${p[100000]||''}"></div>
       <div class="mfd"><label class="mfl">$200K</label><input id="ct_p200" class="inp" type="number" value="${p[200000]||''}"></div>
+      <div class="mfd"><label class="mfl">$500K</label><input id="ct_p500" class="inp" type="number" value="${p[500000]||''}"></div>
     </div>
-    <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Rules</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">RULES</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
       <div class="mfd"><label class="mfl">Target %</label><input id="ct_pt" class="inp" type="number" value="${r.profit_target_pct||10}" step="0.5"></div>
       <div class="mfd"><label class="mfl">Daily Loss %</label><input id="ct_dl" class="inp" type="number" value="${r.max_daily_loss_pct||5}" step="0.5"></div>
       <div class="mfd"><label class="mfl">Max DD %</label><input id="ct_dd" class="inp" type="number" value="${r.max_total_loss_pct||8}" step="0.5"></div>
       <div class="mfd"><label class="mfl">Split %</label><input id="ct_sp" class="inp" type="number" value="${r.profit_split_pct||80}" step="5"></div>
-      <div class="mfd"><label class="mfl">Leverage</label><input id="ct_lv" class="inp" value="${r.leverage||'1:30'}"></div>
+      <div class="mfd"><label class="mfl">Leverage</label><select id="ct_lv" class="inp">${['1:10','1:20','1:30','1:50','1:100','1:200'].map(l=>'<option '+(l===(r.leverage||'1:30')?'selected':'')+'>'+l+'</option>').join('')}</select></div>
       <div class="mfd"><label class="mfl">Min Days</label><input id="ct_md" class="inp" type="number" value="${r.min_trading_days||0}"></div>
+      <div class="mfd"><label class="mfl">Consistency %</label><input id="ct_cn" class="inp" type="number" value="${r.consistency_rule_pct||''}" placeholder="0=none"></div>
+      <div class="mfd"><label class="mfl">Inactivity Days</label><input id="ct_ia" class="inp" type="number" value="${r.inactivity_days||30}"></div>
+      <div class="mfd"><label class="mfl">Min Payout $</label><input id="ct_mp" class="inp" type="number" value="${r.min_payout||50}"></div>
     </div>
-    <div class="mbtns"><button class="bo" onclick="closeMod()">Cancel</button><button class="bp" onclick="updateCtype('${id}')">Save</button></div>`);
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--t2);border-bottom:1px solid var(--brd);padding-bottom:4px">OPTIONS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div class="mfd"><label class="mfl">Phases</label><select id="ct_ph" class="inp"><option value="1" ${(r.phases||1)===1?'selected':''}>1-Step</option><option value="2" ${(r.phases)===2?'selected':''}>2-Step</option></select></div>
+      <div class="mfd"><label class="mfl">Phase 2 Target %</label><input id="ct_p2t" class="inp" type="number" value="${r.phase2_target_pct||5}" step="0.5"></div>
+      <div class="mfd"><label class="mfl">Display Order</label><input id="ct_do" class="inp" type="number" value="${t.display_order||0}"></div>
+      <div class="mfd"><label class="mfl">Active</label><select id="ct_act" class="inp"><option value="1" ${t.is_active?'selected':''}>Active</option><option value="0" ${!t.is_active?'selected':''}>Inactive</option></select></div>
+    </div>
+    <div class="mbtns" style="margin-top:14px"><button class="bo" onclick="closeModal()">Cancel</button><button class="bp" onclick="updateCtype('${id}')">Save Changes</button></div>`);
   }catch(e){toast(e.message,'err');}
 }
 
 async function updateCtype(id){
   const pricing={};
-  const p25=+($('ct_p25')?.value);if(p25)pricing[2500]=p25;
-  const p5=+($('ct_p5')?.value);if(p5)pricing[5000]=p5;
-  const p10=+($('ct_p10')?.value);if(p10)pricing[10000]=p10;
-  const p25k=+($('ct_p25k')?.value);if(p25k)pricing[25000]=p25k;
-  const p50=+($('ct_p50')?.value);if(p50)pricing[50000]=p50;
-  const p100=+($('ct_p100')?.value);if(p100)pricing[100000]=p100;
-  const p200=+($('ct_p200')?.value);if(p200)pricing[200000]=p200;
+  const pmap={ct_p25:2500,ct_p5:5000,ct_p10:10000,ct_p25k:25000,ct_p50:50000,ct_p100:100000,ct_p200:200000,ct_p500:500000};
+  for(const[fid,size] of Object.entries(pmap)){const v=+($(fid)?.value||0);if(v>0)pricing[size]=v;}
   try{
     await api('/api/pluto-admin/challenge-types/'+id,{method:'PUT',body:JSON.stringify({
-      name:$('ct_n').value,slug:$('ct_s').value,is_active:+$('ct_a').value,pricing,
-      rules:{profit_target_pct:+$('ct_pt').value,max_daily_loss_pct:+$('ct_dl').value,
-        max_total_loss_pct:+$('ct_dd').value,profit_split_pct:+$('ct_sp').value,
-        leverage:$('ct_lv').value,min_trading_days:+$('ct_md').value}
+      name:$('ct_n').value, slug:$('ct_s').value, description:$('ct_d')?.value||'',
+      is_active:+$('ct_act').value, display_order:+($('ct_do')?.value||0), pricing,
+      rules:{
+        profit_target_pct:+$('ct_pt').value, max_daily_loss_pct:+$('ct_dl').value,
+        max_total_loss_pct:+$('ct_dd').value, profit_split_pct:+$('ct_sp').value,
+        leverage:$('ct_lv').value, min_trading_days:+$('ct_md').value,
+        consistency_rule_pct:+($('ct_cn')?.value)||null, inactivity_days:+($('ct_ia')?.value)||30,
+        min_payout:+($('ct_mp')?.value)||50, phases:+($('ct_ph')?.value)||1,
+        phase2_target_pct:+($('ct_p2t')?.value)||5
+      }
     })});
-    toast('Updated','ok');closeMod();rCtypes($('mc'));
+    toast('Updated','ok');closeModal();rCtypes($('mc'));
   }catch(e){toast(e.message,'err');}
 }
 
