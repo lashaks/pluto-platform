@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>PlutoTrader</title>
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<!-- TradingView loaded dynamically when chart needed -->
 
 <style>
 /* ─── RESET ─────────────────────────────────────────────────────────── */
@@ -342,6 +342,24 @@ let pos=[], pend=[], hist=[], alerts=[], journal=[];
 let sym='EURUSD', dir='buy', ot='market', tf='5m';
 let chart=null, cSeries=null, vSeries=null, candles=[];
 let ws=null, wsOn=false, botTab='pos';
+
+// Timezone handling
+let userTZ = localStorage.getItem('pluto_tz') || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+function setTZ(tz) { userTZ = tz; localStorage.setItem('pluto_tz', tz); updateClock(); }
+function localTime() {
+  try { return new Date().toLocaleTimeString('en-US', { timeZone: userTZ, hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+  catch(e) { return new Date().toUTCString().slice(17,25); }
+}
+function mktStatus() {
+  // Market hours in UTC: open Sunday 22:00 → Friday 22:00
+  const now = new Date();
+  const day = now.getUTCDay(), h = now.getUTCHours();
+  const open = !(day === 6 || (day === 0 && h < 22) || (day === 5 && h >= 22));
+  // Calculate next open/close
+  let status = open ? 'OPEN' : 'CLOSED';
+  return { open, status };
+}
+
 let drawTool=null, drawings=[], drawPt=null;
 
 const TV_MAP={'EURUSD':'FX:EURUSD','GBPUSD':'FX:GBPUSD','USDJPY':'FX:USDJPY','USDCHF':'FX:USDCHF','AUDUSD':'FX:AUDUSD','USDCAD':'FX:USDCAD','NZDUSD':'FX:NZDUSD','EURGBP':'FX:EURGBP','EURJPY':'FX:EURJPY','GBPJPY':'FX:GBPJPY','XAUUSD':'OANDA:XAUUSD','XAGUSD':'OANDA:XAGUSD','BTCUSD':'COINBASE:BTCUSD','ETHUSD':'COINBASE:ETHUSD','US30':'FOREXCOM:DJI','NAS100':'PEPPERSTONE:NAS100','US500':'FOREXCOM:SPX500','GER40':'PEPPERSTONE:GER40','UK100':'PEPPERSTONE:UK100','USOIL':'TVC:USOIL','UKBRENT':'TVC:UKOIL'};
@@ -487,39 +505,66 @@ const TF={'1m':'1min','3m':'3min','5m':'5min','15m':'15min','30m':'30min','1h':'
 
 function initChart(){
   const el=$('lwc');if(!el)return;
-  el.style.overflow='hidden';
-  try{
-    tvWidget=new TradingView.widget({
-      container_id:'lwc',
-      autosize:true,
-      symbol:tvSym(sym),
-      interval:'5',
-      timezone:'Etc/UTC',
-      theme:'dark',
-      style:'1',
-      locale:'en',
-      toolbar_bg:'#1e222d',
-      enable_publishing:false,
-      hide_top_toolbar:false,
-      hide_legend:false,
-      hide_side_toolbar:false,
-      allow_symbol_change:false,
-      save_image:false,
-      show_popup_button:false,
-      no_referral_id:true,
-      overrides:{
-        'paneProperties.background':'#131722',
-        'paneProperties.backgroundType':'solid',
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px;font-family:var(--ff)">Loading chart...</div>';
+  
+  // Load TradingView script dynamically (non-blocking)
+  function createWidget(){
+    try{
+      if(typeof TradingView==='undefined'){
+        el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px">Chart unavailable — reload page</div>';
+        return;
       }
-    });
-  }catch(e){
-    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px">Loading chart...</div>';
+      el.innerHTML='';
+      tvWidget=new TradingView.widget({
+        container_id:'lwc',
+        autosize:true,
+        symbol:tvSym(sym),
+        interval:tf==='1m'?'1':tf==='3m'?'3':tf==='5m'?'5':tf==='15m'?'15':tf==='30m'?'30':tf==='1h'?'60':tf==='4h'?'240':tf==='1d'?'D':tf==='1w'?'W':'5',
+        timezone:userTZ||'Etc/UTC',
+        theme:'dark',
+        style:'1',
+        locale:'en',
+        toolbar_bg:'#1e222d',
+        enable_publishing:false,
+        hide_top_toolbar:false,
+        hide_legend:false,
+        hide_side_toolbar:false,
+        allow_symbol_change:false,
+        save_image:false,
+        show_popup_button:false,
+        no_referral_id:true,
+        overrides:{
+          'paneProperties.background':'#131722',
+          'paneProperties.backgroundType':'solid',
+          'mainSeriesProperties.candleStyle.upColor':'#26a69a',
+          'mainSeriesProperties.candleStyle.downColor':'#ef5350',
+          'mainSeriesProperties.candleStyle.wickUpColor':'#26a69a',
+          'mainSeriesProperties.candleStyle.wickDownColor':'#ef5350',
+          'mainSeriesProperties.candleStyle.borderUpColor':'#26a69a',
+          'mainSeriesProperties.candleStyle.borderDownColor':'#ef5350',
+        }
+      });
+    }catch(e){
+      console.warn('[Chart]',e);
+      el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px">Chart error — try refreshing</div>';
+    }
+  }
+  
+  if(typeof TradingView!=='undefined'){
+    createWidget();
+  } else {
+    const s=document.createElement('script');
+    s.src='https://s3.tradingview.com/tv.js';
+    s.async=true;
+    s.onload=createWidget;
+    s.onerror=()=>{el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px">Chart CDN unreachable — check connection</div>';};
+    document.head.appendChild(s);
   }
 }
 
 function toggleGrid(){}
 
-async async function loadCandles(){}
+async function loadCandles(){}
 
 function tickChart(){}
 
@@ -1100,13 +1145,33 @@ function renderApp(){
 }
 
 function updateClock(){
-  const el=$('abClock')||$('tbClock');if(!el)return;
-  el.textContent=new Date().toUTCString().slice(17,25)+' UTC';
+  const el=$('tbClock');if(!el)return;
+  const utc=new Date().toUTCString().slice(17,25);
+  const local=localTime();
+  const tzShort=userTZ.split('/').pop().replace(/_/g,' ');
+  el.innerHTML=local+' <span style="color:var(--ink4)">'+tzShort+'</span>';
+  el.title='UTC: '+utc+'\nLocal: '+local+' ('+userTZ+')\nClick to change timezone';
+  el.style.cursor='pointer';
+  el.onclick=showTZPicker;
+  // Update market status
+  const ms=mktStatus();
+  const dot=$('mktDot');if(dot)dot.className='wsdot '+(ms.open?'on':'');
 }
 
 // ══════════════════════════════════════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════════════════════════════════════
+
+function showTZPicker(){
+  const zones=['UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Toronto','America/Sao_Paulo','Europe/London','Europe/Berlin','Europe/Paris','Europe/Madrid','Europe/Rome','Europe/Zurich','Europe/Amsterdam','Europe/Stockholm','Europe/Helsinki','Europe/Athens','Europe/Istanbul','Europe/Moscow','Europe/Pristina','Asia/Dubai','Asia/Kolkata','Asia/Singapore','Asia/Hong_Kong','Asia/Tokyo','Asia/Shanghai','Asia/Seoul','Asia/Bangkok','Australia/Sydney','Australia/Melbourne','Pacific/Auckland','Africa/Johannesburg','Africa/Lagos','Africa/Cairo'];
+  showMod(`<h3>Select Timezone</h3>
+  <div style="max-height:300px;overflow-y:auto">${zones.map(z=>{
+    const short=z.split('/').pop().replace(/_/g,' ');
+    let t='';try{t=new Date().toLocaleTimeString('en-US',{timeZone:z,hour12:false,hour:'2-digit',minute:'2-digit'});}catch(_){t='?';}
+    return '<div style="display:flex;justify-content:space-between;padding:5px 6px;cursor:pointer;border-radius:var(--r);'+(z===userTZ?'background:var(--tealb);color:var(--teal)':'')+'" onclick="setTZ(\''+z+'\');cMod()"><span style="font-size:11px">'+short+'</span><span style="font-family:var(--fm);font-size:10px;color:var(--ink2)">'+t+'</span></div>';
+  }).join('')}</div>`);
+}
+
 function showLogin(){
   $('app').innerHTML=`<div class="lp"><div class="lc">
 <div class="lhead">
