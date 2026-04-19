@@ -314,8 +314,8 @@ const TABLES = [
       rules_json TEXT NOT NULL DEFAULT '{}',
       is_active INTEGER DEFAULT 1,
       display_order INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (NOW()::TEXT),
+      updated_at TEXT DEFAULT (NOW()::TEXT)
     )`,
     `CREATE TABLE IF NOT EXISTS platform_settings (
     key TEXT PRIMARY KEY,
@@ -501,8 +501,8 @@ async function initDatabase() {
       `ALTER TABLE trades ADD COLUMN current_price REAL`,
       `ALTER TABLE trades ADD COLUMN pips REAL DEFAULT 0`,
       `ALTER TABLE trades ADD COLUMN trailing_stop_pips REAL DEFAULT 0`,
-      `CREATE TABLE IF NOT EXISTS pending_orders (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, challenge_id TEXT, funded_account_id TEXT, symbol TEXT NOT NULL, direction TEXT NOT NULL, order_type TEXT NOT NULL, volume REAL NOT NULL, entry_price REAL NOT NULL, stop_loss REAL, take_profit REAL, trailing_stop_pips REAL DEFAULT 0, expiry TEXT, status TEXT DEFAULT 'pending', commission REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), filled_at TEXT, cancelled_at TEXT, cancel_reason TEXT)`,
-      `CREATE TABLE IF NOT EXISTS symbol_settings (symbol TEXT PRIMARY KEY, spread_markup REAL DEFAULT 0, min_volume REAL DEFAULT 0.01, max_volume REAL DEFAULT 100, step_volume REAL DEFAULT 0.01, commission_per_lot REAL DEFAULT 3.5, swap_long REAL DEFAULT 0, swap_short REAL DEFAULT 0, trading_enabled INTEGER DEFAULT 1, updated_at TEXT DEFAULT (datetime('now')))`,
+      `CREATE TABLE IF NOT EXISTS pending_orders (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, challenge_id TEXT, funded_account_id TEXT, symbol TEXT NOT NULL, direction TEXT NOT NULL, order_type TEXT NOT NULL, volume REAL NOT NULL, entry_price REAL NOT NULL, stop_loss REAL, take_profit REAL, trailing_stop_pips REAL DEFAULT 0, expiry TEXT, status TEXT DEFAULT 'pending', commission REAL DEFAULT 0, created_at TEXT DEFAULT (NOW()::TEXT), filled_at TEXT, cancelled_at TEXT, cancel_reason TEXT)`,
+      `CREATE TABLE IF NOT EXISTS symbol_settings (symbol TEXT PRIMARY KEY, spread_markup REAL DEFAULT 0, min_volume REAL DEFAULT 0.01, max_volume REAL DEFAULT 100, step_volume REAL DEFAULT 0.01, commission_per_lot REAL DEFAULT 3.5, swap_long REAL DEFAULT 0, swap_short REAL DEFAULT 0, trading_enabled INTEGER DEFAULT 1, updated_at TEXT DEFAULT (NOW()::TEXT))`,
       `CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, ip_address TEXT, user_agent TEXT, country TEXT, platform TEXT DEFAULT 'web', login_at TEXT DEFAULT (datetime('now')), last_seen TEXT DEFAULT (datetime('now')), is_active INTEGER DEFAULT 1)`,
       `CREATE TABLE IF NOT EXISTS password_reset_codes (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, code TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))`,
     ];
