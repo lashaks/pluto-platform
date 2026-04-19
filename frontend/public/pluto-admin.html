@@ -193,7 +193,8 @@ async function doRender(p){
       case 'symbols': await rSymbols(m); break;
       case 'sessions': await rSessions(m); break;
       case 'payouts': await rPayouts(m); break;
-      case 'audit': await rAudit(m); break;
+      case 'ctypes': await rCtypes(el);break;
+  case 'audit': await rAudit(m); break;
       case 'users': await rUsers(m); break;
     }
     if(['overview','positions','alerts'].includes(p)) refreshT=setTimeout(()=>doRender(p),6000);
@@ -863,6 +864,157 @@ function uSlip(){var b=document.getElementById('slipBar'),v=document.getElementB
 async function aSlip(d){cSlip=Math.max(0,Math.min(10,+(cSlip+d).toFixed(1)));uSlip();await sSlip()}
 async function pSlip(v){cSlip=v;uSlip();await sSlip()}
 async function sSlip(){try{await api('/api/pluto-admin/slippage',{method:'PUT',body:JSON.stringify({slippage_pips:cSlip})})}catch(e){}}
+
+
+async function rCtypes(el) {
+  try {
+    const data = await api('/api/pluto-admin/challenge-types');
+    const db = data.db_types || [];
+    const cfg = data.config_types || [];
+    el.innerHTML = `<div class="page-head"><h1>Challenge Types</h1><p>Create, edit, and manage challenge types and pricing. Changes apply to new purchases immediately.</p></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-sm btn-b" onclick="newCtype()">+ New Challenge Type</button>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Built-in Types (from config — read only)</div></div>
+    <table class="tbl" style="font-size:12px"><tr><th>Name</th><th>Slug</th><th>Target</th><th>Daily</th><th>Max DD</th><th>Split</th><th>Pricing (100K)</th></tr>
+    ${cfg.map(t=>`<tr>
+      <td style="font-weight:600">${t.name}</td>
+      <td style="font-family:var(--fm);color:var(--t3)">${t.slug}</td>
+      <td>${t.rules.profit_target_pct||t.rules.phase1_target_pct||'—'}%</td>
+      <td>${t.rules.max_daily_loss_pct}%</td>
+      <td>${t.rules.max_total_loss_pct}%</td>
+      <td>${t.rules.profit_split_pct}%</td>
+      <td style="font-family:var(--fm)">$${t.pricing[100000]||'—'}</td>
+    </tr>`).join('')}
+    </table></div>
+    <div class="card" style="margin-top:12px"><div class="ch"><div class="ct">Custom Types (admin-created)</div></div>
+    ${db.length?`<table class="tbl" style="font-size:12px"><tr><th>Name</th><th>Slug</th><th>Active</th><th>Pricing (100K)</th><th>Target</th><th>Actions</th></tr>
+    ${db.map(t=>{
+      const p=JSON.parse(t.pricing_json||'{}');
+      const r=JSON.parse(t.rules_json||'{}');
+      return `<tr>
+        <td style="font-weight:600">${t.name}</td>
+        <td style="font-family:var(--fm);color:var(--t3)">${t.slug}</td>
+        <td><span style="color:${t.is_active?'var(--gr)':'var(--rd)'}">${t.is_active?'Active':'Inactive'}</span></td>
+        <td style="font-family:var(--fm)">$${p[100000]||'—'}</td>
+        <td>${r.profit_target_pct||'—'}%</td>
+        <td><button class="btn btn-xs btn-b" onclick="editCtype('${t.id}')">Edit</button> <button class="btn btn-xs btn-d" onclick="delCtype('${t.id}','${t.name}')">Del</button></td>
+      </tr>`;
+    }).join('')}
+    </table>`:'<div style="padding:16px;text-align:center;color:var(--t3)">No custom types yet. Click "+ New Challenge Type" to create one.</div>'}
+    </div>`;
+  } catch(e) { el.innerHTML = `<div style="color:var(--rd);padding:20px">${e.message}</div>`; }
+}
+
+function newCtype(){
+  showMod(`<h3>Create Challenge Type</h3>
+  <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" placeholder="e.g. Pluto Elite"></div>
+  <div class="mfd"><label class="mfl">Slug (URL-safe ID)</label><input id="ct_s" class="inp" placeholder="e.g. elite"></div>
+  <div class="mfd"><label class="mfl">Description</label><input id="ct_d" class="inp" placeholder="Optional description"></div>
+  <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Pricing (USD per account size)</h4>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div class="mfd"><label class="mfl">$2.5K</label><input id="ct_p25" class="inp" type="number" placeholder="19"></div>
+    <div class="mfd"><label class="mfl">$5K</label><input id="ct_p5" class="inp" type="number" placeholder="32"></div>
+    <div class="mfd"><label class="mfl">$10K</label><input id="ct_p10" class="inp" type="number" placeholder="59"></div>
+    <div class="mfd"><label class="mfl">$25K</label><input id="ct_p25k" class="inp" type="number" placeholder="144"></div>
+    <div class="mfd"><label class="mfl">$50K</label><input id="ct_p50" class="inp" type="number" placeholder="225"></div>
+    <div class="mfd"><label class="mfl">$100K</label><input id="ct_p100" class="inp" type="number" placeholder="449"></div>
+    <div class="mfd"><label class="mfl">$200K</label><input id="ct_p200" class="inp" type="number" placeholder="799"></div>
+  </div>
+  <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Rules</h4>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div class="mfd"><label class="mfl">Profit Target %</label><input id="ct_pt" class="inp" type="number" value="10" step="0.5"></div>
+    <div class="mfd"><label class="mfl">Max Daily Loss %</label><input id="ct_dl" class="inp" type="number" value="5" step="0.5"></div>
+    <div class="mfd"><label class="mfl">Max Total Loss %</label><input id="ct_dd" class="inp" type="number" value="8" step="0.5"></div>
+    <div class="mfd"><label class="mfl">Profit Split %</label><input id="ct_sp" class="inp" type="number" value="80" step="5"></div>
+    <div class="mfd"><label class="mfl">Leverage</label><input id="ct_lv" class="inp" value="1:30"></div>
+    <div class="mfd"><label class="mfl">Min Trading Days</label><input id="ct_md" class="inp" type="number" value="0"></div>
+  </div>
+  <div class="mbtns"><button class="bo" onclick="closeMod()">Cancel</button><button class="bp" onclick="saveCtype()">Create</button></div>`);
+}
+
+async function saveCtype(){
+  const pricing={};
+  const p25=+($('ct_p25')?.value);if(p25)pricing[2500]=p25;
+  const p5=+($('ct_p5')?.value);if(p5)pricing[5000]=p5;
+  const p10=+($('ct_p10')?.value);if(p10)pricing[10000]=p10;
+  const p25k=+($('ct_p25k')?.value);if(p25k)pricing[25000]=p25k;
+  const p50=+($('ct_p50')?.value);if(p50)pricing[50000]=p50;
+  const p100=+($('ct_p100')?.value);if(p100)pricing[100000]=p100;
+  const p200=+($('ct_p200')?.value);if(p200)pricing[200000]=p200;
+  const rules={
+    profit_target_pct:+($('ct_pt')?.value)||10,
+    max_daily_loss_pct:+($('ct_dl')?.value)||5,
+    max_total_loss_pct:+($('ct_dd')?.value)||8,
+    profit_split_pct:+($('ct_sp')?.value)||80,
+    leverage:$('ct_lv')?.value||'1:30',
+    min_trading_days:+($('ct_md')?.value)||0
+  };
+  try{
+    await api('/api/pluto-admin/challenge-types',{method:'POST',body:JSON.stringify({
+      name:$('ct_n').value,slug:$('ct_s').value,description:$('ct_d')?.value||'',pricing,rules
+    })});
+    toast('Challenge type created','ok');closeMod();rCtypes($('mc'));
+  }catch(e){toast(e.message,'err');}
+}
+
+async function editCtype(id){
+  try{
+    const data=await api('/api/pluto-admin/challenge-types');
+    const t=(data.db_types||[]).find(x=>x.id===id);if(!t)return toast('Not found','err');
+    const p=JSON.parse(t.pricing_json||'{}');
+    const r=JSON.parse(t.rules_json||'{}');
+    showMod(`<h3>Edit: ${t.name}</h3>
+    <div class="mfd"><label class="mfl">Name</label><input id="ct_n" class="inp" value="${t.name}"></div>
+    <div class="mfd"><label class="mfl">Slug</label><input id="ct_s" class="inp" value="${t.slug}"></div>
+    <div class="mfd"><label class="mfl">Active</label><select id="ct_a" class="inp"><option value="1" ${t.is_active?'selected':''}>Active</option><option value="0" ${!t.is_active?'selected':''}>Inactive</option></select></div>
+    <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Pricing (USD)</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div class="mfd"><label class="mfl">$2.5K</label><input id="ct_p25" class="inp" type="number" value="${p[2500]||''}"></div>
+      <div class="mfd"><label class="mfl">$5K</label><input id="ct_p5" class="inp" type="number" value="${p[5000]||''}"></div>
+      <div class="mfd"><label class="mfl">$10K</label><input id="ct_p10" class="inp" type="number" value="${p[10000]||''}"></div>
+      <div class="mfd"><label class="mfl">$25K</label><input id="ct_p25k" class="inp" type="number" value="${p[25000]||''}"></div>
+      <div class="mfd"><label class="mfl">$50K</label><input id="ct_p50" class="inp" type="number" value="${p[50000]||''}"></div>
+      <div class="mfd"><label class="mfl">$100K</label><input id="ct_p100" class="inp" type="number" value="${p[100000]||''}"></div>
+      <div class="mfd"><label class="mfl">$200K</label><input id="ct_p200" class="inp" type="number" value="${p[200000]||''}"></div>
+    </div>
+    <h4 style="margin:12px 0 6px;font-size:12px;color:var(--t2)">Rules</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div class="mfd"><label class="mfl">Target %</label><input id="ct_pt" class="inp" type="number" value="${r.profit_target_pct||10}" step="0.5"></div>
+      <div class="mfd"><label class="mfl">Daily Loss %</label><input id="ct_dl" class="inp" type="number" value="${r.max_daily_loss_pct||5}" step="0.5"></div>
+      <div class="mfd"><label class="mfl">Max DD %</label><input id="ct_dd" class="inp" type="number" value="${r.max_total_loss_pct||8}" step="0.5"></div>
+      <div class="mfd"><label class="mfl">Split %</label><input id="ct_sp" class="inp" type="number" value="${r.profit_split_pct||80}" step="5"></div>
+      <div class="mfd"><label class="mfl">Leverage</label><input id="ct_lv" class="inp" value="${r.leverage||'1:30'}"></div>
+      <div class="mfd"><label class="mfl">Min Days</label><input id="ct_md" class="inp" type="number" value="${r.min_trading_days||0}"></div>
+    </div>
+    <div class="mbtns"><button class="bo" onclick="closeMod()">Cancel</button><button class="bp" onclick="updateCtype('${id}')">Save</button></div>`);
+  }catch(e){toast(e.message,'err');}
+}
+
+async function updateCtype(id){
+  const pricing={};
+  const p25=+($('ct_p25')?.value);if(p25)pricing[2500]=p25;
+  const p5=+($('ct_p5')?.value);if(p5)pricing[5000]=p5;
+  const p10=+($('ct_p10')?.value);if(p10)pricing[10000]=p10;
+  const p25k=+($('ct_p25k')?.value);if(p25k)pricing[25000]=p25k;
+  const p50=+($('ct_p50')?.value);if(p50)pricing[50000]=p50;
+  const p100=+($('ct_p100')?.value);if(p100)pricing[100000]=p100;
+  const p200=+($('ct_p200')?.value);if(p200)pricing[200000]=p200;
+  try{
+    await api('/api/pluto-admin/challenge-types/'+id,{method:'PUT',body:JSON.stringify({
+      name:$('ct_n').value,slug:$('ct_s').value,is_active:+$('ct_a').value,pricing,
+      rules:{profit_target_pct:+$('ct_pt').value,max_daily_loss_pct:+$('ct_dl').value,
+        max_total_loss_pct:+$('ct_dd').value,profit_split_pct:+$('ct_sp').value,
+        leverage:$('ct_lv').value,min_trading_days:+$('ct_md').value}
+    })});
+    toast('Updated','ok');closeMod();rCtypes($('mc'));
+  }catch(e){toast(e.message,'err');}
+}
+
+async function delCtype(id,name){
+  if(!confirm('Delete challenge type "'+name+'"? This cannot be undone.'))return;
+  try{await api('/api/pluto-admin/challenge-types/'+id,{method:'DELETE'});toast('Deleted','ok');rCtypes($('mc'));}catch(e){toast(e.message,'err');}
+}
 
 </script>
 </body>

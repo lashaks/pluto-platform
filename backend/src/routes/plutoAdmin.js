@@ -574,4 +574,82 @@ router.put('/symbols/bulk-swap', async (req, res) => {
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
+
+// ── CHALLENGE TYPES MANAGER ───────────────────────────────────────────────────
+// GET /api/pluto-admin/challenge-types
+router.get('/challenge-types', async (req, res) => {
+  try {
+    const types = await queryAll('SELECT * FROM challenge_types ORDER BY display_order ASC, created_at ASC');
+    // Also return config-based types for reference
+    const config = require('../../config');
+    const configTypes = [
+      { slug:'one_step', name:'Pluto Classic (1-Step)', pricing:config.challengePricing, rules:config.oneStepRules, source:'config' },
+      { slug:'two_step', name:'Pluto Dual (2-Step)', pricing:config.challengePricing, rules:config.twoStepRules, source:'config' },
+      { slug:'rapid', name:'PlutoRapid', pricing:config.rapidPricing, rules:config.rapidRules, source:'config' },
+    ];
+    res.json({ db_types: types, config_types: configTypes });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/pluto-admin/challenge-types — Create new type
+router.post('/challenge-types', async (req, res) => {
+  try {
+    const { name, slug, description, pricing, rules, is_active, display_order } = req.body;
+    if (!name || !slug) return res.status(400).json({ error: 'name and slug required' });
+    if (!pricing || typeof pricing !== 'object') return res.status(400).json({ error: 'pricing object required' });
+    if (!rules || typeof rules !== 'object') return res.status(400).json({ error: 'rules object required' });
+    const id = uuidv4();
+    await run(`INSERT INTO challenge_types (id,name,slug,description,pricing_json,rules_json,is_active,display_order) VALUES (?,?,?,?,?,?,?,?)`,
+      [id, name, slug.toLowerCase().replace(/[^a-z0-9_]/g,'_'), description||'', JSON.stringify(pricing), JSON.stringify(rules), is_active??1, display_order??0]);
+    await run(`INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
+      [uuidv4(), 'CHALLENGE_TYPE_CREATED', 'challenge_type', id, `Created: ${name} (${slug})`]);
+    res.status(201).json({ success: true, id });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// PUT /api/pluto-admin/challenge-types/:id — Update
+router.put('/challenge-types/:id', async (req, res) => {
+  try {
+    const { name, slug, description, pricing, rules, is_active, display_order } = req.body;
+    const fields=[], vals=[];
+    if (name !== undefined) { fields.push('name=?'); vals.push(name); }
+    if (slug !== undefined) { fields.push('slug=?'); vals.push(slug.toLowerCase().replace(/[^a-z0-9_]/g,'_')); }
+    if (description !== undefined) { fields.push('description=?'); vals.push(description); }
+    if (pricing !== undefined) { fields.push('pricing_json=?'); vals.push(JSON.stringify(pricing)); }
+    if (rules !== undefined) { fields.push('rules_json=?'); vals.push(JSON.stringify(rules)); }
+    if (is_active !== undefined) { fields.push('is_active=?'); vals.push(is_active?1:0); }
+    if (display_order !== undefined) { fields.push('display_order=?'); vals.push(display_order); }
+    if (!fields.length) return res.status(400).json({ error: 'No fields' });
+    fields.push("updated_at=datetime('now')");
+    vals.push(req.params.id);
+    await run(`UPDATE challenge_types SET ${fields.join(',')} WHERE id=?`, vals);
+    res.json({ success: true });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// DELETE /api/pluto-admin/challenge-types/:id — Remove
+router.delete('/challenge-types/:id', async (req, res) => {
+  try {
+    await run('DELETE FROM challenge_types WHERE id=?', [req.params.id]);
+    res.json({ success: true });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// GET /api/pluto-admin/challenge-types/pricing — Public pricing for frontend
+router.get('/challenge-types/pricing', async (req, res) => {
+  try {
+    const config = require('../../config');
+    const dbTypes = await queryAll('SELECT * FROM challenge_types WHERE is_active=1 ORDER BY display_order ASC');
+    const allTypes = [
+      { slug:'one_step', name:'Pluto Classic', pricing:config.challengePricing, rules:config.oneStepRules },
+      { slug:'two_step', name:'Pluto Dual', pricing:config.challengePricing, rules:config.twoStepRules },
+      { slug:'rapid', name:'PlutoRapid', pricing:config.rapidPricing, rules:config.rapidRules },
+    ];
+    for (const dt of dbTypes) {
+      allTypes.push({ slug:dt.slug, name:dt.name, pricing:JSON.parse(dt.pricing_json), rules:JSON.parse(dt.rules_json) });
+    }
+    res.json(allTypes);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

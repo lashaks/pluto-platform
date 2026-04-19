@@ -37,16 +37,25 @@ router.get('/:id', authenticate, async (req, res) => {
 router.post('/purchase', authenticate, async (req, res) => {
   try {
     const { account_size, profit_split, challenge_type, payment_method, discount_code, platform } = req.body;
-    const pricingTable = type === 'rapid' ? config.rapidPricing : config.challengePricing;
-    const fee = pricingTable[account_size];
-    if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(config.challengePricing).map(Number) });
-
+    const type = ['two_step','rapid'].includes(challenge_type) ? challenge_type : 'one_step';
     const selectedPlatform = 'plutotrade';
 
-    const type = ['two_step','rapid'].includes(challenge_type) ? challenge_type : 'one_step';
-    const rules = type === 'two_step' ? config.twoStepRules
+    // Dynamic pricing: check DB first, fall back to config
+    let pricingTable = type === 'rapid' ? config.rapidPricing : config.challengePricing;
+    try {
+      const dbType = await queryOne(`SELECT pricing_json FROM challenge_types WHERE slug=$1 AND is_active=1`, [type]);
+      if (dbType?.pricing_json) pricingTable = JSON.parse(dbType.pricing_json);
+    } catch(_) {}
+    const fee = pricingTable[account_size];
+    if (!fee) return res.status(400).json({ error: 'Invalid account size', valid_sizes: Object.keys(pricingTable).map(Number) });
+    // Read rules: DB first (admin-created types), config fallback
+    let rules = type === 'two_step' ? config.twoStepRules
                 : type === 'rapid'    ? config.rapidRules
                 :                       config.oneStepRules;
+    try {
+      const dbRules = await queryOne(`SELECT rules_json FROM challenge_types WHERE slug=$1 AND is_active=1`, [type]);
+      if (dbRules?.rules_json) rules = { ...rules, ...JSON.parse(dbRules.rules_json) };
+    } catch(_) {}
     const split = profit_split === 90 ? 90 : rules.profit_split_pct;
     let totalFee = split === 90 ? Math.round(fee * 1.3) : fee;
 
@@ -64,7 +73,7 @@ router.post('/purchase', authenticate, async (req, res) => {
         const maxedOut = dc.max_uses > 0 && dc.current_uses >= dc.max_uses;
         if (!expired && !maxedOut) {
           const discount = Math.round(totalFee * dc.discount_pct / 100);
-          totalFee = totalFee - discount;
+          totalFee = Math.max(1, totalFee - discount); // Floor at $1 — no free/negative challenges
           discountApplied = { code: dc.code, pct: dc.discount_pct, saved: discount };
           await run(`UPDATE discount_codes SET current_uses = current_uses + 1 WHERE id=$1`, [dc.id]);
         }
