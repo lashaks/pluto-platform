@@ -31,11 +31,13 @@ app.use(cors({
       'https://pluto-platform.vercel.app',
       'https://plutocapitalfunding.com',
       'https://www.plutocapitalfunding.com',
+      'https://trade.plutocapitalfunding.com',
+      'https://admin.plutocapitalfunding.com',
       'http://localhost:3000',
       'http://localhost:5173',
     ];
-    // Allow any vercel.app preview URL + no origin (mobile/curl)
-    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) return cb(null, true);
+    // Allow any vercel.app preview URL + any plutocapitalfunding subdomain + no origin (mobile/curl)
+    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin) || /\.plutocapitalfunding\.com$/.test(origin)) return cb(null, true);
     cb(null, true); // open during dev — tighten before public launch
   },
   credentials: true,
