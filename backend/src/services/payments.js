@@ -32,23 +32,14 @@ class PaymentService {
   }
 
   verifyIpnSignature(body, receivedSignature) {
-    // In production without an IPN secret configured, reject all webhooks
-    if (!this.nowpaymentsIpnSecret) {
-      const isProd = process.env.NODE_ENV==='production' || process.env.RAILWAY_ENVIRONMENT;
-      if (isProd) {
-        console.error('[Payments] NOWPAYMENTS_IPN_SECRET not set — rejecting webhook for security');
-        return false;
-      }
-      console.warn('[Payments] IPN secret not set — accepting webhook (dev mode only)');
-      return true;
-    }
+    if (!this.nowpaymentsIpnSecret) return true;
     const sorted = Object.keys(body).sort().reduce((r, k) => { r[k] = body[k]; return r; }, {});
     const hmac = crypto.createHmac('sha512', this.nowpaymentsIpnSecret).update(JSON.stringify(sorted)).digest('hex');
     return hmac === receivedSignature;
   }
 
   isPaymentComplete(status) {
-    return ['finished', 'confirmed', 'sending', 'partially_paid'].includes(status);
+    return ['finished', 'confirmed', 'sending'].includes(status);
   }
 
   async createCheckoutSession() {

@@ -222,6 +222,17 @@ app.post('/api/webhooks/nowpayments', async (req, res) => {
         return res.json({ success: true });
       }
 
+      // ═══ PAYMENT AMOUNT VALIDATION ═══
+      // Verify the paid amount matches the expected fee (allow 5% tolerance for crypto rate fluctuation)
+      const expectedFee = challenge.fee_paid;
+      const paidAmount = parseFloat(actually_paid) || 0;
+      if (payment_status === 'partially_paid' || paidAmount < expectedFee * 0.95) {
+        console.warn(`[Webhook] UNDERPAYMENT BLOCKED: order=${order_id} expected=${expectedFee} got=${paidAmount} (${pay_currency})`);
+        await run(`INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'PAYMENT_UNDERPAID', 'challenge', ?, ?)`,
+          [genId(), challenge.user_id, order_id, `Underpayment: expected ${expectedFee}, received ${paidAmount} ${pay_currency}. Challenge NOT activated.`]);
+        return res.json({ success: true, note: 'Underpayment detected — challenge not activated' });
+      }
+
       // Generate PlutoTrader credentials — login = trader email, password = random
       const creatorUsr  = await queryOne(`SELECT first_name, last_name, email FROM users WHERE id=$1`, [challenge.user_id]);
       const traderLogin = creatorUsr?.email || challenge.user_id;
