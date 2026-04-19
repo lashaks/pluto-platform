@@ -60,7 +60,7 @@ let pendingResetEmail='';
 async function doForgot(e){e.preventDefault();try{pendingResetEmail=$('forgotEmail').value;await api('/api/auth/forgot-password',{method:'POST',body:JSON.stringify({email:pendingResetEmail})});showAuthScreen('formReset');const re=$('resetEmail');if(re)re.value=pendingResetEmail;toast('Check your email for a reset code.','info')}catch(x){toast(x.message,'error')}}
 async function doReset(e){e.preventDefault();try{const em=$('resetEmail')?.value||pendingResetEmail;await api('/api/auth/reset-password',{method:'POST',body:JSON.stringify({email:em,code:$('resetCode').value,new_password:$('resetNewPass').value})});toast('Password reset! You can now sign in.','success');showAuth('login')}catch(x){toast(x.message,'error')}}
 async function resendResetCode(){const em=$('resetEmail')?.value||pendingResetEmail;if(!em){toast('Enter your email first','error');return;}try{await api('/api/auth/forgot-password',{method:'POST',body:JSON.stringify({email:em})});toast('New code sent — check your email','info')}catch(x){toast(x.message,'error')}}
-function logout(){token=null;user=null;localStorage.removeItem('pcf_token');sessionStorage.removeItem('pluto_welcomed');$('app').style.display='none';$('landing').style.display='block'}
+function logout(){token=null;user=null;localStorage.removeItem('pcf_token');$('app').style.display='none';$('landing').style.display='block'}
 function toggleMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');if(s.classList.contains('mobile-open')){closeMobile()}else{s.classList.add('mobile-open');o.classList.add('open')}}
 function closeMobile(){const s=document.getElementById('dashSidebar');const o=document.getElementById('mobileOverlay');s.classList.remove('mobile-open');o.classList.remove('open')}
 async function enterDashboard(){
@@ -258,31 +258,34 @@ function navigate(p){
   if(titleEl)titleEl.textContent=titles[p]||'';
   if(window['render_'+p])window['render_'+p]();
 }
-let PLANS={one_step:[],two_step:[],rapid:[]};
-let PLAN_TYPES=[];
-async function loadChallengeTypes(){
-  try{
-    const types=await fetch(BE+'/api/challenges/types').then(r=>r.json());
-    if(!types||!types.length)return;
-    PLAN_TYPES=types;
-    PLANS={};
-    types.forEach(t=>{PLANS[t.slug]=t.plans;});
-    // Rebuild pricing tabs
-    const tabC=document.getElementById('evalTabs');
-    if(tabC){
-      tabC.innerHTML=types.map((t,i)=>`<button class="eval-tab ${i===0?'active':''}" onclick="switchEval('${t.slug}')">${t.name}${t.slug==='rapid'?' <span style=\"position:absolute;top:-6px;right:-4px;background:#f59e0b;color:#000;font-size:.48rem;font-weight:800;padding:1px 4px;border-radius:3px;letter-spacing:.06em\">FAST</span>':''}</button>`).join('');
-    }
-    // Also update dashboard buy page tabs
-    const dashTabs=document.getElementById('dashEvalTabs');
-    if(dashTabs){
-      dashTabs.innerHTML=types.map((t,i)=>`<button class="eval-tab ${i===0?'active':''}" onclick="switchBuyEval('${t.slug}')">${t.name}</button>`).join('');
-    }
-    // Render first type
-    if(types[0])renderPricing(PLANS[types[0].slug],$('landingPricing'),"selectPlan");
-  }catch(e){console.warn('[Pricing]',e.message);}
+const PLANS={
+  one_step:[
+    {size:2500,  fee:19,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:5000,  fee:32,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:10000, fee:59,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:25000, fee:144, target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:50000, fee:225, target:10,daily:5,dd:8, split:80,lev:'1:30'},
+    {size:100000,fee:449, target:10,daily:5,dd:8, split:80,lev:'1:50',badge:'MAX'},
+  ],
+  two_step:[
+    {size:2500,  fee:15,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:5000,  fee:29,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:10000, fee:49,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:25000, fee:129, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:50000, fee:199, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
+    {size:100000,fee:379, target:'8/5',daily:5,dd:10,split:80,lev:'1:50',badge:'MAX'},
+  ],
+  rapid:[
+    {size:2500,  fee:15,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:5000,  fee:25,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:10000, fee:45,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:25000, fee:109, target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:50000, fee:179, target:12,daily:6,dd:8, split:80,lev:'1:30'},
+    {size:100000,fee:349, target:12,daily:6,dd:8, split:80,lev:'1:50',badge:'MAX'},
+  ],
 };
-function renderPricing(plans,c,action){c.innerHTML=plans.map((p,i)=>`<div class="plan ${i===4?'popular':''}" onclick="${action}(${p.size})"><div class="plan-size">${F(p.size)}</div><div class="plan-price">${F(p.fee)}</div><div class="plan-detail">${p.target}% Target</div><div class="plan-detail">${p.daily}% Daily Loss</div><div class="plan-detail">${p.dd}% Max DD</div><div class="plan-detail">${p.split}% Split</div><div class="plan-detail">${p.lev} Leverage</div>${p.consistency?`<div class="plan-detail">${p.consistency}% Consistency</div>`:`<div class="plan-detail" style="color:var(--gr)">No Consistency Rule</div>`}<button class="btn btn-primary btn-sm btn-full" style="margin-top:16px">${action==='selectPlan'?'Get Funded':'Select Plan'}</button></div>`).join('')}
-function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>{t.classList.remove('active');t.style.borderBottomColor='transparent'});if(event&&event.target)event.target.classList.add('active');if(PLANS[type])renderPricing(PLANS[type],$('landingPricing'),'selectPlan');}
+function renderPricing(plans,c,action){c.innerHTML=plans.map((p,i)=>`<div class="plan ${i===4?'popular':''}" onclick="${action}(${p.size})"><div class="plan-size">${F(p.size)}</div><div class="plan-price">${F(p.fee)}</div><div class="plan-detail">${p.target}% Target</div><div class="plan-detail">${p.daily}% Daily Loss</div><div class="plan-detail">${p.dd}% Max DD</div><div class="plan-detail">${p.split}% Split</div><div class="plan-detail">${p.lev} Leverage</div><div class="plan-detail">20% Consistency</div><button class="btn btn-primary btn-sm btn-full" style="margin-top:16px">${action==='selectPlan'?'Get Funded':'Select Plan'}</button></div>`).join('')}
+function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>{t.classList.remove('active');t.style.borderBottomColor='transparent'});event.target.classList.add('active');renderPricing(PLANS[type],$('landingPricing'),"selectPlan")}
 function G(label,value,max,color,warn){const p=Math.min(100,Math.abs(value)/max*100);const c=warn&&p>70?'var(--rd)':color;return`<div style="flex:1;min-width:160px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font-size:.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">${label}</span><span style="font-size:.84rem;font-family:var(--fm);font-weight:700;color:${warn&&p>70?'var(--rd)':'var(--t1)'}">${value.toFixed(2)}% <span style="color:var(--t3);font-weight:400">/ ${max}%</span></span></div><div class="bar" style="height:6px"><div class="bar-fill" style="width:${p}%;background:${c}"></div></div></div>`}
 function M(label,value,color){return`<div style="padding:16px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--brd);text-align:center"><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">${label}</div><div style="font-size:1.15rem;font-family:var(--fm);font-weight:700;${color?'color:'+color:''}">${value}</div></div>`}
 function R(l,v,c){return`<div class="row"><span class="row-label">${l}</span><span class="row-value"${c?' style="color:'+c+'"':''}>${v}</span></div>`}
@@ -297,7 +300,7 @@ ${pending.length?`<div class="card" style="border-color:rgba(251,191,36,.2);back
 ${active.length?`<div class="card"><div class="card-title">Active Evaluations</div>${active.map(c=>{const pp=((c.current_balance-c.starting_balance)/c.starting_balance*100);const tp=Math.min(100,Math.max(0,pp/c.profit_target_pct*100));const du=((c.highest_balance-c.lowest_equity)/c.starting_balance*100);const dp=Math.min(100,du/c.max_total_loss_pct*100);const phase=c.challenge_type==='two_step'?(c.phase===2
     ?' <span style="display:inline-flex;align-items:center;padding:2px 8px;background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-left:6px;vertical-align:middle">Phase 2</span>'
     :' <span style="display:inline-flex;align-items:center;padding:2px 8px;background:var(--acbg);color:var(--ac2);border:1px solid var(--acgl);border-radius:10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-left:6px;vertical-align:middle">Phase 1</span>'
-  ):'';return`<div class="detail" style="cursor:pointer" onclick="navigate('challenges')"><div class="detail-head"><div><div class="detail-title">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div class="detail-sub">Terminal: <span style="color:var(--ac2)">PlutoTrader</span></div></div>${B(c.status)}<a href="/terminal.html?challenge="+c.id+"" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none"><button class="btn btn-primary btn-sm" style="gap:5px">&#9654; Trade Now</button></a></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">${M('Balance',F(c.current_balance))}${M('Profit',pct(pp),pp>=0?'var(--gr)':'var(--rd)')}${M('Trades',String(c.total_trades))}${M('Win Rate',(c.total_trades?Math.round(c.winning_trades/c.total_trades*100):0)+'%')}</div><div style="display:flex;gap:20px;flex-wrap:wrap">${G('Target',pp,c.profit_target_pct,'var(--gr)',false)}${G('Drawdown',du,c.max_total_loss_pct,'var(--ac2)',true)}</div></div>`}).join('')}</div>`:`<div class="card" style="text-align:center;padding:52px"><div style="width:56px;height:56px;border-radius:14px;background:var(--ac-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem">&#128640;</div><div style="font-weight:700;font-size:1.08rem;margin-bottom:6px">No active evaluations</div><div style="color:var(--t2);font-size:.88rem;margin-bottom:22px">Start a challenge to prove your edge.</div><button class="btn btn-primary" onclick="navigate('buy')">Buy Challenge &rarr;</button></div>`}
+  ):'';return`<div class="detail" style="cursor:pointer" onclick="navigate('challenges')"><div class="detail-head"><div><div class="detail-title">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div class="detail-sub">Terminal: <span style="color:var(--ac2)">PlutoTrader</span></div></div>${B(c.status)}<a href="https://trade.plutocapitalfunding.com/terminal.html?challenge="+c.id+"" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none"><button class="btn btn-primary btn-sm" style="gap:5px">&#9654; Trade Now</button></a></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">${M('Balance',F(c.current_balance))}${M('Profit',pct(pp),pp>=0?'var(--gr)':'var(--rd)')}${M('Trades',String(c.total_trades))}${M('Win Rate',(c.total_trades?Math.round(c.winning_trades/c.total_trades*100):0)+'%')}</div><div style="display:flex;gap:20px;flex-wrap:wrap">${G('Target',pp,c.profit_target_pct,'var(--gr)',false)}${G('Drawdown',du,c.max_total_loss_pct,'var(--ac2)',true)}</div></div>`}).join('')}</div>`:`<div class="card" style="text-align:center;padding:52px"><div style="width:56px;height:56px;border-radius:14px;background:var(--ac-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem">&#128640;</div><div style="font-weight:700;font-size:1.08rem;margin-bottom:6px">No active evaluations</div><div style="color:var(--t2);font-size:.88rem;margin-bottom:22px">Start a challenge to prove your edge.</div><button class="btn btn-primary" onclick="navigate('buy')">Buy Challenge &rarr;</button></div>`}
 ${(passed||failed)?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card" style="text-align:center"><div style="font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px">Passed</div><div style="font-size:2.2rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--gr)">${passed}</div></div><div class="card" style="text-align:center"><div style="font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px">Failed</div><div style="font-size:2.2rem;font-weight:600;font-family:var(--fd);letter-spacing:-.03em;color:var(--rd)">${failed}</div></div></div>`:''}`}catch(e){$('page-dashboard').innerHTML=`<div class="card"><div class="empty">Failed to load. <a onclick="navigate('dashboard')">Retry</a></div></div>`}};
 
 // CHALLENGES (Account Metrics)
@@ -310,7 +313,7 @@ const tgtAmt=c.starting_balance*c.profit_target_pct/100;const tgtRemain=Math.max
 const ddMax=c.starting_balance*c.max_total_loss_pct/100;const ddUsedAmt=c.highest_balance-c.current_equity;const ddRemain=Math.max(0,ddMax-ddUsedAmt);const ddProg=Math.min(100,ddUsedAmt/ddMax*100);
 const dlMax=c.starting_balance*c.max_daily_loss_pct/100;const dlUsedAmt=Math.max(0,c.day_start_balance-c.current_equity);const dlRemain=Math.max(0,dlMax-dlUsedAmt);const dlProg=Math.min(100,dlUsedAmt/dlMax*100);
 const threshold=c.starting_balance-ddMax;
-return`<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden"><div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);flex-wrap:wrap;gap:10px"><div><div style="font-size:1.1rem;font-weight:700">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">ID: ${c.id.slice(0,8)} &bull; ${new Date(c.created_at).toLocaleDateString()}</div></div><div style="display:flex;align-items:center;gap:8px">${isActive?`<div style="display:flex;gap:6px;align-items:center"><a href="/terminal.html" target="_blank" style="text-decoration:none"><button class="btn btn-primary btn-sm">&#9654; Open Terminal</button></a><button class="btn btn-outline btn-sm" onclick="showCredentials('${c.ctrader_login||user?.email||''}')">Login Info</button></div>`:''} ${B(c.status)}</div></div>
+return`<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden"><div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);flex-wrap:wrap;gap:10px"><div><div style="font-size:1.1rem;font-weight:700">${F(c.account_size)} ${c.challenge_type==='two_step'?'2-Step':'1-Step'}${phase}</div><div style="font-size:.76rem;color:var(--t3);margin-top:2px">ID: ${c.id.slice(0,8)} &bull; ${new Date(c.created_at).toLocaleDateString()}</div></div><div style="display:flex;align-items:center;gap:8px">${isActive?`<div style="display:flex;gap:6px;align-items:center"><a href="https://trade.plutocapitalfunding.com/terminal.html" target="_blank" style="text-decoration:none"><button class="btn btn-primary btn-sm">&#9654; Open Terminal</button></a><button class="btn btn-outline btn-sm" onclick="showCredentials('${c.ctrader_login||user?.email||''}')">Login Info</button></div>`:''} ${B(c.status)}</div></div>
 ${isPending?`<div style="padding:24px;text-align:center;color:var(--am)"><div style="font-size:1.2rem;margin-bottom:8px">&#9202;</div><strong>Awaiting Payment</strong></div>`:''}
 ${isActive||isPassed||isFailed?`<div style="padding:24px">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px">
@@ -759,7 +762,7 @@ let codes=[];try{codes=await api('/api/admin/discount-codes')}catch(e){}
 let settings={};try{settings=await api('/api/admin/settings')}catch(e){}
 const demoOn=settings.demo_mode==='true';
 const tb=(id,label)=>`<button class="eval-tab ${adminTab===id?'active':''}" onclick="adminTab='${id}';render_admin()">${label}</button>`;
-$('page-admin').innerHTML=`<div class="page-head" style="display:flex;align-items:center;justify-content:space-between"><div><h1>Admin Panel</h1><p>Platform management</p></div><a href="/pluto-admin.html" target="_blank" style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border-radius:var(--r2);font-size:.76rem;font-weight:700;text-decoration:none;box-shadow:0 4px 16px rgba(139,92,246,.3)">🚀 Open PlutoAdmin Dashboard →</a></div>
+$('page-admin').innerHTML=`<div class="page-head" style="display:flex;align-items:center;justify-content:space-between"><div><h1>Admin Panel</h1><p>Platform management</p></div><a href="https://admin.plutocapitalfunding.com" target="_blank" style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border-radius:var(--r2);font-size:.76rem;font-weight:700;text-decoration:none;box-shadow:0 4px 16px rgba(139,92,246,.3)">🚀 Open PlutoAdmin Dashboard →</a></div>
 <div class="card" style="padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px"><div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:${demoOn?'var(--gr)':'var(--rd)'};box-shadow:0 0 8px ${demoOn?'rgba(52,211,153,.5)':'rgba(248,113,113,.3)'}"></div><span style="font-weight:700;font-size:.9rem">${demoOn?'Demo Mode ON':'Demo Mode OFF'}</span><span style="font-size:.74rem;color:var(--t3)">${demoOn?'Purchases skip payment — PlutoTrader accounts created instantly':'Payments required via NOWPayments'}</span></div><button class="btn ${demoOn?'btn-danger':'btn-primary'} btn-sm" onclick="toggleDemo(${demoOn?'false':'true'})">${demoOn?'Disable Demo':'Enable Demo'}</button></div>
 <div class="stats"><div class="stat s-purple"><div class="stat-label">Revenue</div><div class="stat-value">${F(o.total_revenue)}</div></div><div class="stat s-green"><div class="stat-label">Payouts</div><div class="stat-value">${F(o.total_payouts)}</div></div><div class="stat s-blue"><div class="stat-label">Net</div><div class="stat-value">${F(o.net_revenue)}</div></div><div class="stat s-cyan"><div class="stat-label">Reserve</div><div class="stat-value">${o.reserve_health}%</div></div><div class="stat s-amber"><div class="stat-label">Users</div><div class="stat-value">${o.total_users}</div></div><div class="stat s-green"><div class="stat-label">Active</div><div class="stat-value">${o.active_challenges}</div></div><div class="stat s-blue"><div class="stat-label">Funded</div><div class="stat-value">${o.total_funded}</div></div><div class="stat s-red"><div class="stat-label">Pending</div><div class="stat-value">${o.pending_payouts}</div></div></div>
 <div class="eval-tabs" style="width:100%;margin-bottom:20px">${tb('overview','Payouts')}${tb('users','Users')}${tb('codes','Promo Codes')}${tb('terminal','PlutoTrader')}${tb('log','Audit Log')}</div>
@@ -820,7 +823,7 @@ function showCredentials(login){
     <button class="modal-close" onclick="document.getElementById('credModal').remove()">&times;</button>
     <h2>PlutoTrader Access</h2>
     <p style="color:var(--t2);font-size:.86rem;margin-bottom:20px">Log into the terminal with your Pluto Capital account credentials — the same email and password you use here on the dashboard.</p>
-    <a href="/terminal.html" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:18px;display:block;text-align:center;padding:12px;font-size:.9rem">&#9654; Open PlutoTrader Terminal</a>
+    <a href="https://trade.plutocapitalfunding.com/terminal.html" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:18px;display:block;text-align:center;padding:12px;font-size:.9rem">&#9654; Open PlutoTrader Terminal</a>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r)">
         <div>

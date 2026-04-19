@@ -17,8 +17,8 @@
   <script src="/js/tf.min.js" defer></script>
   <script src="/js/handpose.min.js" defer></script>
 </head>
-<body style="background:transparent">
-<div id="landing" style="background:transparent;position:relative;z-index:1">
+<body>
+<div id="landing">
   <!-- DISCLAIMER BANNER -->
 
   <!-- FULLSCREEN ANIMATED BACKGROUND -->
@@ -109,7 +109,7 @@
   <section class="section" id="pricing"><div class="container">
     <div class="section-label">Challenge Plans</div>
     <h2 class="section-title">Choose your account size.</h2>
-    <div class="eval-tabs" id="evalTabs">
+    <div class="eval-tabs">
       <button class="eval-tab active" onclick="switchEval('one_step')">Pluto Classic</button>
       <button class="eval-tab" onclick="switchEval('two_step')">Pluto Dual</button>
       <button class="eval-tab" onclick="switchEval('rapid')" style="position:relative">PlutoRapid <span style="position:absolute;top:-6px;right:-4px;background:#f59e0b;color:#000;font-size:.48rem;font-weight:800;padding:1px 4px;border-radius:3px;letter-spacing:.06em">FAST</span></button>
@@ -227,36 +227,6 @@
         <div class="field"><label>First Name</label><input id="regFirst" required placeholder="John"></div>
         <div class="field"><label>Last Name</label><input id="regLast" required placeholder="Doe"></div>
       </div>
-      <div class="field"><label>Country</label><select id="regCountry" required style="padding:10px;border-radius:var(--r2);border:1px solid var(--brd2);background:var(--sf);color:var(--t1);font-family:var(--ff);font-size:.88rem">
-        <option value="">Select your country</option>
-        <option value="US">United States</option><option value="GB">United Kingdom</option><option value="DE">Germany</option>
-        <option value="FR">France</option><option value="CA">Canada</option><option value="AU">Australia</option>
-        <option value="NL">Netherlands</option><option value="CH">Switzerland</option><option value="SE">Sweden</option>
-        <option value="NO">Norway</option><option value="DK">Denmark</option><option value="FI">Finland</option>
-        <option value="AT">Austria</option><option value="BE">Belgium</option><option value="IE">Ireland</option>
-        <option value="IT">Italy</option><option value="ES">Spain</option><option value="PT">Portugal</option>
-        <option value="PL">Poland</option><option value="CZ">Czech Republic</option><option value="RO">Romania</option>
-        <option value="HR">Croatia</option><option value="SI">Slovenia</option><option value="SK">Slovakia</option>
-        <option value="BG">Bulgaria</option><option value="HU">Hungary</option><option value="LT">Lithuania</option>
-        <option value="LV">Latvia</option><option value="EE">Estonia</option><option value="CY">Cyprus</option>
-        <option value="MT">Malta</option><option value="LU">Luxembourg</option><option value="GR">Greece</option>
-        <option value="JP">Japan</option><option value="KR">South Korea</option><option value="SG">Singapore</option>
-        <option value="HK">Hong Kong</option><option value="AE">UAE</option><option value="SA">Saudi Arabia</option>
-        <option value="QA">Qatar</option><option value="KW">Kuwait</option><option value="BH">Bahrain</option>
-        <option value="OM">Oman</option><option value="TR">Turkey</option><option value="ZA">South Africa</option>
-        <option value="NG">Nigeria</option><option value="KE">Kenya</option><option value="GH">Ghana</option>
-        <option value="EG">Egypt</option><option value="MA">Morocco</option><option value="TN">Tunisia</option>
-        <option value="IN">India</option><option value="PK">Pakistan</option><option value="BD">Bangladesh</option>
-        <option value="MY">Malaysia</option><option value="ID">Indonesia</option><option value="TH">Thailand</option>
-        <option value="VN">Vietnam</option><option value="PH">Philippines</option><option value="TW">Taiwan</option>
-        <option value="NZ">New Zealand</option><option value="BR">Brazil</option><option value="MX">Mexico</option>
-        <option value="AR">Argentina</option><option value="CO">Colombia</option><option value="CL">Chile</option>
-        <option value="PE">Peru</option><option value="XK">Kosovo</option><option value="AL">Albania</option>
-        <option value="MK">North Macedonia</option><option value="RS">Serbia</option><option value="BA">Bosnia</option>
-        <option value="ME">Montenegro</option><option value="MD">Moldova</option><option value="UA">Ukraine</option>
-        <option value="GE">Georgia</option><option value="AM">Armenia</option><option value="AZ">Azerbaijan</option>
-        <option value="OTHER">Other</option>
-      </select></div>
       <div class="field"><label>Email</label><input type="email" id="regEmail" required placeholder="trader@example.com"></div>
       <div class="field"><label>Password</label><input type="password" id="regPass" required minlength="6" placeholder="Min 6 characters"></div>
       <label style="display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--t2);cursor:pointer;line-height:1.5"><input type="checkbox" id="regTerms" required style="margin-top:3px;accent-color:var(--ac)"> I agree to the <a onclick="showTerms()" style="color:var(--ac2);cursor:pointer">Terms of Service</a>, <a onclick="showPrivacy()" style="color:var(--ac2);cursor:pointer">Privacy Policy</a>, and <a onclick="showRisk()" style="color:var(--ac2);cursor:pointer">Risk Disclosure</a>.</label>
@@ -321,7 +291,7 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <span id="mobilePageTitle" style="font-size:.82rem;font-weight:700;color:var(--t1);letter-spacing:-.01em">Dashboard</span>
-    <a href="/terminal.html" target="_blank" style="display:flex;align-items:center;padding:5px 9px;background:var(--ac-bg);border:1px solid var(--ac-gl);border-radius:var(--r);color:var(--ac2);font-size:.65rem;font-weight:700;text-decoration:none;white-space:nowrap">▶ Trade</a>
+    <a href="https://trade.plutocapitalfunding.com" target="_blank" style="display:flex;align-items:center;padding:5px 9px;background:var(--ac-bg);border:1px solid var(--ac-gl);border-radius:var(--r);color:var(--ac2);font-size:.65rem;font-weight:700;text-decoration:none;white-space:nowrap">▶ Trade</a>
   </div>
   <!-- OVERLAY -->
   <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobile()"></div>
@@ -330,7 +300,7 @@
     <nav class="sb-nav">
       <button class="sb-link active" onclick="navigate('dashboard')" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
       <button class="sb-link" onclick="navigate('challenges')" data-page="challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>My Challenges</button>
-      <a class="sb-link" href="/terminal.html" target="_blank" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Trading Terminal</a>
+      <a class="sb-link" href="https://trade.plutocapitalfunding.com" target="_blank" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Trading Terminal</a>
       <button class="sb-link" onclick="navigate('funded')" data-page="funded"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>Funded Accounts</button>
       <button class="sb-link" onclick="navigate('buy')" data-page="buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Buy Challenge</button>
       <button class="sb-link" onclick="navigate('payouts')" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H3v16h18V4z"/><path d="M3 10h18"/></svg>Payouts</button>
@@ -379,7 +349,6 @@
 </div></div>
 
 <script src="/js/app.js"></script>
-<script src="/js/pluto-anim.js"></script>
 <script src="/js/gesture.js"></script>
 
 <!-- PARTICLE ANIMATION + CONFETTI CELEBRATIONS -->
