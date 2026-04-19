@@ -1,16 +1,41 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "trade.plutocapitalfunding.com" }],
+      "destination": "/terminal.html",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "admin.plutocapitalfunding.com" }],
+      "destination": "/pluto-admin.html",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/pluto-admin.html",
+      "has": [{ "type": "host", "value": "plutocapitalfunding.com" }],
+      "destination": "/404.html"
+    },
+    {
+      "source": "/pluto-admin.html",
+      "has": [{ "type": "host", "value": "trade.plutocapitalfunding.com" }],
+      "destination": "/404.html"
+    },
+    {
+      "source": "/pluto-admin.html",
+      "has": [{ "type": "host", "value": "pluto-platform.vercel.app" }],
+      "destination": "/404.html"
+    }
+  ],
   "headers": [
     {
       "source": "/pluto-admin.html",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
         { "key": "X-Frame-Options", "value": "DENY" }
-      ]
-    },
-    {
-      "source": "/terminal.html",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
       ]
     },
     {
