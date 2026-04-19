@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>PlutoTrader</title>
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 /* ─── RESET ─────────────────────────────────────────────────────────── */
@@ -343,6 +343,11 @@ let sym='EURUSD', dir='buy', ot='market', tf='5m';
 let chart=null, cSeries=null, vSeries=null, candles=[];
 let ws=null, wsOn=false, botTab='pos';
 let drawTool=null, drawings=[], drawPt=null;
+
+const TV_MAP={'EURUSD':'FX:EURUSD','GBPUSD':'FX:GBPUSD','USDJPY':'FX:USDJPY','USDCHF':'FX:USDCHF','AUDUSD':'FX:AUDUSD','USDCAD':'FX:USDCAD','NZDUSD':'FX:NZDUSD','EURGBP':'FX:EURGBP','EURJPY':'FX:EURJPY','GBPJPY':'FX:GBPJPY','XAUUSD':'OANDA:XAUUSD','XAGUSD':'OANDA:XAGUSD','BTCUSD':'COINBASE:BTCUSD','ETHUSD':'COINBASE:ETHUSD','US30':'FOREXCOM:DJI','NAS100':'PEPPERSTONE:NAS100','US500':'FOREXCOM:SPX500','GER40':'PEPPERSTONE:GER40','UK100':'PEPPERSTONE:UK100','USOIL':'TVC:USOIL','UKBRENT':'TVC:UKOIL'};
+function tvSym(s){return TV_MAP[s]||'FX:'+s;}
+let tvWidget=null;
+
 let slOn=false, tpOn=false, trOn=false, slMode='pips', tpMode='pips';
 let showGrid=true, refreshT=null;
 
@@ -465,12 +470,14 @@ async function qTrade(s,d){
 function pickSym(s){
   sym=s; closeDrops();
   document.querySelectorAll('.mw-row').forEach(r=>r.classList.remove('on'));
-  $('mr'+s)?.classList.add('on');
-  $('tbSymN') && ($('tbSymN').textContent=s);
-  $('rpSym') && ($('rpSym').textContent=s);
-  $('rpDesc') && ($('rpDesc').textContent=inst[s]?.name||'');
-  $('caBadge') && ($('caBadge').textContent=s);
-  renderTB(); loadCandles(); reDraw();
+  const row=$('mr'+s); if(row)row.classList.add('on');
+  $('rpSym')&&($('rpSym').textContent=s);
+  $('rpDesc')&&($('rpDesc').textContent=inst[s]?.name||'');
+  $('caBadge')&&($('caBadge').textContent=s);
+  renderTB(); calcUpdate();
+  localStorage.setItem('pluto_last_sym',s);
+  // Update TradingView chart symbol
+  try{ initChart(); }catch(e){}
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -479,251 +486,52 @@ function pickSym(s){
 const TF={'1m':'1min','3m':'3min','5m':'5min','15m':'15min','30m':'30min','1h':'1h','4h':'4h','1d':'1day','1w':'1week'};
 
 function initChart(){
-  const el=$('lwc'); if(!el||chart)return;
-  chart=LightweightCharts.createChart(el,{
-    layout:{background:{type:LightweightCharts.ColorType.Solid,color:'#080c12'},textColor:'#4a5568'},
-    grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}},
-    crosshair:{mode:LightweightCharts.CrosshairMode.Normal,vertLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'},horzLine:{color:'rgba(0,212,200,.3)',labelBackgroundColor:'#1a2130'}},
-    rightPriceScale:{borderColor:'rgba(255,255,255,.045)',textColor:'#4a5568'},
-    timeScale:{borderColor:'rgba(255,255,255,.045)',timeVisible:true,secondsVisible:false},
-    width:el.offsetWidth,height:el.offsetHeight,
-  });
-  cSeries=chart.addCandlestickSeries({upColor:'#26A69A',downColor:'#EF5350',borderUpColor:'#26A69A',borderDownColor:'#EF5350',wickUpColor:'#00c160',wickDownColor:'#cc3a47'});
-  vSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:.82,bottom:0}});
-  chart.priceScale('vol').applyOptions({scaleMargins:{top:.82,bottom:0}});
-
-  // OHLC on crosshair
-  chart.subscribeCrosshairMove(p=>{
-    if(!p?.seriesData)return;
-    const d=p.seriesData.get(cSeries);
-    if(!d)return;
-    const e=$('caOHLC');
-    if(e)e.innerHTML=`<span style="color:var(--ink3)">O:</span>${d.open} <span style="color:var(--grn)">H:</span>${d.high} <span style="color:var(--red)">L:</span>${d.low} <span style="color:var(--ink1)">C:</span><strong>${d.close}</strong>`;
-  });
-
-  // Redraw drawings on zoom/pan
-  chart.timeScale().subscribeVisibleLogicalRangeChange(()=>reDraw());
-  chart.timeScale().subscribeVisibleTimeRangeChange(()=>reDraw());
-
-  // Init drawing canvas
-  // Pre-size the drawing canvas to match chart container
-  setTimeout(()=>{
-    const cv=$('dc'),el=$('lwc');
-    if(cv&&el){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
-  },100);
-  initDC();
-
-  // Resize observer
-  const ro=new ResizeObserver(()=>{
-    if(chart) chart.resize(el.offsetWidth,el.offsetHeight);
-    // Sync canvas size immediately
-    const cv=$('dc');
-    if(cv){cv.width=el.offsetWidth;cv.height=el.offsetHeight;}
-    setTimeout(reDraw,20);
-  });
-  ro.observe(el);
-}
-
-function toggleGrid(){
-  showGrid=!showGrid;
-  if(chart)chart.applyOptions({grid:{vertLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'},horzLines:{color:showGrid?'rgba(255,255,255,.025)':'transparent'}}});
-  $('gridBtn')?.classList.toggle('on',showGrid);
-}
-
-async function loadCandles(){
-  if(!chart)return;
+  const el=$('lwc');if(!el)return;
+  el.style.overflow='hidden';
   try{
-    const data=await api(`/api/trading/candles?symbol=${sym}&timeframe=${TF[tf]||'5min'}&count=300`);
-    if(!data?.length)return;
-    candles=data.map(c=>({time:Math.floor(new Date(c.time||c.t).getTime()/1000),open:+c.open,high:+c.high,low:+c.low,close:+c.close,volume:+c.volume||0})).sort((a,b)=>a.time-b.time);
-    cSeries.setData(candles);
-    vSeries.setData(candles.map(c=>({time:c.time,value:c.volume||0,color:c.close>=c.open?'rgba(0,230,118,.18)':'rgba(255,71,87,.18)'})));
-    chart.timeScale().fitContent();
-    setTimeout(()=>{reDraw();addPosLines();},50);
-  }catch(e){console.warn('candles:',e.message);}
+    tvWidget=new TradingView.widget({
+      container_id:'lwc',
+      autosize:true,
+      symbol:tvSym(sym),
+      interval:'5',
+      timezone:'Etc/UTC',
+      theme:'dark',
+      style:'1',
+      locale:'en',
+      toolbar_bg:'#1e222d',
+      enable_publishing:false,
+      hide_top_toolbar:false,
+      hide_legend:false,
+      hide_side_toolbar:false,
+      allow_symbol_change:false,
+      save_image:false,
+      show_popup_button:false,
+      no_referral_id:true,
+      overrides:{
+        'paneProperties.background':'#131722',
+        'paneProperties.backgroundType':'solid',
+      }
+    });
+  }catch(e){
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#787b86;font-size:11px">Loading chart...</div>';
+  }
 }
 
-function tickChart(s,p){
-  if(s!==sym||!cSeries)return;
-  const tsec={'1min':60,'3min':180,'5min':300,'15min':900,'30min':1800,'1h':3600,'4h':14400,'1day':86400};
-  const sec=tsec[TF[tf]]||300;
-  const now=Math.floor(Date.now()/1000), barT=now-(now%sec);
-  const mid=+(p.bid*0.5+p.ask*0.5);
-  const last=candles[candles.length-1];
-  if(last?.time===barT){last.close=mid;last.high=Math.max(last.high,mid);last.low=Math.min(last.low,mid);cSeries.update(last);vSeries.update({time:barT,value:(last.volume||0)+1,color:last.close>=last.open?'rgba(0,230,118,.18)':'rgba(255,71,87,.18)'});}
-  else if(barT>=(last?.time||0)){const nb={time:barT,open:mid,high:mid,low:mid,close:mid,volume:1};candles.push(nb);if(candles.length>500)candles.shift();cSeries.update(nb);}
-}
+function toggleGrid(){}
 
-function switchTF(t){
-  tf=t;
-  document.querySelectorAll('.tf').forEach(b=>b.classList.toggle('on',b.dataset.tf===t));
-  loadCandles();
-}
+async async function loadCandles(){}
 
-function addPosLines(){
-  if(!cSeries||!chart)return;
-  // Remove old price lines
-  try{cSeries.priceLines&&cSeries.priceLines().forEach(l=>{try{cSeries.removePriceLine(l)}catch(_){}});}catch(_){}
-  pos.filter(p=>p.symbol===sym).forEach(p=>{
-    const dg=digs(sym),cp=px[sym],cur=cp?(p.direction==='buy'?cp.bid:cp.ask):p.open_price;
-    const pips=+((p.direction==='buy'?cur-p.open_price:p.open_price-cur)/pip(sym)).toFixed(1);
-    const pv=pipVal(sym,p.volume);
-    const usdPnl=+(pips*pv).toFixed(2);
-    // Entry line
-    try{cSeries.createPriceLine({price:p.open_price,color:'rgba(41,98,255,.7)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:`${p.direction.toUpperCase()} ${p.volume} | ${usdPnl>=0?'+':''}$${usdPnl}`});}catch(_){}
-    // SL line with USD loss
-    if(p.stop_loss){
-      const slPips=Math.abs((p.open_price-p.stop_loss)/pip(sym));
-      const slUsd=+(slPips*pv).toFixed(2);
-      try{cSeries.createPriceLine({price:p.stop_loss,color:'rgba(239,83,80,.7)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dotted,axisLabelVisible:true,title:`SL -$${slUsd}`});}catch(_){}
-    }
-    // TP line with USD profit
-    if(p.take_profit){
-      const tpPips=Math.abs((p.take_profit-p.open_price)/pip(sym));
-      const tpUsd=+(tpPips*pv).toFixed(2);
-      try{cSeries.createPriceLine({price:p.take_profit,color:'rgba(38,166,154,.7)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dotted,axisLabelVisible:true,title:`TP +$${tpUsd}`});}catch(_){}
-    }
-  });
-}
+function tickChart(){}
+
+function switchTF(t){tf=t;document.querySelectorAll('.tf').forEach(b=>b.classList.toggle('on',b.dataset.tf===t));try{initChart();}catch(e){}}
+
+function addPosLines(){/* TradingView widget handles chart */}
 
 // ─── DRAWING CANVAS ───────────────────────────────────────────────────
 // Drawings stored by price/time so they persist across zoom and pan
-function initDC(){
-  const cv=$('dc'); if(!cv)return;
+function initDC(){}
 
-  // Get coordinates relative to chart container (same origin as LightweightCharts)
-  function coords(e){
-    const r=$('lwc').getBoundingClientRect();
-    return {x:e.clientX-r.left, y:e.clientY-r.top};
-  }
-  function toChart(x,y){
-    // coordinateToTime/Price can return null outside visible range — fall back to raw pixel
-    const ts  = chart.timeScale().coordinateToTime(x);
-    const price = cSeries.coordinateToPrice(y);
-    return {ts, price, x, y};
-  }
-
-  cv.addEventListener('mousedown',e=>{
-    if(!drawTool)return;
-    const {x,y}=coords(e);
-    const {ts,price}=toChart(x,y);
-    if(drawTool==='hline'){
-      if(price==null)return;
-      drawings.push({type:'hline',sym,price,color:'#00d4c8',w:1});
-      setTool(null);reDraw();
-    } else if(drawTool==='vline'){
-      drawings.push({type:'vline',sym,ts,x,color:'#448aff',w:1});
-      setTool(null);reDraw();
-    } else {
-      drawPt={type:drawTool,sym,x1:x,y1:y,ts1:ts,p1:price??0,x2:x,y2:y,ts2:ts,p2:price??0};
-    }
-  });
-
-  cv.addEventListener('mousemove',e=>{
-    if(!drawPt)return;
-    const {x,y}=coords(e);
-    const {ts,price}=toChart(x,y);
-    drawPt.x2=x; drawPt.y2=y;
-    if(ts!=null)   drawPt.ts2=ts;
-    if(price!=null) drawPt.p2=price;
-    reDraw();
-  });
-
-  cv.addEventListener('mouseup',e=>{
-    if(!drawPt)return;
-    const {x,y}=coords(e);
-    const {ts,price}=toChart(x,y);
-    drawPt.x2=x; drawPt.y2=y;
-    if(ts!=null)   drawPt.ts2=ts;
-    if(price!=null) drawPt.p2=price;
-    if(drawTool==='line'||drawTool==='ray'){
-      drawings.push({...drawPt,color:'#a855f7',w:1.5});
-    } else if(drawTool==='rect'){
-      drawings.push({...drawPt,color:'rgba(168,85,247,.12)',borderColor:'#a855f7',w:1});
-    } else if(drawTool==='fib'){
-      drawings.push({...drawPt,color:'#ffb300',w:1});
-    }
-    drawPt=null; setTool(null); reDraw();
-  });
-
-  cv.addEventListener('mouseleave',()=>{
-    if(drawPt){ drawPt=null; reDraw(); }
-  });
-}
-
-function reDraw(){
-  const cv=$('dc'); if(!cv||!chart)return;
-  // Sync canvas size to container WITHOUT wiping it via width= assignment
-  const W=cv.offsetWidth, H=cv.offsetHeight;
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
-  const ctx=cv.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  const all=[...drawings,...(drawPt?[drawPt]:[])];
-  all.filter(d=>d.sym===sym).forEach(d=>{
-    ctx.save();
-    if(d.type==='hline'){
-      const y=cSeries.priceToCoordinate(d.price);
-      if(y==null)return ctx.restore();
-      ctx.strokeStyle=d.color;ctx.lineWidth=d.w||1;ctx.setLineDash([5,3]);ctx.globalAlpha=.8;
-      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-      ctx.setLineDash([]);ctx.fillStyle=d.color;ctx.font='600 9px IBM Plex Mono';ctx.globalAlpha=.9;
-      ctx.fillText(Fp(d.price,digs(sym)),W-68,y-2);
-    } else if(d.type==='vline'){
-      // vline stored with ts OR raw x fallback
-      let x=null;
-      if(d.ts) x=chart.timeScale().timeToCoordinate(d.ts);
-      if(x==null) x=d.x; // use raw pixel if ts out of view
-      if(x==null)return ctx.restore();
-      ctx.strokeStyle=d.color;ctx.lineWidth=d.w||1;ctx.setLineDash([4,3]);ctx.globalAlpha=.7;
-      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();ctx.setLineDash([]);
-    } else if(d.type==='line'||d.type==='ray'){
-      // Convert stored price/time to current pixel coords
-      let x1,y1,x2,y2;
-      if(d.ts1&&d.p1){
-        x1=chart.timeScale().timeToCoordinate(d.ts1)??d.x1;
-        y1=cSeries.priceToCoordinate(d.p1)??d.y1;
-        x2=chart.timeScale().timeToCoordinate(d.ts2)??d.x2;
-        y2=cSeries.priceToCoordinate(d.p2)??d.y2;
-      } else {x1=d.x1;y1=d.y1;x2=d.x2;y2=d.y2;}
-      ctx.strokeStyle=d.color||'#a855f7';ctx.lineWidth=d.w||1.5;ctx.globalAlpha=.85;
-      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-      if(d.type==='ray'){
-        const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1,sc=W*3/len;
-        ctx.setLineDash([4,3]);ctx.globalAlpha=.4;
-        ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2+dx*sc,y2+dy*sc);ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    } else if(d.type==='rect'){
-      let x1,y1,x2,y2;
-      if(d.ts1&&d.p1){
-        x1=chart.timeScale().timeToCoordinate(d.ts1)??d.x1;
-        y1=cSeries.priceToCoordinate(d.p1)??d.y1;
-        x2=chart.timeScale().timeToCoordinate(d.ts2)??d.x2;
-        y2=cSeries.priceToCoordinate(d.p2)??d.y2;
-      } else {x1=d.x1;y1=d.y1;x2=d.x2;y2=d.y2;}
-      const rx=Math.min(x1,x2),ry=Math.min(y1,y2),rw=Math.abs(x2-x1),rh=Math.abs(y2-y1);
-      ctx.fillStyle=d.color||'rgba(168,85,247,.1)';ctx.globalAlpha=.8;ctx.fillRect(rx,ry,rw,rh);
-      ctx.strokeStyle=d.borderColor||'#a855f7';ctx.lineWidth=1;ctx.globalAlpha=.7;ctx.strokeRect(rx,ry,rw,rh);
-    } else if(d.type==='fib'){
-      const fibs=[0,.236,.382,.5,.618,.786,1];
-      const cols=['#ff4757','#ffb300','#448aff','#a855f7','#00e676','#ffb300','#ff4757'];
-      let y1,y2;
-      if(d.p1&&d.p2){
-        y1=cSeries.priceToCoordinate(d.p1)??d.y1;
-        y2=cSeries.priceToCoordinate(d.p2)??d.y2;
-      } else {y1=d.y1;y2=d.y2;}
-      fibs.forEach((f,i)=>{
-        const yf=y1+(y2-y1)*f;
-        ctx.strokeStyle=cols[i];ctx.lineWidth=.8;ctx.setLineDash([3,3]);ctx.globalAlpha=.7;
-        ctx.beginPath();ctx.moveTo(0,yf);ctx.lineTo(W,yf);ctx.stroke();
-        ctx.setLineDash([]);ctx.fillStyle=cols[i];ctx.font='500 8px IBM Plex Mono';ctx.globalAlpha=.85;
-        const price=d.p1&&d.p2?+(d.p1+(d.p2-d.p1)*f).toFixed(digs(sym)):'';
-        ctx.fillText(`${(f*100).toFixed(1)}%${price?' '+price:''}`,3,yf-2);
-      });
-    }
-    ctx.restore();
-  });
-}
+function reDraw(){}
 
 function setTool(t){
   drawTool=t;
@@ -1155,9 +963,7 @@ function renderApp(){
   <!-- Chart Area -->
   <div id="ca">
     <div id="lwc"></div>
-    <canvas id="dc"></canvas>
-    <div class="ca-ohlc" id="caOHLC"></div>
-    <div class="ca-sym-badge" id="caBadge">${sym}</div>
+            <div class="ca-sym-badge" id="caBadge">${sym}</div>
   </div>
 
   <!-- Order Panel (right) -->
