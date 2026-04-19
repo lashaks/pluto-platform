@@ -5,7 +5,19 @@
 <link rel="alternate icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZkMjhkOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YzFkOTUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9InVybCgjYmcpIi8+CiAgPCEtLSBQbGFuZXQgcmluZyAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNiIgcng9IjEzIiByeT0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE5NiwxODEsMjUzLDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMTYgMTYpIi8+CiAgPCEtLSBQIGxldHRlcmZvcm0gLS0+CiAgPHRleHQgeD0iOCIgeT0iMjIiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNyIgZmlsbD0id2hpdGUiIGxldHRlci1zcGFjaW5nPSItMSI+UDwvdGV4dD4KPC9zdmc+Cg==">
 <link rel="apple-touch-icon" href="/img/favicon.svg?v=49">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#131722">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PlutoTrader">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<!-- Splash screens for iOS -->
+<link rel="apple-touch-startup-image" href="/img/icon-512.png">
+
 <title>PlutoTrader</title>
 <!-- TradingView loaded dynamically when chart needed -->
 
@@ -297,6 +309,66 @@ input,select,button,textarea{font-family:inherit;font-size:inherit}
 .lb{width:100%;background:#2962FF;border:none;border-radius:var(--r2);padding:10px;color:#000;font-size:.8rem;font-weight:800;cursor:pointer;transition:.15s;font-family:var(--ff);letter-spacing:.02em}
 .lb:hover{background:#1E53E5;transform:translateY(-1px)}
 .le{display:none;background:var(--redb);border:1px solid var(--redgl);border-radius:var(--r);padding:5px 8px;color:var(--red);font-size:.66rem;margin-bottom:8px}
+
+/* ─── MOBILE / PWA ────────────────────────────────────────────────────── */
+@supports(padding-top: env(safe-area-inset-top)) {
+  #tb { padding-top: env(safe-area-inset-top); height: calc(var(--tb) + env(safe-area-inset-top)); }
+  #ab { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--ab) + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 768px) {
+  :root { --mw: 0px; --rp: 0px; --bot: 160px; --tb: 42px; }
+  #body { grid-template-columns: 1fr; }
+  #mw { display: none; }
+  #rp { 
+    position: fixed; bottom: calc(var(--bot) + var(--ab)); left: 0; right: 0;
+    height: auto; max-height: 55vh; z-index: 100; border-top: 1px solid var(--wire);
+    transform: translateY(100%); transition: transform .25s ease;
+    overflow-y: auto;
+  }
+  #rp.mob-open { transform: translateY(0); }
+  .tf-strip { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .draw-strip { display: none; }
+  .tb-logo { padding: 0 8px; }
+  .tb-wordmark { display: none; }
+  .tb-sym-btn { min-width: 120px; padding: 0 8px; }
+  .tb-r { gap: 3px; padding: 0 4px; }
+  .tb-rbtn { padding: 2px 6px; font-size: .55rem; }
+  .tb-acct-pill { padding: 3px 6px; }
+  #tbClock { display: none; }
+  .bs-grid { grid-template-columns: 1fr 1fr; }
+  
+  /* Mobile order toggle button */
+  #mobOrderBtn {
+    position: fixed; bottom: calc(var(--bot) + var(--ab) + 8px); right: 8px;
+    width: 48px; height: 48px; border-radius: 50%; z-index: 99;
+    background: var(--teal); color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(41,98,255,.4); font-size: 18px;
+  }
+  
+  /* Bottom panel smaller on mobile */
+  .bot-tabs { height: 28px; }
+  .bt { font-size: .58rem; padding: 3px 8px; }
+  .tbl { font-size: .62rem; }
+  .tbl th, .tbl td { padding: 3px 5px; }
+  
+  /* Login page mobile */
+  .lc { width: 92vw; padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  :root { --bot: 140px; --tb: 38px; }
+  .tb-sym-btn { min-width: 90px; }
+  .tf { padding: 2px 5px; font-size: .58rem; }
+  .tb-r > a, .tb-r > button:last-of-type { display: none; }
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+  .tb-r > a[href="/"] { display: none; } /* Hide dashboard link in standalone */
+}
+
 </style>
 </head>
 <body>
@@ -1219,6 +1291,51 @@ async function boot(){
     else{$('app').innerHTML=`<div class="lp"><div class="lc"><div style="color:var(--red);margin-bottom:12px;font-size:.75rem">⚠ ${e.message}</div><button class="lb" onclick="boot()">Retry</button></div></div>`;}
   }
 }
+
+
+// ── PWA Service Worker ────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.log('SW:', e));
+}
+
+// ── Mobile Order Panel Toggle ─────────────────────────────────────────
+function initMobile() {
+  if (window.innerWidth > 768) return;
+  
+  // Add floating order button
+  if (!document.getElementById('mobOrderBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'mobOrderBtn';
+    btn.innerHTML = '📊';
+    btn.title = 'Open Order Panel';
+    btn.onclick = () => {
+      const rp = document.getElementById('rp');
+      if (rp) {
+        rp.classList.toggle('mob-open');
+        btn.innerHTML = rp.classList.contains('mob-open') ? '✕' : '📊';
+      }
+    };
+    document.body.appendChild(btn);
+  }
+  
+  // Close order panel when clicking chart area
+  const ca = document.getElementById('ca');
+  if (ca) ca.addEventListener('click', () => {
+    const rp = document.getElementById('rp');
+    const btn = document.getElementById('mobOrderBtn');
+    if (rp?.classList.contains('mob-open')) {
+      rp.classList.remove('mob-open');
+      if (btn) btn.innerHTML = '📊';
+    }
+  });
+}
+
+// Run after app renders
+const _origRenderApp = renderApp;
+renderApp = function() {
+  _origRenderApp();
+  setTimeout(initMobile, 200);
+};
 
 boot();
 </script>
