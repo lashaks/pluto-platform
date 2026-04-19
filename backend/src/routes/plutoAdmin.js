@@ -407,6 +407,8 @@ router.put('/symbols/bulk', async (req, res) => {
     for (const sym of symbols) {
       const settings = {};
       if (spread_markup !== undefined) settings.spread_markup = spread_markup;
+      if (req.body.swap_long !== undefined) settings.swap_long = parseFloat(req.body.swap_long);
+      if (req.body.swap_short !== undefined) settings.swap_short = parseFloat(req.body.swap_short);
       if (commission_per_lot !== undefined) settings.commission_per_lot = commission_per_lot;
       await orderEngine.updateSymbolSettings(sym.toUpperCase(), settings);
       results.push(sym.toUpperCase());
@@ -422,6 +424,7 @@ router.put('/symbols/bulk', async (req, res) => {
 
 router.put('/symbols/:symbol', async (req, res) => {
   try {
+    // Handles: spread_markup, commission_per_lot, swap_long, swap_short, trading_enabled
     await orderEngine.updateSymbolSettings(req.params.symbol.toUpperCase(), req.body);
     res.json({ success: true });
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -529,7 +532,46 @@ router.get('/users', async (req, res) => {
 });
 
 
-router.get('/slippage',async(req,res)=>{try{const r=await queryOne("SELECT value FROM platform_settings WHERE key='slippage_pips'");res.json({slippage_pips:r?parseFloat(r.value):0.3})}catch(e){res.json({slippage_pips:0.3})}});
-router.put('/slippage',async(req,res)=>{try{const{slippage_pips}=req.body;if(slippage_pips===undefined||slippage_pips<0||slippage_pips>10)return res.status(400).json({error:'slippage_pips must be 0-10'});const ex=await queryOne("SELECT key FROM platform_settings WHERE key='slippage_pips'");if(ex)await run("UPDATE platform_settings SET value=$1,updated_at=NOW()::TEXT WHERE key='slippage_pips'",[String(slippage_pips)]);else await run("INSERT INTO platform_settings(key,value)VALUES('slippage_pips',$1)",[String(slippage_pips)]);const oe=require('../services/orderEngine');if(oe.setSlippage)oe.setSlippage(slippage_pips);res.json({success:true,slippage_pips})}catch(e){res.status(500).json({error:e.message})}});
+// ── SLIPPAGE CONTROL ──────────────────────────────────────────────────────────
+router.get('/slippage', async (req, res) => {
+  try {
+    const row = await queryOne("SELECT value FROM platform_settings WHERE key='slippage_pips'");
+    res.json({ slippage_pips: row ? parseFloat(row.value) : 0.3 });
+  } catch (e) { res.json({ slippage_pips: 0.3 }); }
+});
+
+router.put('/slippage', async (req, res) => {
+  try {
+    const { slippage_pips } = req.body;
+    if (slippage_pips === undefined || slippage_pips < 0 || slippage_pips > 10)
+      return res.status(400).json({ error: 'slippage_pips must be 0-10' });
+    const existing = await queryOne("SELECT key FROM platform_settings WHERE key='slippage_pips'");
+    if (existing) await run("UPDATE platform_settings SET value=$1, updated_at=NOW()::TEXT WHERE key='slippage_pips'", [String(slippage_pips)]);
+    else await run("INSERT INTO platform_settings (key, value) VALUES ('slippage_pips', $1)", [String(slippage_pips)]);
+    const oe = require('../services/orderEngine');
+    if (oe.setSlippage) oe.setSlippage(slippage_pips);
+    res.json({ success: true, slippage_pips });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// ── BULK SWAP OPERATIONS ──────────────────────────────────────────────────────
+router.put('/symbols/bulk-swap', async (req, res) => {
+  try {
+    const { symbols, swap_long, swap_short } = req.body;
+    const targetSymbols = symbols || Object.keys(require('../services/marketData').getInstruments());
+    const results = [];
+    for (const sym of targetSymbols) {
+      const settings = {};
+      if (swap_long !== undefined) settings.swap_long = parseFloat(swap_long);
+      if (swap_short !== undefined) settings.swap_short = parseFloat(swap_short);
+      await orderEngine.updateSymbolSettings(sym.toUpperCase(), settings);
+      results.push(sym.toUpperCase());
+    }
+    await run(`INSERT INTO audit_log (id,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`,
+      [uuidv4(), 'BULK_SWAP_UPDATE', 'symbol', 'bulk', `Updated ${results.length} symbols: swap_long=${swap_long ?? 'unchanged'}, swap_short=${swap_short ?? 'unchanged'}`]);
+    res.json({ success: true, updated: results });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
 
 module.exports = router;

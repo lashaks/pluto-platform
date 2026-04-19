@@ -8,8 +8,7 @@ const email = require('../services/email');
 
 const router = express.Router();
 
-// In-memory verification codes (move to Redis/DB in production at scale)
-const verificationCodes = {};
+// Verification codes stored in DB (survives server restarts)
 // Reset codes stored in DB (not memory — survives server restarts)
 
 // Brute-force protection — lockout after 5 failed login attempts
@@ -63,7 +62,8 @@ router.post('/register', async (req, res) => {
 
     // Send verification code
     const code = generateCode();
-    verificationCodes[userEmail] = { code, expires: Date.now() + 15 * 60 * 1000, userId: id };
+    await run(`DELETE FROM platform_settings WHERE key=$1`, ["vcode_"+userEmail]);
+    await run(`INSERT INTO platform_settings (key, value) VALUES ($1, $2)`, ["vcode_"+userEmail, JSON.stringify({code, expires: Date.now()+15*60*1000, userId: id})]);
     email.sendVerification(userEmail, first_name || 'Trader', code).catch(e => console.error('[Auth] Verification email error:', e.message));
 
     res.status(201).json({
@@ -83,17 +83,18 @@ router.post('/verify-email', async (req, res) => {
     const { email: userEmail, code } = req.body;
     if (!userEmail || !code) return res.status(400).json({ error: 'Email and code are required' });
 
-    const stored = verificationCodes[userEmail];
+    const storedRow = await queryOne(`SELECT value FROM platform_settings WHERE key=$1`, ["vcode_"+userEmail]);
+    const stored = storedRow ? JSON.parse(storedRow.value) : null;
     if (!stored) return res.status(400).json({ error: 'No verification pending for this email. Request a new code.' });
     if (Date.now() > stored.expires) {
-      delete verificationCodes[userEmail];
+      await run(`DELETE FROM platform_settings WHERE key=$1`, ["vcode_"+userEmail]);
       return res.status(400).json({ error: 'Code expired. Request a new one.' });
     }
     if (stored.code !== code) return res.status(400).json({ error: 'Invalid code' });
 
     // Mark email as verified
     await run(`UPDATE users SET kyc_status='none', updated_at=NOW()::TEXT WHERE id=?`, [stored.userId]);
-    delete verificationCodes[userEmail];
+    await run(`DELETE FROM platform_settings WHERE key=$1`, ["vcode_"+userEmail]);
 
     // Send welcome email
     const user = await queryOne(`SELECT first_name FROM users WHERE id='${stored.userId}'`);

@@ -52,10 +52,10 @@ class OrderEngine {
     return this.symbolSettings[symbol]?.spread_markup || 0;
   }
 
-  _execPrice(symbol, direction, extraMarkup = 0) {
+  _execPrice(symbol, direction) {
     const price = marketData.getPrice(symbol);
     if (!price) return null;
-    const markup = (this._getSpreadMarkup(symbol) + (extraMarkup || 0)) / 2;
+    const markup = this._getSpreadMarkup(symbol) / 2;
     return direction === 'buy' ? price.ask + markup : price.bid - markup;
   }
 
@@ -68,31 +68,14 @@ class OrderEngine {
     const _d = new Date(), _day = _d.getUTCDay(), _h = _d.getUTCHours();
     if (_day === 6 || (_day === 0 && _h < 22) || (_day === 5 && _h >= 22))
       throw new Error('Markets are closed — trading resumes Sunday 22:00 UTC');
-    const execPrice = this._execPrice(symbol, direction, adminOverrides.spread_markup);
+    const execPrice = this._execPrice(symbol, direction);
     if (!execPrice) throw new Error('No price for ' + symbol);
     const account = await this._getAccount(challengeId, fundedAccountId);
     if (!account)                     throw new Error('Account not found');
     if (account.status !== 'active')  throw new Error(`Account is ${account.status}`);
-
-    // ── Parse admin overrides from admin_notes ───────────────────────────────
-    let adminOverrides = {};
-    try { adminOverrides = JSON.parse(account.admin_notes||'{}'); } catch(_) {}
-
-    const maxLots = adminOverrides.max_lots_override || this._getMaxLots(account.account_size);
+    const maxLots  = this._getMaxLots(account.account_size);
     const openLots = await this._getOpenLots(challengeId, fundedAccountId);
     if (openLots + volume > maxLots) throw new Error(`Max ${maxLots}L exposure. Currently ${openLots.toFixed(2)}L open`);
-
-    // ── Leverage & margin check ──────────────────────────────────────────────
-    const leverageNum = parseInt((account.leverage||'1:30').replace('1:',''))||30;
-    const contractSize = inst.contract_size || 100000;
-    const execPriceForMargin = this._execPrice(symbol, direction);
-    const requiredMargin = (volume * contractSize * execPriceForMargin) / leverageNum;
-    const currentBalance = account.current_balance || account.starting_balance || 0;
-    const floatPnL = await this._getTotalFloatingPnL(challengeId, fundedAccountId);
-    const equity = currentBalance + floatPnL;
-    const usedMargin = await this._getUsedMargin(challengeId, fundedAccountId, leverageNum, contractSize);
-    const freeMargin = equity - usedMargin;
-    if (requiredMargin > freeMargin) throw new Error(`Insufficient margin. Required: $${requiredMargin.toFixed(2)}, Free: $${freeMargin.toFixed(2)}`);
     if (stopLoss) {
       if (direction==='buy'  && stopLoss >= execPrice) throw new Error('SL must be below entry for buy');
       if (direction==='sell' && stopLoss <= execPrice) throw new Error('SL must be above entry for sell');
@@ -260,8 +243,20 @@ class OrderEngine {
 
       // SL/TP
       const p = this.positions[pos.id];
-      if (p.stop_loss && ((p.direction==='buy' && bid<=p.stop_loss) || (p.direction==='sell' && ask>=p.stop_loss))) { await this._closePosition(p,'stop_loss'); continue; }
-      if (p.take_profit && ((p.direction==='buy' && bid>=p.take_profit) || (p.direction==='sell' && ask<=p.take_profit))) { await this._closePosition(p,'take_profit'); continue; }
+      if (p.stop_loss && ((p.direction==='buy' && bid<=p.stop_loss) || (p.direction==='sell' && ask>=p.stop_loss))) {
+        // Apply slippage to SL fill
+        const slipPips = this.slippagePips * (inst?.pip || 0.0001);
+        if (p.direction === 'buy') p._slippedClose = p.stop_loss - slipPips;
+        else p._slippedClose = p.stop_loss + slipPips;
+        await this._closePosition(p, 'stop_loss'); continue;
+      }
+      if (p.take_profit && ((p.direction==='buy' && bid>=p.take_profit) || (p.direction==='sell' && ask<=p.take_profit))) {
+        // Apply slippage to TP fill
+        const slipPipsTP = this.slippagePips * (inst?.pip || 0.0001);
+        if (p.direction === 'buy') p._slippedClose = p.take_profit - slipPipsTP;
+        else p._slippedClose = p.take_profit + slipPipsTP;
+        await this._closePosition(p, 'take_profit'); continue;
+      }
 
       // Equity / risk check
       const account = await this._getAccount(pos.challengeId, pos.fundedAccountId);
@@ -308,7 +303,10 @@ class OrderEngine {
     const pips     = (pos.direction==='buy' ? closePx-pos.open_price : pos.open_price-closePx) / inst.pip;
     const profit   = +(pips * inst.pipValue * closeVol).toFixed(2);
     const hours    = (Date.now() - new Date(pos.open_time).getTime()) / 3600000;
-    const swap     = +(hours>=24 ? -(closeVol*pos.open_price*0.005/365) : 0).toFixed(2);
+    // Read swap rate from symbol settings (admin-controlled)
+    const ss = this.symbolSettings[pos.symbol] || {};
+    const swapRate = pos.direction === 'buy' ? (ss.swap_long ?? -0.005) : (ss.swap_short ?? -0.005);
+    const swap = +(hours >= 24 ? (closeVol * pos.open_price * swapRate / 365) : 0).toFixed(2);
     const now      = new Date().toISOString();
     const cid      = pos.challengeId||pos.challenge_id;
     const fid      = pos.fundedAccountId||pos.funded_account_id;
@@ -383,20 +381,6 @@ class OrderEngine {
     return 0;
   }
 
-  async _getUsedMargin(challengeId, fundedAccountId, leverageNum=30, contractSize=100000) {
-    const qp = challengeId ? `challenge_id=$1` : `funded_account_id=$1`;
-    const id  = challengeId || fundedAccountId;
-    const trades = await queryAll(`SELECT symbol, volume, open_price FROM trades WHERE ${qp} AND status='open'`, [id]).catch(()=>[]);
-    let used = 0;
-    for (const t of trades) {
-      const inst = marketData.getInstrument(t.symbol);
-      const cs   = inst?.contract_size || contractSize;
-      const lev  = leverageNum;
-      used += (t.volume * cs * t.open_price) / lev;
-    }
-    return used;
-  }
-
   async _getOpenLots(challengeId, fundedAccountId) {
     if (challengeId) { const r=await queryOne(`SELECT COALESCE(SUM(volume),0) as lots FROM trades WHERE challenge_id=$1 AND status='open'`,[challengeId]); return r?.lots||0; }
     if (fundedAccountId) { const r=await queryOne(`SELECT COALESCE(SUM(volume),0) as lots FROM trades WHERE funded_account_id=$1 AND status='open'`,[fundedAccountId]); return r?.lots||0; }
@@ -404,10 +388,9 @@ class OrderEngine {
   }
 
   _getMaxLots(accountSize) {
-    const exp = config.oneStepRules.max_lot_exposure;
-    const sizes = Object.keys(exp).map(Number).sort((a,b)=>a-b);
-    for (const s of sizes) if (accountSize<=s) return exp[s];
-    return exp[sizes[sizes.length-1]]; // fallback to largest defined size
+    const sizes = Object.keys(config.oneStepRules.max_lot_exposure).map(Number).sort((a,b)=>a-b);
+    for (const s of sizes) if (accountSize<=s) return config.oneStepRules.max_lot_exposure[s];
+    return config.oneStepRules.max_lot_exposure[200000];
   }
 
   async getOpenPositions(userId, challengeId, fundedAccountId) {
@@ -460,12 +443,17 @@ class OrderEngine {
     return { success: true };
   }
 
-  setSlippage(pips){
-    this.slippagePips=parseFloat(pips)||0;
-    console.log("[OrderEngine] Slippage set to "+this.slippagePips+" pips");
+  setSlippage(pips) {
+    this.slippagePips = parseFloat(pips) || 0;
+    console.log('[OrderEngine] Slippage set to ' + this.slippagePips + ' pips');
   }
 
-  getSlippage(){return this.slippagePips;}
+  getSlippage() { return this.slippagePips; }
+
+  getSwapRates(symbol) {
+    const ss = this.symbolSettings[symbol] || {};
+    return { swap_long: ss.swap_long ?? -0.005, swap_short: ss.swap_short ?? -0.005 };
+  }
 }
 
 module.exports = new OrderEngine();
