@@ -258,34 +258,31 @@ function navigate(p){
   if(titleEl)titleEl.textContent=titles[p]||'';
   if(window['render_'+p])window['render_'+p]();
 }
-const PLANS={
-  one_step:[
-    {size:2500,  fee:19,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
-    {size:5000,  fee:32,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
-    {size:10000, fee:59,  target:10,daily:5,dd:8, split:80,lev:'1:30'},
-    {size:25000, fee:144, target:10,daily:5,dd:8, split:80,lev:'1:30'},
-    {size:50000, fee:225, target:10,daily:5,dd:8, split:80,lev:'1:30'},
-    {size:100000,fee:449, target:10,daily:5,dd:8, split:80,lev:'1:50',badge:'MAX'},
-  ],
-  two_step:[
-    {size:2500,  fee:15,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
-    {size:5000,  fee:29,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
-    {size:10000, fee:49,  target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
-    {size:25000, fee:129, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
-    {size:50000, fee:199, target:'8/5',daily:5,dd:10,split:80,lev:'1:30'},
-    {size:100000,fee:379, target:'8/5',daily:5,dd:10,split:80,lev:'1:50',badge:'MAX'},
-  ],
-  rapid:[
-    {size:2500,  fee:15,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
-    {size:5000,  fee:25,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
-    {size:10000, fee:45,  target:12,daily:6,dd:8, split:80,lev:'1:30'},
-    {size:25000, fee:109, target:12,daily:6,dd:8, split:80,lev:'1:30'},
-    {size:50000, fee:179, target:12,daily:6,dd:8, split:80,lev:'1:30'},
-    {size:100000,fee:349, target:12,daily:6,dd:8, split:80,lev:'1:50',badge:'MAX'},
-  ],
+let PLANS={one_step:[],two_step:[],rapid:[]};
+let PLAN_TYPES=[];
+async function loadChallengeTypes(){
+  try{
+    const types=await fetch(BE+'/api/challenges/types').then(r=>r.json());
+    if(!types||!types.length)return;
+    PLAN_TYPES=types;
+    PLANS={};
+    types.forEach(t=>{PLANS[t.slug]=t.plans;});
+    // Rebuild pricing tabs
+    const tabC=document.getElementById('evalTabs');
+    if(tabC){
+      tabC.innerHTML=types.map((t,i)=>`<button class="eval-tab ${i===0?'active':''}" onclick="switchEval('${t.slug}')">${t.name}${t.slug==='rapid'?' <span style=\"position:absolute;top:-6px;right:-4px;background:#f59e0b;color:#000;font-size:.48rem;font-weight:800;padding:1px 4px;border-radius:3px;letter-spacing:.06em\">FAST</span>':''}</button>`).join('');
+    }
+    // Also update dashboard buy page tabs
+    const dashTabs=document.getElementById('dashEvalTabs');
+    if(dashTabs){
+      dashTabs.innerHTML=types.map((t,i)=>`<button class="eval-tab ${i===0?'active':''}" onclick="switchBuyEval('${t.slug}')">${t.name}</button>`).join('');
+    }
+    // Render first type
+    if(types[0])renderPricing(PLANS[types[0].slug],$('landingPricing'),"selectPlan");
+  }catch(e){console.warn('[Pricing]',e.message);}
 };
-function renderPricing(plans,c,action){c.innerHTML=plans.map((p,i)=>`<div class="plan ${i===4?'popular':''}" onclick="${action}(${p.size})"><div class="plan-size">${F(p.size)}</div><div class="plan-price">${F(p.fee)}</div><div class="plan-detail">${p.target}% Target</div><div class="plan-detail">${p.daily}% Daily Loss</div><div class="plan-detail">${p.dd}% Max DD</div><div class="plan-detail">${p.split}% Split</div><div class="plan-detail">${p.lev} Leverage</div><div class="plan-detail">20% Consistency</div><button class="btn btn-primary btn-sm btn-full" style="margin-top:16px">${action==='selectPlan'?'Get Funded':'Select Plan'}</button></div>`).join('')}
-function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>{t.classList.remove('active');t.style.borderBottomColor='transparent'});event.target.classList.add('active');renderPricing(PLANS[type],$('landingPricing'),"selectPlan")}
+function renderPricing(plans,c,action){c.innerHTML=plans.map((p,i)=>`<div class="plan ${i===4?'popular':''}" onclick="${action}(${p.size})"><div class="plan-size">${F(p.size)}</div><div class="plan-price">${F(p.fee)}</div><div class="plan-detail">${p.target}% Target</div><div class="plan-detail">${p.daily}% Daily Loss</div><div class="plan-detail">${p.dd}% Max DD</div><div class="plan-detail">${p.split}% Split</div><div class="plan-detail">${p.lev} Leverage</div>${p.consistency?`<div class="plan-detail">${p.consistency}% Consistency</div>`:`<div class="plan-detail" style="color:var(--gr)">No Consistency Rule</div>`}<button class="btn btn-primary btn-sm btn-full" style="margin-top:16px">${action==='selectPlan'?'Get Funded':'Select Plan'}</button></div>`).join('')}
+function switchEval(type){currentEval=type;document.querySelectorAll('#pricing .eval-tab').forEach(t=>{t.classList.remove('active');t.style.borderBottomColor='transparent'});if(event&&event.target)event.target.classList.add('active');if(PLANS[type])renderPricing(PLANS[type],$('landingPricing'),'selectPlan');}
 function G(label,value,max,color,warn){const p=Math.min(100,Math.abs(value)/max*100);const c=warn&&p>70?'var(--rd)':color;return`<div style="flex:1;min-width:160px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font-size:.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">${label}</span><span style="font-size:.84rem;font-family:var(--fm);font-weight:700;color:${warn&&p>70?'var(--rd)':'var(--t1)'}">${value.toFixed(2)}% <span style="color:var(--t3);font-weight:400">/ ${max}%</span></span></div><div class="bar" style="height:6px"><div class="bar-fill" style="width:${p}%;background:${c}"></div></div></div>`}
 function M(label,value,color){return`<div style="padding:16px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--brd);text-align:center"><div style="font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">${label}</div><div style="font-size:1.15rem;font-family:var(--fm);font-weight:700;${color?'color:'+color:''}">${value}</div></div>`}
 function R(l,v,c){return`<div class="row"><span class="row-label">${l}</span><span class="row-value"${c?' style="color:'+c+'"':''}>${v}</span></div>`}

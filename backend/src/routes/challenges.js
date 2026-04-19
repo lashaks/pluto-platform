@@ -9,6 +9,59 @@ const email = require('../services/email');
 const router = express.Router();
 
 // GET /api/challenges — list user's challenges
+
+// ── PUBLIC: Get all challenge types for buy page ──────────────────────────────
+router.get('/types', async (req, res) => {
+  try {
+    const { queryAll } = require('../models/database');
+    const config = require('../../config');
+    
+    // Get all types from DB (admin-editable)
+    const dbTypes = await queryAll('SELECT * FROM challenge_types WHERE is_active=1 ORDER BY display_order ASC');
+    
+    // If DB has types, use those exclusively
+    if (dbTypes.length > 0) {
+      const types = dbTypes.map(t => {
+        const pricing = JSON.parse(t.pricing_json || '{}');
+        const rules = JSON.parse(t.rules_json || '{}');
+        return {
+          slug: t.slug,
+          name: t.name,
+          description: t.description || '',
+          plans: Object.entries(pricing).map(([size, fee]) => ({
+            size: parseInt(size),
+            fee,
+            target: rules.profit_target_pct || 10,
+            daily: rules.max_daily_loss_pct || 5,
+            dd: rules.max_total_loss_pct || 8,
+            split: rules.profit_split_pct || 80,
+            lev: rules.leverage || '1:30',
+            consistency: rules.consistency_rule_pct,
+            min_days: rules.min_trading_days || 0,
+            phases: rules.phases || 1,
+            phase2_target: rules.phase2_target_pct || 5,
+          })).sort((a,b) => a.size - b.size),
+        };
+      });
+      return res.json(types);
+    }
+    
+    // Fallback: return config-based types
+    const mkPlans = (pricing, rules, phases) => Object.entries(pricing).map(([s,f]) => ({
+      size:parseInt(s), fee:f, target:rules.profit_target_pct||rules.phase1_target_pct||10,
+      daily:rules.max_daily_loss_pct||5, dd:rules.max_total_loss_pct||8,
+      split:rules.profit_split_pct||80, lev:rules.leverage||'1:30',
+      consistency:rules.consistency_rule_pct, phases:phases||1
+    })).sort((a,b)=>a.size-b.size);
+    
+    res.json([
+      { slug:'one_step', name:'Pluto Classic', description:'1-Step evaluation', plans: mkPlans(config.challengePricing, config.oneStepRules, 1) },
+      { slug:'two_step', name:'Pluto Dual', description:'2-Step evaluation', plans: mkPlans(config.challengePricing, config.twoStepRules, 2) },
+      { slug:'rapid', name:'PlutoRapid', description:'Fast track, no consistency', plans: mkPlans(config.rapidPricing, config.rapidRules, 1) },
+    ]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/', authenticate, async (req, res) => {
   const challenges = await queryAll(`SELECT * FROM challenges WHERE user_id=$1 ORDER BY created_at DESC`, [req.user.id]);
   res.json(challenges);

@@ -469,6 +469,31 @@ async function seedDatabase(client) {
 // ============================================================
 // INIT
 // ============================================================
+
+  // Seed built-in challenge types
+  async function seedChallengeTypes() {
+    const config = require('../../config');
+    const types = [
+      { slug:'one_step', name:'Pluto Classic', desc:'1-Step evaluation',
+        pricing:config.challengePricing, rules:{...config.oneStepRules,phases:1}, ord:0 },
+      { slug:'two_step', name:'Pluto Dual', desc:'2-Step evaluation',
+        pricing:Object.fromEntries(Object.entries(config.challengePricing).map(([k,v])=>[k,Math.round(v*0.8)])),
+        rules:{...config.twoStepRules,phases:2,profit_target_pct:config.twoStepRules.phase1_target_pct,phase2_target_pct:config.twoStepRules.phase2_target_pct}, ord:1 },
+      { slug:'rapid', name:'PlutoRapid', desc:'Fast track, no consistency',
+        pricing:config.rapidPricing, rules:{...config.rapidRules,phases:1}, ord:2 },
+    ];
+    for (const t of types) {
+      try {
+        const ex = await queryOne("SELECT id FROM challenge_types WHERE slug=$1",[t.slug]);
+        if(!ex){
+          await run("INSERT INTO challenge_types (id,name,slug,description,pricing_json,rules_json,is_active,display_order) VALUES ($1,$2,$3,$4,$5,$6,1,$7)",
+            [require('uuid').v4(),t.name,t.slug,t.desc,JSON.stringify(t.pricing),JSON.stringify(t.rules),t.ord]);
+          console.log('  ✓ Seeded:',t.name);
+        }
+      }catch(_){}
+    }
+  }
+
 async function initDatabase() {
   if (USE_SQLITE) {
     await initSqlJs();
@@ -561,6 +586,7 @@ async function initDatabase() {
       try { await client.query(sql); } catch(_) {}
     }
     console.log('  ✓ Migrations applied');
+    await seedChallengeTypes();
     await seedDatabase(client);
   } finally {
     client.release();
