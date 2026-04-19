@@ -89,7 +89,15 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/challenges/purchase — buy a new challenge
 router.post('/purchase', authenticate, async (req, res) => {
   try {
+    // Block unverified users
+    const buyer = await queryOne('SELECT email_verified FROM users WHERE id=$1', [req.user.id]);
+    if (!buyer?.email_verified) return res.status(403).json({ error: 'Please verify your email before purchasing a challenge' });
+
     const { account_size, profit_split, challenge_type, payment_method, discount_code, platform } = req.body;
+    // Max 5 active accounts per user
+    const activeCount = await queryOne('SELECT COUNT(*) as c FROM challenges WHERE user_id=$1 AND status IN (\'active\',\'pending_payment\')', [req.user.id]);
+    if (parseInt(activeCount?.c || 0) >= 5) return res.status(400).json({ error: 'Maximum 5 active challenges. Close or complete existing ones first.' });
+
     const type = ['two_step','rapid'].includes(challenge_type) ? challenge_type : 'one_step';
     const selectedPlatform = 'plutotrade';
 

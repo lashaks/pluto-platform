@@ -39,7 +39,9 @@ function generateCode() {
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email: userEmail, password, first_name, last_name, country, terms_accepted } = req.body;
+    const { email: userEmail, password, first_name: rawFirst, last_name: rawLast, country, terms_accepted } = req.body;
+    const first_name = sanitize(rawFirst || '').slice(0, 50);
+    const last_name = sanitize(rawLast || '').slice(0, 50);
     if (!userEmail || !password) return res.status(400).json({ error: 'Email and password are required' });
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     if (!terms_accepted) return res.status(400).json({ error: 'You must accept the Terms of Service, Privacy Policy, and Risk Disclosure' });
@@ -97,7 +99,7 @@ router.post('/verify-email', async (req, res) => {
     await run(`DELETE FROM platform_settings WHERE key=$1`, ["vcode_"+userEmail]);
 
     // Send welcome email
-    const user = await queryOne(`SELECT first_name FROM users WHERE id='${stored.userId}'`);
+    const user = await queryOne(`SELECT first_name FROM users WHERE id=$1`, [stored.userId]);
     email.sendWelcome(userEmail, user?.first_name || 'Trader').catch(e => console.error('[Auth] Welcome email error:', e.message));
 
     res.json({ success: true, message: 'Email verified! Welcome to Pluto Capital.' });
